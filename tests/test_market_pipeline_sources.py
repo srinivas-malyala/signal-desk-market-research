@@ -64,3 +64,16 @@ def test_silver_classification_prefers_valid_record_before_latest_duplicate() ->
     recency_order = source.index('F.col("ingested_at").desc()')
     assert quality_order < recency_order
     assert 'Window.partitionBy("ticker_raw", "trading_date")' in source
+
+
+def test_gold_metrics_have_stable_window_and_benchmark_definitions() -> None:
+    performance = _source("gold_stock_performance.py")
+    peers = _source("gold_market_peer_comparison.py")
+    coverage = _source("gold_market_data_coverage.py")
+
+    assert "rowsBetween(-19, 0)" in performance
+    assert "F.stddev_samp" in performance
+    assert "sqrt(252)" in performance
+    assert "percentile_approx(daily_return, 0.5, 10000)" in peers
+    assert "F.percent_rank" in peers
+    assert 'F.lit("COMPLETE")' in coverage
