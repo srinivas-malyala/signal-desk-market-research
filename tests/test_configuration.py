@@ -66,10 +66,12 @@ def test_market_and_research_pipeline_resources_are_isolated() -> None:
     backfill = (ROOT / "resources" / "market_volume_backfill.job.yml").read_text()
 
     assert "include: ../pipelines/**" not in market + research
-    assert "bronze_market_*.py" in market
-    assert "bronze_sec_*.py" not in market
-    assert "bronze_sec_*.py" in research
-    assert "bronze_market_*.py" not in research
+    assert "bronze_market_daily.py" in market
+    assert "bronze_sec_submissions.py" not in market
+    assert "bronze_sec_submissions.py" in research
+    assert "bronze_market_daily.py" not in research
+    assert "*.py" not in market + research
+    assert 'spark.sql.caseSensitive: "true"' in market
     assert "${resources.pipelines.market_pipeline.id}" in backfill
     assert "${resources.pipelines.research_pipeline.id}" not in backfill
 

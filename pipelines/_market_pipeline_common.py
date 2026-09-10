@@ -20,6 +20,7 @@ MARKET_BAR_SCHEMA = T.StructType(
 MARKET_RESPONSE_SCHEMA = T.StructType(
     [
         T.StructField("adjusted", T.BooleanType()),
+        T.StructField("count", T.LongType()),
         T.StructField("queryCount", T.LongType()),
         T.StructField("request_id", T.StringType()),
         T.StructField("results", T.ArrayType(MARKET_BAR_SCHEMA)),

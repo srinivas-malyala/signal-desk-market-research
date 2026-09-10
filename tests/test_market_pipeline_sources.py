@@ -25,6 +25,11 @@ def test_bronze_response_uses_modern_sdp_autoloader_and_lineage() -> None:
     assert 'pathGlobFilter", "response.json"' in source
 
 
+def test_massive_response_schema_captures_the_count_envelope_field() -> None:
+    source = _source("_market_pipeline_common.py")
+    assert 'T.StructField("count", T.LongType())' in source
+
+
 def test_bronze_manifest_and_reconciliation_contracts_are_present() -> None:
     manifest_source = _source("bronze_market_manifests.py")
     reconciliation_source = _source("market_ingestion_reconciliation.py")

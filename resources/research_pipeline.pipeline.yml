@@ -18,15 +18,27 @@ resources:
         - glob:
             include: ../pipelines/document_text.py
         - glob:
-            include: ../pipelines/bronze_research_*.py
+            include: ../pipelines/bronze_research_articles.py
         - glob:
-            include: ../pipelines/bronze_sec_*.py
+            include: ../pipelines/bronze_sec_company_facts.py
         - glob:
-            include: ../pipelines/silver_article_*.py
+            include: ../pipelines/bronze_sec_filing_documents.py
         - glob:
-            include: ../pipelines/silver_research_*.py
+            include: ../pipelines/bronze_sec_manifests.py
         - glob:
-            include: ../pipelines/silver_sec_*.py
+            include: ../pipelines/bronze_sec_submissions.py
+        - glob:
+            include: ../pipelines/silver_article_tickers.py
+        - glob:
+            include: ../pipelines/silver_research_articles.py
+        - glob:
+            include: ../pipelines/silver_research_chunks.py
+        - glob:
+            include: ../pipelines/silver_sec_companies.py
+        - glob:
+            include: ../pipelines/silver_sec_facts.py
+        - glob:
+            include: ../pipelines/silver_sec_filings.py
         - glob:
             include: ../pipelines/sec_structured_reconciliation.py
         - glob:
@@ -34,7 +46,7 @@ resources:
         - glob:
             include: ../pipelines/gold_industry_peer_comparison.py
         - glob:
-            include: ../pipelines/gold_research_*.py
+            include: ../pipelines/gold_research_catalog.py
       configuration:
         signal_desk.raw_volume_path: /Volumes/${var.catalog}/${var.schema}/${var.raw_volume}
       permissions:

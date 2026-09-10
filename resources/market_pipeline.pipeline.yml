@@ -14,17 +14,28 @@ resources:
         - glob:
             include: ../pipelines/_market_pipeline_common.py
         - glob:
-            include: ../pipelines/bronze_market_*.py
+            include: ../pipelines/bronze_market_daily.py
         - glob:
-            include: ../pipelines/market_*.py
+            include: ../pipelines/bronze_market_manifests.py
         - glob:
-            include: ../pipelines/silver_market_*.py
+            include: ../pipelines/market_bars_classified.py
+        - glob:
+            include: ../pipelines/market_ingestion_reconciliation.py
+        - glob:
+            include: ../pipelines/silver_market_bars.py
+        - glob:
+            include: ../pipelines/silver_market_quarantine.py
+        - glob:
+            include: ../pipelines/silver_market_reconciliation.py
         - glob:
             include: ../pipelines/gold_stock_performance.py
         - glob:
-            include: ../pipelines/gold_market_*.py
+            include: ../pipelines/gold_market_peer_comparison.py
+        - glob:
+            include: ../pipelines/gold_market_data_coverage.py
       configuration:
         signal_desk.raw_volume_path: /Volumes/${var.catalog}/${var.schema}/${var.raw_volume}
+        spark.sql.caseSensitive: "true"
       permissions:
         - level: CAN_VIEW
           group_name: users
