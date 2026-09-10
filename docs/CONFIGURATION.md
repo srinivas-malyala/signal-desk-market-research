@@ -36,10 +36,14 @@ Both Databricks Apps receive `DATABRICKS_WAREHOUSE_ID` from an attached `sql-war
 | Frontend | `mcp-connection` | UC/external MCP connection or service endpoint | Use/query only |
 | Frontend | `sql-warehouse` | SQL warehouse | Can use |
 
-Until the final Lakebase project resource is available, both apps accept a runtime-only URL with this shape:
+Until the final Lakebase project resource is available, both apps accept a runtime-only URL assembled from this approved contract:
 
 ```text
-postgresql://student:<password>@ep-odd-union-d1792avs.database.us-west-2.cloud.databricks.com/databricks_postgres?sslmode=require
+host=ep-odd-union-d1792avs.database.us-west-2.cloud.databricks.com
+database=databricks_postgres
+user=student
+password=<runtime-secret>
+sslmode=require
 ```
 
 The password and complete URL must remain in a secret or runtime environment. Every connection validates `SIGNAL_DESK_SCHEMA`, verifies that it exists, and then sets its session search path to `student_sri,public`; application tables therefore resolve in the student schema rather than `public`. The schema is assumed to be pre-created and must be owned by, or grant create/read/write privileges to, the `student` role. A missing schema fails the connection instead of falling back to `public`.
