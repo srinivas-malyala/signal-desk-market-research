@@ -2,3 +2,5 @@ command: ["gunicorn", "--bind", "0.0.0.0:8000", "app:app"]
 env:
   - name: LAKEBASE_URL
     valueFrom: lakebase-url
+  - name: SIGNAL_DESK_SCHEMA
+    value: student_sri

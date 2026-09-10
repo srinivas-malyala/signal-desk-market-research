@@ -15,6 +15,8 @@ def test_apps_use_resource_references_instead_of_scope_names() -> None:
         text = path.read_text()
         assert "valueFrom:" in text
         assert "SECRET_SCOPE" not in text
+        assert "SIGNAL_DESK_SCHEMA" in text
+        assert "student_sri" in text
 
 
 def test_secret_setup_requires_an_explicit_profile() -> None:

@@ -1,14 +1,43 @@
 """Lakebase access and migration helpers for the stock research app."""
+
 from __future__ import annotations
 
 import base64
 import os
+import re
 from contextlib import contextmanager
 from pathlib import Path
 
 import psycopg2
 from databricks.sdk import WorkspaceClient
 from psycopg2.extras import RealDictCursor
+
+DEFAULT_SCHEMA = "student_sri"
+SCHEMA_PATTERN = re.compile(r"^[a-z_][a-z0-9_]*$")
+
+
+def get_schema_name() -> str:
+    """Return the isolated application schema after validating its identifier."""
+    schema = os.getenv("SIGNAL_DESK_SCHEMA", DEFAULT_SCHEMA)
+    if not SCHEMA_PATTERN.fullmatch(schema):
+        raise ValueError("SIGNAL_DESK_SCHEMA must be a lowercase PostgreSQL identifier")
+    return schema
+
+
+def configure_schema(connection) -> None:
+    """Require the provisioned schema and make it the session's first lookup path."""
+    schema = get_schema_name()
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname = %s) AS schema_exists",
+            (schema,),
+        )
+        if not cursor.fetchone()["schema_exists"]:
+            raise RuntimeError(f"Required Lakebase schema {schema!r} does not exist")
+        cursor.execute(
+            "SELECT set_config('search_path', %s, false)",
+            (f"{schema},public",),
+        )
 
 
 def get_lakebase_url() -> str:
@@ -25,6 +54,7 @@ def get_lakebase_url() -> str:
 def get_connection():
     connection = psycopg2.connect(get_lakebase_url(), cursor_factory=RealDictCursor)
     try:
+        configure_schema(connection)
         yield connection
     finally:
         connection.close()
@@ -45,8 +75,7 @@ def write(sql: str, params=None, returning: bool = False):
 
 
 def migrate() -> None:
-    sql = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    migration_sql = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
     with get_connection() as connection, connection.cursor() as cursor:
-        cursor.execute(sql)
+        cursor.execute(migration_sql)
         connection.commit()
-

@@ -48,7 +48,7 @@ databricks bundle validate --strict --target dev --profile '<user-selected-profi
 
 ## Remaining workspace gates
 
-1. Select an existing Lakebase project/branch/database or authorize a dedicated development project.
-2. Deploy the minimal app before it initializes its schema so the app service principal becomes schema owner.
+1. Replace the approved student-role placeholder with the usable Lakebase connection secret when it becomes available.
+2. Verify that the `student` role can connect and create/read/write tables in the pre-created `student_sri` schema.
 3. Insert, update, and delete a uniquely labeled disposable row.
 4. Configure or inspect Lakebase Lakehouse Sync in the UI and verify ordered Delta changes and latency. If unavailable, implement the approved Lakeflow event-table fallback.

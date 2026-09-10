@@ -4,3 +4,5 @@ env:
     valueFrom: massive-api-key
   - name: LAKEBASE_URL
     valueFrom: lakebase-url
+  - name: SIGNAL_DESK_SCHEMA
+    value: student_sri
