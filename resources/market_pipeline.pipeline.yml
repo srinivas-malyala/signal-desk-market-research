@@ -1,0 +1,30 @@
+resources:
+  pipelines:
+    market_pipeline:
+      name: signal-desk-market-pipeline-${bundle.target}
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      serverless: true
+      development: ${var.pipeline_development}
+      continuous: false
+      photon: true
+      channel: current
+      root_path: ../pipelines
+      libraries:
+        - glob:
+            include: ../pipelines/_market_pipeline_common.py
+        - glob:
+            include: ../pipelines/bronze_market_*.py
+        - glob:
+            include: ../pipelines/market_*.py
+        - glob:
+            include: ../pipelines/silver_market_*.py
+        - glob:
+            include: ../pipelines/gold_stock_performance.py
+        - glob:
+            include: ../pipelines/gold_market_*.py
+      configuration:
+        signal_desk.raw_volume_path: /Volumes/${var.catalog}/${var.schema}/${var.raw_volume}
+      permissions:
+        - level: CAN_VIEW
+          group_name: users

@@ -7,7 +7,7 @@ Phase 3 is implemented and deterministically tested locally. No workspace deploy
 | Unit | Implementation | Local evidence | Remaining workspace gate |
 |---|---|---|---|
 | 3.1 SEC client and raw landing | Complete locally | Identifying User-Agent enforcement, official-host allowlist, conservative five-request/second rolling limiter, two-worker default with a four-worker hard cap, retry/backoff including `Retry-After`, 24-hour cache, content-addressed snapshots, accession-keyed immutable filings, and SHA-256 manifests | Store the approved contact in `sec/user-agent`; run AAPL/MSFT ingestion and retain sanitized metrics |
-| 3.2 Structured companies, filings, facts, and articles | Complete locally | Dynamic taxonomy/concept/unit XBRL model, fiscal-period fields, amendments, deterministic fact/accession deduplication, company/CIK/ticker mapping, SEC SIC industry enrichment, Massive article deduplication, and many-to-many article/ticker bridge | Run serverless pipeline expectations and inspect `sec_structured_reconciliation` |
+| 3.2 Structured companies, filings, facts, and articles | Isolated and complete locally | Dedicated `research_pipeline` resource, dynamic taxonomy/concept/unit XBRL model, fiscal-period fields, amendments, deterministic fact/accession deduplication, company/CIK/ticker mapping, SEC SIC industry enrichment, Massive article deduplication, and many-to-many article/ticker bridge | Run serverless pipeline expectations and inspect `sec_structured_reconciliation` |
 | 3.3 Documents and research chunks | Complete locally | Binary Auto Loader for filing HTML, table-aware HTML normalization, selected Item extraction, boilerplate handling, deterministic overlap, stable SHA-256 chunk IDs, filing/article union, Gold research catalog, and provenance/uniqueness reconciliation | Inspect parsed filings and `research_chunk_reconciliation`; query bounded catalog results through the SQL warehouse |
 
 ## Raw storage contract
@@ -38,4 +38,4 @@ Research-article requests reuse the Phase 1 process-safe Massive limiter and its
 
 ## Deployment gate
 
-The `research_refresh` job runs SEC ingestion and article ingestion in parallel, then incrementally refreshes the shared Spark pipeline only after both succeed. Bundle deployment remains deferred because the same bundle contains Lakebase-dependent applications and the usable student Lakebase password is still pending.
+The `research_refresh` job runs SEC ingestion and article ingestion in parallel, then incrementally refreshes the dedicated research-only Spark pipeline after both succeed. These Phase 3 resources can be selectively deployed without either Lakebase-dependent application or `research_embeddings`; live execution still requires the `sec/user-agent` secret and the Phase 2 `gold_stock_performance` table used for industry comparison.

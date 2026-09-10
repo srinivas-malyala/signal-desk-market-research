@@ -33,7 +33,7 @@ resources:
           depends_on:
             - task_key: rate_safe_market_landing
           pipeline_task:
-            pipeline_id: ${resources.pipelines.research_pipeline.id}
+            pipeline_id: ${resources.pipelines.market_pipeline.id}
             full_refresh: false
         - task_key: certify_market_volume
           depends_on:

@@ -60,6 +60,20 @@ def test_market_job_has_phase1_safety_controls() -> None:
     assert "requests>=2.32,<3" in text
 
 
+def test_market_and_research_pipeline_resources_are_isolated() -> None:
+    market = (ROOT / "resources" / "market_pipeline.pipeline.yml").read_text()
+    research = (ROOT / "resources" / "research_pipeline.pipeline.yml").read_text()
+    backfill = (ROOT / "resources" / "market_volume_backfill.job.yml").read_text()
+
+    assert "include: ../pipelines/**" not in market + research
+    assert "bronze_market_*.py" in market
+    assert "bronze_sec_*.py" not in market
+    assert "bronze_sec_*.py" in research
+    assert "bronze_market_*.py" not in research
+    assert "${resources.pipelines.market_pipeline.id}" in backfill
+    assert "${resources.pipelines.research_pipeline.id}" not in backfill
+
+
 def test_secret_setup_requires_an_explicit_profile() -> None:
     text = (ROOT / "setup_secrets.py").read_text()
     assert 'parser.add_argument("--profile", required=True' in text
