@@ -1,0 +1,48 @@
+resources:
+  jobs:
+    research_article_ingestion:
+      name: signal-desk-research-article-ingestion-${bundle.target}
+      description: Lands Massive news for many-to-many article/ticker research relationships
+      max_concurrent_runs: 1
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: volume
+          default: ${var.raw_volume}
+        - name: ticker_one
+          default: AAPL
+        - name: ticker_two
+          default: MSFT
+        - name: limit
+          default: "50"
+      environments:
+        - environment_key: default
+          spec:
+            client: "4"
+            dependencies:
+              - databricks-sdk>=0.81,<1
+              - pydantic>=2.10,<3
+              - requests>=2.32,<3
+      tasks:
+        - task_key: land_research_articles
+          environment_key: default
+          spark_python_task:
+            python_file: ../ingestion/article_landing.py
+            parameters:
+              - --catalog
+              - "{{job.parameters.catalog}}"
+              - --schema
+              - "{{job.parameters.schema}}"
+              - --volume
+              - "{{job.parameters.volume}}"
+              - --ticker
+              - "{{job.parameters.ticker_one}}"
+              - --ticker
+              - "{{job.parameters.ticker_two}}"
+              - --limit
+              - "{{job.parameters.limit}}"
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
