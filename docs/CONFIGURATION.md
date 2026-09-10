@@ -18,6 +18,7 @@ Both Databricks Apps receive `DATABRICKS_WAREHOUSE_ID` from an attached `sql-war
 |---|---|---|---|
 | `MASSIVE_API_KEY` | feasibility/local ingestion | Live Massive calls | Local environment only |
 | `MASSIVE_API_BASE_URL` | Massive clients | Optional test override | Environment; defaults to Massive API |
+| `MASSIVE_RATE_LIMIT_STATE_PATH` | Massive clients | Shared request coordination | Writable state file; defaults to local `/tmp`, Volume control path in ingestion job |
 | `SEC_USER_AGENT` | SEC ingestion | Live SEC calls | Identifying application/contact string |
 | `USE_MOCK_BACKEND` | apps | Local development only | Literal `true`; deployed target must use `false` |
 | `DATABRICKS_WAREHOUSE_ID` | frontend/MCP analytics | Delta SQL access | App resource `valueFrom` |

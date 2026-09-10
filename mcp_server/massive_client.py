@@ -57,10 +57,11 @@ class MassiveResponse:
     observation: RequestObservation
 
 
-def _api_key() -> str:
+def _api_key(databricks_profile: str | None = None) -> str:
     if value := os.getenv("MASSIVE_API_KEY"):
         return value
-    secret = WorkspaceClient().secrets.get_secret(scope=SECRET_SCOPE, key=SECRET_KEY)
+    workspace = WorkspaceClient(profile=databricks_profile) if databricks_profile else WorkspaceClient()
+    secret = workspace.secrets.get_secret(scope=SECRET_SCOPE, key=SECRET_KEY)
     if not secret.value:
         raise RuntimeError(f"Databricks secret {SECRET_SCOPE}/{SECRET_KEY} has no value")
     return base64.b64decode(secret.value).decode("utf-8")
@@ -128,6 +129,7 @@ class MassiveClient:
         sleeper: Callable[[float], None] = time.sleep,
         random_source: Callable[[], float] = random.random,
         session: requests.Session | None = None,
+        databricks_profile: str | None = None,
     ) -> None:
         if timeout <= 0 or max_retries < 0 or backoff_factor < 0 or jitter < 0:
             raise ValueError("timeout must be positive; retries, backoff, and jitter cannot be negative")
@@ -142,7 +144,7 @@ class MassiveClient:
         self.session = session or requests.Session()
         self.session.headers.update(
             {
-                "Authorization": f"Bearer {api_key or _api_key()}",
+                "Authorization": f"Bearer {api_key or _api_key(databricks_profile)}",
                 "User-Agent": "signal-desk/1.0",
             }
         )

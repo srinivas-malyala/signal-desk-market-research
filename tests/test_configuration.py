@@ -48,6 +48,18 @@ def test_apps_attach_selected_warehouse_with_can_use() -> None:
         assert "permission: CAN_USE" in text
 
 
+def test_market_job_has_phase1_safety_controls() -> None:
+    text = (ROOT / "resources" / "market_ingestion.job.yml").read_text()
+    assert "max_concurrent_runs: 1" in text
+    assert "name: start_date" in text
+    assert "name: end_date" in text
+    assert 'name: max_dates' in text
+    assert 'default: "10"' in text
+    assert "name: stop_after_row_estimate" in text
+    assert "databricks-sdk>=0.81,<1" in text
+    assert "requests>=2.32,<3" in text
+
+
 def test_secret_setup_requires_an_explicit_profile() -> None:
     text = (ROOT / "setup_secrets.py").read_text()
     assert 'parser.add_argument("--profile", required=True' in text

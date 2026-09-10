@@ -11,10 +11,21 @@ resources:
           default: ${var.schema}
         - name: volume
           default: ${var.raw_volume}
+        - name: start_date
+          default: ""
+        - name: end_date
+          default: ""
+        - name: max_dates
+          default: "10"
+        - name: stop_after_row_estimate
+          default: "0"
       environments:
         - environment_key: default
           spec:
             client: "4"
+            dependencies:
+              - databricks-sdk>=0.81,<1
+              - requests>=2.32,<3
       tasks:
         - task_key: grouped_daily_landing
           environment_key: default
@@ -27,6 +38,14 @@ resources:
               - "{{job.parameters.schema}}"
               - --volume
               - "{{job.parameters.volume}}"
+              - --start-date
+              - "{{job.parameters.start_date}}"
+              - --end-date
+              - "{{job.parameters.end_date}}"
+              - --max-dates
+              - "{{job.parameters.max_dates}}"
+              - --stop-after-row-estimate
+              - "{{job.parameters.stop_after_row_estimate}}"
           timeout_seconds: 3600
           max_retries: 2
           min_retry_interval_millis: 60000

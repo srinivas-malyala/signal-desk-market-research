@@ -9,6 +9,7 @@ from unittest.mock import Mock
 import pytest
 import requests
 
+from mcp_server import massive_client
 from mcp_server.massive_client import (
     MassiveClient,
     MassiveResponseError,
@@ -179,3 +180,14 @@ def test_non_list_results_are_rejected() -> None:
     client = MassiveClient(api_key="fixture-key", limiter=Mock())
     with pytest.raises(MassiveResponseError):
         client._list_results({"results": {"ticker": "AAPL"}})
+
+
+def test_secret_lookup_can_use_an_explicit_databricks_profile(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("MASSIVE_API_KEY", raising=False)
+    secret = Mock(value="Zml4dHVyZS1rZXk=")
+    workspace = Mock()
+    workspace.secrets.get_secret.return_value = secret
+    constructor = Mock(return_value=workspace)
+    monkeypatch.setattr(massive_client, "WorkspaceClient", constructor)
+    assert massive_client._api_key("selected") == "fixture-key"
+    constructor.assert_called_once_with(profile="selected")

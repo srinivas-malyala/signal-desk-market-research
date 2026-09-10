@@ -7,7 +7,7 @@ This is the living tracker for implementation progress and external gates. A uni
 | Phase | Status | Completed | Pending or external gate |
 |---|---|---|---|
 | 0 — Foundation | Substantially complete | Architecture/contracts, quality tooling, bundle, Unity Catalog and warehouse validation, Massive and SEC feasibility | Lakebase live CRUD/CDF check; first development deployment |
-| 1 — Massive ingestion | In progress | 1.1 rate-safe client; 1.2 atomic checkpoint store, date bounds, stale-run recovery, and idempotent resume | Cross-host limiter coordination after Lakebase access; 1.3 landing job; live pilot |
+| 1 — Massive ingestion | Implemented locally; workspace pilot pending | 1.1 rate-safe client; 1.2 atomic checkpoints; 1.3 immutable landing; two-date live local pilot landed 33,186 rows and reran with zero API calls | Deploy 10-date Volume pilot; validate Volume locks/atomic replace; cross-host limiter coordination after Lakebase access |
 | 2 — Spark market pipeline | Pending | Pipeline resource scaffold only | Bronze, Silver, Gold, quality rules, and measured 1M-row certification |
 | 3 — SEC pipeline | Pending | SEC submissions and Company Facts feasibility passed | Production client, raw landing, structured normalization, document parsing, and chunks |
 | 4 — Lakebase | Blocked externally | Provisional student DSN and `student_sri` schema contract | Usable password, CRUD proof, versioned migrations, pooling, and identity isolation |
@@ -19,10 +19,10 @@ This is the living tracker for implementation progress and external gates. A uni
 
 ## Active sequence
 
-1. Complete Phase 1 immutable landing job.
-2. Run the local replay/idempotency suite.
-3. Validate the development bundle.
-4. Run a controlled Databricks pilot only after deploy-time secret resources are ready.
+1. Deploy and run the Phase 1 10-date Volume pilot when deploy-time secret resources are ready.
+2. Implement Phase 2 Bronze ingestion from the immutable landing contract.
+3. Reconcile manifest and Bronze counts before implementing Silver.
+4. Finalize cross-host rate coordination before enabling interactive Massive traffic.
 
 ## Current external inputs
 
