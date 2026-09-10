@@ -76,6 +76,7 @@ def test_rerun_skips_completed_dates_without_api_calls(tmp_path: Path) -> None:
     second_client = Mock()
     metrics = run_backfill(settings, second_client)
     assert metrics.skipped_dates == 2
+    assert metrics.available_rows == 4
     second_client.get_daily_market_summary.assert_not_called()
 
 
@@ -163,6 +164,7 @@ def test_stop_after_row_target_bounds_api_calls(tmp_path: Path) -> None:
     metrics = run_backfill(settings, client)
     assert metrics.api_dates == 2
     assert metrics.landed_rows == 6
+    assert metrics.available_rows == 6
 
 
 def test_manifest_records_injected_utc_clock(tmp_path: Path) -> None:

@@ -343,9 +343,10 @@ Market + documents + Lakebase tools
 
 **Implement:**
 
-- Run 252 dates at four calls per minute; continue farther into the two-year window only if required.
+- Start with the observed pilot density (about 16,593 rows per response), target 1.1 million raw rows for margin, and permit at most 252 dates in the initial run. The checkpointed job stops fetching once the raw target is reached and can resume with a higher target if measured Silver distinct rows do not yet exceed one million.
+- Record every permitted physical attempt in a credential-free append-only audit ledger; all retries still pass through the shared four-calls-per-rolling-minute limiter.
 - Persist a certification report with API-call count, elapsed API time, row counts by layer, duplicates, quarantined rows, date range, and exact distinct-key count.
-- Stop automatically once Silver contains more than one million distinct `(ticker, trading_date)` rows.
+- Orchestrate immutable landing, incremental pipeline refresh, and strict Silver certification as separate dependent tasks.
 
 **Tests:**
 
@@ -354,7 +355,7 @@ Market + documents + Lakebase tools
 - Rerun a completed subset and prove the Delta count does not change.
 - Sample reconciliation from raw manifest through Bronze and Silver.
 
-**Exit criterion:** A saved SQL result and run report certify more than one million distinct market rows with no rate-limit violation.
+**Exit criterion:** A saved Delta certification record and run output certify more than one million distinct market rows with no rate-limit violation.
 
 # Phase 3 — SEC and unstructured-data pipeline
 

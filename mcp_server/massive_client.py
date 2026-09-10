@@ -73,6 +73,7 @@ class ProcessSafeRollingLimiter:
     def __init__(
         self,
         state_path: Path = DEFAULT_LIMITER_PATH,
+        audit_path: Path | None = None,
         limit: int = 4,
         window_seconds: float = 60.0,
         clock: Callable[[], float] = time.time,
@@ -81,6 +82,7 @@ class ProcessSafeRollingLimiter:
         if limit < 1 or window_seconds <= 0:
             raise ValueError("limit and window_seconds must be positive")
         self.state_path = state_path
+        self.audit_path = audit_path or state_path.with_name(f"{state_path.stem}_audit.jsonl")
         self.limit = limit
         self.window_seconds = window_seconds
         self.clock = clock
@@ -88,6 +90,7 @@ class ProcessSafeRollingLimiter:
 
     def acquire(self) -> None:
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
+        self.audit_path.parent.mkdir(parents=True, exist_ok=True)
         while True:
             with self.state_path.open("a+", encoding="utf-8") as state_file:
                 fcntl.flock(state_file.fileno(), fcntl.LOCK_EX)
@@ -109,6 +112,22 @@ class ProcessSafeRollingLimiter:
                     json.dump(active, state_file)
                     state_file.flush()
                     os.fsync(state_file.fileno())
+                    with self.audit_path.open("a", encoding="utf-8") as audit_file:
+                        audit_file.write(
+                            json.dumps(
+                                {
+                                    "version": 1,
+                                    "acquired_at_epoch": now,
+                                    "limit": self.limit,
+                                    "window_seconds": self.window_seconds,
+                                },
+                                separators=(",", ":"),
+                                sort_keys=True,
+                            )
+                            + "\n"
+                        )
+                        audit_file.flush()
+                        os.fsync(audit_file.fileno())
                     return
                 wait_for = max(self.window_seconds - (now - min(active)), 0.001)
             self.sleeper(wait_for)

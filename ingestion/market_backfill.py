@@ -62,6 +62,7 @@ class BackfillMetrics:
     terminal_failures: int = 0
     landed_rows: int = 0
     landed_bytes: int = 0
+    available_rows: int = 0
 
 
 def _canonical_json_bytes(value: dict[str, Any]) -> bytes:
@@ -192,6 +193,11 @@ def run_backfill(
         claim = checkpoints.claim(trading_date, retry_terminal=config.retry_terminal)
         if claim is None:
             metrics.skipped_dates += 1
+            existing = landings.read_manifest(trading_date)
+            if existing is not None:
+                metrics.available_rows += existing["row_count"]
+                if config.stop_after_rows and metrics.available_rows >= config.stop_after_rows:
+                    break
             continue
         metrics.claimed_dates += 1
         try:
@@ -211,11 +217,12 @@ def run_backfill(
             )
             metrics.landed_rows += manifest["row_count"]
             metrics.landed_bytes += manifest["byte_count"]
+            metrics.available_rows += manifest["row_count"]
             if manifest["row_count"] == 0:
                 metrics.no_data_dates += 1
             else:
                 metrics.completed_dates += 1
-            if config.stop_after_rows and metrics.landed_rows >= config.stop_after_rows:
+            if config.stop_after_rows and metrics.available_rows >= config.stop_after_rows:
                 break
         except Exception as error:
             retryable = _is_retryable(error)

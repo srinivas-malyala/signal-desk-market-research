@@ -1,0 +1,53 @@
+resources:
+  jobs:
+    market_volume_backfill:
+      name: signal-desk-market-volume-backfill-${bundle.target}
+      description: Rate-safe landing, Spark refresh, and measured one-million-row certification
+      max_concurrent_runs: 1
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: volume
+          default: ${var.raw_volume}
+        - name: max_dates
+          default: "252"
+        - name: raw_row_target
+          default: "1100000"
+      environments:
+        - environment_key: default
+          spec:
+            client: "4"
+      tasks:
+        - task_key: rate_safe_market_landing
+          run_job_task:
+            job_id: ${resources.jobs.market_ingestion.id}
+            job_parameters:
+              catalog: "{{job.parameters.catalog}}"
+              schema: "{{job.parameters.schema}}"
+              volume: "{{job.parameters.volume}}"
+              max_dates: "{{job.parameters.max_dates}}"
+              stop_after_row_estimate: "{{job.parameters.raw_row_target}}"
+        - task_key: refresh_market_pipeline
+          depends_on:
+            - task_key: rate_safe_market_landing
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.research_pipeline.id}
+            full_refresh: false
+        - task_key: certify_market_volume
+          depends_on:
+            - task_key: refresh_market_pipeline
+          environment_key: default
+          spark_python_task:
+            python_file: ../jobs/certify_market_volume.py
+            parameters:
+              - --catalog
+              - "{{job.parameters.catalog}}"
+              - --schema
+              - "{{job.parameters.schema}}"
+              - --volume
+              - "{{job.parameters.volume}}"
+      permissions:
+        - level: CAN_VIEW
+          group_name: users

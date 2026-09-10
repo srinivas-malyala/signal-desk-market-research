@@ -9,7 +9,7 @@ from pyspark.sql import functions as F
     comment="One-row capability gate; replaced by Bronze/Silver/Gold datasets in Phase 2.",
 )
 def phase0_capability_check():
-    return spark.range(1).select(
+    return spark.range(1).select(  # noqa: F821 - injected by Databricks SDP
         F.lit("signal-desk").alias("project"),
         F.current_timestamp().alias("validated_at"),
     )

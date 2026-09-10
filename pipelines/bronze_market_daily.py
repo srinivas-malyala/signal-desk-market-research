@@ -18,6 +18,13 @@ from pyspark.sql import functions as F
         "raw_record_present": "raw_record_json IS NOT NULL",
     }
 )
+@dp.expect_all(
+    {
+        "ticker_observed": "ticker_raw IS NOT NULL",
+        "event_timestamp_observed": "event_timestamp IS NOT NULL",
+        "request_id_observed": "source_request_id IS NOT NULL",
+    }
+)
 def bronze_market_daily():
     responses = (
         spark.readStream.format("cloudFiles")  # noqa: F821 - injected by Databricks SDP
