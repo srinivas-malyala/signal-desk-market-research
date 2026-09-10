@@ -72,3 +72,17 @@ def test_configuration_contains_no_literal_credentials() -> None:
     for path in candidates:
         lowered = path.read_text().lower()
         assert not any(token.lower() in lowered for token in prohibited), path
+
+
+def test_serverless_python_entry_points_do_not_require_dunder_file() -> None:
+    entry_points = (
+        ROOT / "ingestion" / "market_backfill.py",
+        ROOT / "ingestion" / "article_landing.py",
+        ROOT / "ingestion" / "sec_landing.py",
+        ROOT / "jobs" / "certify_market_volume.py",
+        ROOT / "jobs" / "ingest_research_embeddings.py",
+    )
+    for path in entry_points:
+        text = path.read_text()
+        assert 'globals().get("filename")' in text, path
+        assert "Path(__file__)" not in text, path

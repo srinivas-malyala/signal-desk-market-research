@@ -14,7 +14,9 @@ from pathlib import Path
 from typing import Any
 
 if __package__ in {None, ""}:
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    runtime_file = globals().get("__file__") or globals().get("filename")
+    if runtime_file:
+        sys.path.insert(0, str(Path(runtime_file).resolve().parents[1]))
 
 from ingestion.market_backfill import _canonical_json_bytes, atomic_write  # noqa: E402
 from ingestion.sec_client import SecClient, SecResponse  # noqa: E402

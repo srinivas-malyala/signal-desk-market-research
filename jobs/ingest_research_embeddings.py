@@ -10,12 +10,14 @@ import hashlib
 import json
 import sys
 from pathlib import Path
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
 
 import pg8000.dbapi
 from sentence_transformers import SentenceTransformer
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "mcp_server"))
+runtime_file = globals().get("__file__") or globals().get("filename")
+if runtime_file:
+    sys.path.insert(0, str(Path(runtime_file).resolve().parents[1] / "mcp_server"))
 import lakebase  # noqa: E402
 
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
@@ -25,15 +27,18 @@ CHUNK_OVERLAP = 100
 
 def chunks(text: str, size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP):
     clean = " ".join((text or "").split())
-    if not clean: return
+    if not clean:
+        return
     start = 0
     while start < len(clean):
         end = min(start + size, len(clean))
         if end < len(clean):
             boundary = clean.rfind(" ", start + size // 2, end)
-            if boundary > start: end = boundary
+            if boundary > start:
+                end = boundary
         yield clean[start:end]
-        if end == len(clean): break
+        if end == len(clean):
+            break
         start = max(end - overlap, start + 1)
 
 
@@ -79,7 +84,11 @@ def main(batch_size: int = 100) -> int:
           chunk_text=excluded.chunk_text,content_hash=excluded.content_hash,embedding=excluded.embedding,created_at=now()"""
         for start in range(0, len(records), batch_size):
             values = []
-            for row, vector in zip(records[start:start + batch_size], embeddings[start:start + batch_size]):
+            for row, vector in zip(
+                records[start:start + batch_size],
+                embeddings[start:start + batch_size],
+                strict=True,
+            ):
                 values.append((row["id"], row["source_type"], str(row["source_id"]), row["ticker"], row["chunk_index"],
                                row["chunk_text"], row["content_hash"], json.dumps([float(x) for x in vector]), MODEL_NAME))
             cursor.executemany(sql, values)
@@ -96,4 +105,3 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int, default=100)
     args = parser.parse_args()
     main(max(1, args.batch_size))
-

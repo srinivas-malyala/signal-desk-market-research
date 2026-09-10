@@ -9,7 +9,9 @@ import uuid
 from pathlib import Path
 
 if __package__ in {None, ""}:
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    runtime_file = globals().get("__file__") or globals().get("filename")
+    if runtime_file:
+        sys.path.insert(0, str(Path(runtime_file).resolve().parents[1]))
 
 from shared.market_certification import (  # noqa: E402
     MarketCertificationMetrics,

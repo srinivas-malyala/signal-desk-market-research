@@ -17,7 +17,11 @@ from typing import Any
 import requests
 
 if __package__ in {None, ""}:
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    # Databricks serverless spark_python_task executes the file with ``exec`` and
+    # supplies ``filename`` without defining ``__file__``.
+    runtime_file = globals().get("__file__") or globals().get("filename")
+    if runtime_file:
+        sys.path.insert(0, str(Path(runtime_file).resolve().parents[1]))
 
 from ingestion.checkpoints import CheckpointStore, eligible_weekdays  # noqa: E402
 from mcp_server.massive_client import (  # noqa: E402
