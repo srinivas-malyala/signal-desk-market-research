@@ -1,0 +1,50 @@
+resources:
+  jobs:
+    research_refresh:
+      name: signal-desk-research-refresh-${bundle.target}
+      description: Orchestrates SEC filings, research articles, and the unified Spark research pipeline
+      max_concurrent_runs: 1
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: volume
+          default: ${var.raw_volume}
+        - name: company_one
+          default: AAPL:0000320193
+        - name: company_two
+          default: MSFT:0000789019
+        - name: ticker_one
+          default: AAPL
+        - name: ticker_two
+          default: MSFT
+      tasks:
+        - task_key: ingest_sec_research
+          run_job_task:
+            job_id: ${resources.jobs.sec_ingestion.id}
+            job_parameters:
+              catalog: "{{job.parameters.catalog}}"
+              schema: "{{job.parameters.schema}}"
+              volume: "{{job.parameters.volume}}"
+              company_one: "{{job.parameters.company_one}}"
+              company_two: "{{job.parameters.company_two}}"
+        - task_key: ingest_research_articles
+          run_job_task:
+            job_id: ${resources.jobs.research_article_ingestion.id}
+            job_parameters:
+              catalog: "{{job.parameters.catalog}}"
+              schema: "{{job.parameters.schema}}"
+              volume: "{{job.parameters.volume}}"
+              ticker_one: "{{job.parameters.ticker_one}}"
+              ticker_two: "{{job.parameters.ticker_two}}"
+        - task_key: refresh_research_pipeline
+          depends_on:
+            - task_key: ingest_sec_research
+            - task_key: ingest_research_articles
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.research_pipeline.id}
+            full_refresh: false
+      permissions:
+        - level: CAN_VIEW
+          group_name: users

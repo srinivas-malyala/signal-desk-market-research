@@ -368,6 +368,7 @@ Market + documents + Lakebase tools
 - SEC client with compliant identifying User-Agent, bounded concurrency, retry/backoff, and caching.
 - Submissions, Company Facts, and selected 10-K/10-Q/8-K document retrieval.
 - Raw landing manifests with CIK, accession number, filing type, filing date, URL, checksum, and content type.
+- Store changing submissions and Company Facts as content-addressed snapshots; treat accession-keyed filing documents as immutable and fail closed on checksum changes.
 
 **Tests:**
 
@@ -387,6 +388,7 @@ Market + documents + Lakebase tools
 - XBRL fact normalization with taxonomy, unit, period, form, filed date, and accession.
 - Filing metadata table and many-to-many article/ticker bridge.
 - Expectations for accession uniqueness, valid source URL, CIK format, and required dates.
+- Enrich market analytics with SEC SIC industry peers without dropping market rows that lack company reference data.
 
 **Tests:**
 
@@ -404,6 +406,7 @@ Market + documents + Lakebase tools
 - HTML-to-text normalization, selected section extraction, boilerplate removal, chunking, overlap, content hashes, and provenance.
 - Stable chunk IDs based on source, accession/article ID, content hash, and index.
 - Gold research catalog with source type, ticker, title, filing/article date, URL, and freshness.
+- Reconciliation datasets that fail on duplicate chunk IDs, duplicate source indexes, or missing provenance.
 
 **Tests:**
 

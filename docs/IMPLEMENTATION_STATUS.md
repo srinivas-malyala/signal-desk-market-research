@@ -9,7 +9,7 @@ This is the living tracker for implementation progress and external gates. A uni
 | 0 — Foundation | Substantially complete | Architecture/contracts, quality tooling, bundle, Unity Catalog and warehouse validation, Massive and SEC feasibility | Lakebase live CRUD/CDF check; first development deployment |
 | 1 — Massive ingestion | Implemented locally; workspace pilot pending | 1.1 rate-safe client; 1.2 atomic checkpoints; 1.3 immutable landing; two-date live local pilot landed 33,186 rows and reran with zero API calls | Deploy 10-date Volume pilot; validate Volume locks/atomic replace; cross-host limiter coordination after Lakebase access |
 | 2 — Spark market pipeline | Implemented locally; workspace proof pending | Auto Loader Bronze + manifests; deterministic Silver + quarantine; Gold performance, broad-market peer, and coverage datasets; rate-attempt ledger; orchestrated measured certification | Deploy/run pipeline; reconcile 10-date pilot; execute bounded backfill; persist passing >1M-row certification; add sector/industry enrichment after Phase 3 reference data |
-| 3 — SEC pipeline | Pending | SEC submissions and Company Facts feasibility passed | Production client, raw landing, structured normalization, document parsing, and chunks |
+| 3 — SEC pipeline | Implemented locally; workspace proof pending | Identified/rate-limited SEC client; immutable submissions, Company Facts, and selected filings; dynamic XBRL normalization; company/filing/article relationships; HTML section extraction; deterministic chunks; Gold research catalog | Provision `sec/user-agent`; deploy and run two-company refresh; inspect pipeline expectations and reconciliation; retain live evidence |
 | 4 — Lakebase | Blocked externally | Provisional student DSN and `student_sri` schema contract | Usable password, CRUD proof, versioned migrations, pooling, and identity isolation |
 | 5 — MCP agent tools | Prototype available | Existing retrieval/write tools characterized | Production contracts, safe traces, confirmation, repository boundaries, and semantic retrieval |
 | 6 — CDF analytics | Pending | Architecture selected | Lakebase change feed, Silver activity, and Gold usage metrics |
@@ -19,10 +19,11 @@ This is the living tracker for implementation progress and external gates. A uni
 
 ## Active sequence
 
-1. Deploy and run the Phase 1 10-date Volume pilot when deploy-time secret resources are ready.
-2. Deploy and run the Phase 2 pipeline, then inspect all Bronze/Silver reconciliation rows.
-3. Execute the bounded market-volume workflow until the strict certification passes above one million distinct Silver keys.
-4. Finalize cross-host rate coordination before enabling interactive Massive traffic.
+1. Provision the approved SEC identifying contact as runtime secret `sec/user-agent` without committing it.
+2. Deploy and run the Phase 1 10-date Volume pilot when deploy-time Lakebase resources are ready.
+3. Run the Phase 3 two-company research refresh and inspect SEC/chunk reconciliation datasets.
+4. Execute the bounded market-volume workflow until the strict certification passes above one million distinct Silver keys.
+5. Finalize cross-host rate coordination before enabling interactive Massive traffic.
 
 ## Current external inputs
 

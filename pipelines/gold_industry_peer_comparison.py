@@ -22,10 +22,12 @@ def gold_industry_peer_comparison():
         spark.read.table("gold_stock_performance")  # noqa: F821 - injected by Databricks SDP
         .filter(F.col("daily_return").isNotNull())
     )
+    company_rank = Window.partitionBy("ticker").orderBy(F.col("fetched_at").desc(), F.col("cik"))
     companies = (
         spark.read.table("silver_sec_companies")  # noqa: F821 - injected by Databricks SDP
+        .withColumn("ticker_rank", F.row_number().over(company_rank))
+        .filter(F.col("ticker_rank") == 1)
         .select("ticker", "cik", "company_name", "sic", "industry")
-        .dropDuplicates(["ticker"])
     )
     enriched = performance.join(companies, "ticker").filter(F.col("industry").isNotNull())
     industry_day = enriched.groupBy("industry", "trading_date").agg(

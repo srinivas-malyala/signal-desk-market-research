@@ -21,6 +21,7 @@ Both Databricks Apps receive `DATABRICKS_WAREHOUSE_ID` from an attached `sql-war
 | `MASSIVE_RATE_LIMIT_STATE_PATH` | Massive clients | Shared request coordination | Writable state file; defaults to local `/tmp`, Volume control path in ingestion job |
 | derived `*_audit.jsonl` path | Massive certification | Every permitted physical API attempt | Credential-free append-only ledger beside the limiter state; never contains request headers or API keys |
 | `SEC_USER_AGENT` | SEC ingestion | Live SEC calls | Identifying application/contact string |
+| `sec/user-agent` | deployed SEC ingestion | When `SEC_USER_AGENT` is not set | Databricks secret containing the approved identifying contact; decoded only in memory |
 | `USE_MOCK_BACKEND` | apps | Local development only | Literal `true`; deployed target must use `false` |
 | `DATABRICKS_WAREHOUSE_ID` | frontend/MCP analytics | Delta SQL access | App resource `valueFrom` |
 | `PGHOST`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, `PGPORT` | MCP operational store | Future attached Lakebase access | Attached `postgres` resource; never logged |
