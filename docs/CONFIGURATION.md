@@ -4,6 +4,16 @@ Configuration names are stable contracts. Credentials and sensitive resource ide
 
 The development analytical namespace is Unity Catalog `bootcamp_students.student_sri`. The operational PostgreSQL schema is also named `student_sri`, but it is a separate namespace inside Lakebase; the shared name does not imply shared storage.
 
+The verified development SQL compute is the serverless `Serverless Starter Warehouse`:
+
+- Warehouse ID: `b15d3d6f837ba428`
+- Workspace ID: `1352785079224954`
+- Server: `dbc-7b106152-caf3.cloud.databricks.com`
+- HTTP path: `/sql/1.0/warehouses/b15d3d6f837ba428`
+- OAuth issuer: `https://dbc-7b106152-caf3.cloud.databricks.com/oidc`
+
+Both Databricks Apps receive `DATABRICKS_WAREHOUSE_ID` from an attached `sql-warehouse` resource with `CAN_USE`. Authentication remains Databricks-managed; no JDBC credential or OAuth token is stored in source.
+
 | Name | Component | Required when | Source |
 |---|---|---|---|
 | `MASSIVE_API_KEY` | feasibility/local ingestion | Live Massive calls | Local environment only |

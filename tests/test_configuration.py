@@ -14,8 +14,10 @@ def test_development_target_uses_selected_unity_catalog_schema() -> None:
     text = (ROOT / "databricks.yml").read_text()
     assert "catalog: bootcamp_students" in text
     assert "schema: student_sri" in text
+    assert "warehouse_id: b15d3d6f837ba428" in text
     assert "default: main" not in text
     assert "schema: signal_desk_dev" not in text
+    assert "replace-before-deploy" not in text
 
 
 def test_existing_unity_catalog_schema_is_not_bundle_managed() -> None:
@@ -29,8 +31,21 @@ def test_apps_use_resource_references_instead_of_scope_names() -> None:
         text = path.read_text()
         assert "valueFrom:" in text
         assert "SECRET_SCOPE" not in text
+        assert "DATABRICKS_WAREHOUSE_ID" in text
+        assert "valueFrom: sql-warehouse" in text
         assert "SIGNAL_DESK_SCHEMA" in text
         assert "student_sri" in text
+
+
+def test_apps_attach_selected_warehouse_with_can_use() -> None:
+    for path in (
+        ROOT / "resources" / "stock_research_mcp.app.yml",
+        ROOT / "resources" / "signal_desk_frontend.app.yml",
+    ):
+        text = path.read_text()
+        assert "name: sql-warehouse" in text
+        assert "id: ${var.warehouse_id}" in text
+        assert "permission: CAN_USE" in text
 
 
 def test_secret_setup_requires_an_explicit_profile() -> None:

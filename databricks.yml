@@ -14,7 +14,6 @@ variables:
     default: signal_desk_raw
   warehouse_id:
     description: SQL warehouse ID used by the frontend for analytics
-    default: replace-before-deploy
   pipeline_development:
     description: Whether the Lakeflow pipeline uses development mode
     default: true
@@ -26,6 +25,7 @@ targets:
     variables:
       catalog: bootcamp_students
       schema: student_sri
+      warehouse_id: b15d3d6f837ba428
 
   prod:
     mode: production

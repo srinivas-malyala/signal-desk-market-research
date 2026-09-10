@@ -1,5 +1,7 @@
 command: ["python", "stock_research_mcp_server.py"]
 env:
+  - name: DATABRICKS_WAREHOUSE_ID
+    valueFrom: sql-warehouse
   - name: MASSIVE_API_KEY
     valueFrom: massive-api-key
   - name: LAKEBASE_URL

@@ -1,5 +1,7 @@
 command: ["gunicorn", "--bind", "0.0.0.0:8000", "app:app"]
 env:
+  - name: DATABRICKS_WAREHOUSE_ID
+    valueFrom: sql-warehouse
   - name: LAKEBASE_URL
     valueFrom: lakebase-url
   - name: SIGNAL_DESK_SCHEMA

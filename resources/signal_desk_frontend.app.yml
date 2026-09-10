@@ -4,3 +4,9 @@ resources:
       name: signal-desk-frontend-${bundle.target}
       description: Signal Desk Flask research workflow
       source_code_path: ../dashboard
+      resources:
+        - name: sql-warehouse
+          description: Serverless SQL warehouse for governed analytics queries
+          sql_warehouse:
+            id: ${var.warehouse_id}
+            permission: CAN_USE
