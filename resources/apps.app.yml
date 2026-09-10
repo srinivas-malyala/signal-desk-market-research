@@ -1,0 +1,11 @@
+resources:
+  apps:
+    stock_research_mcp:
+      name: signal-desk-mcp-${bundle.target}
+      description: Signal Desk FastMCP retrieval and action service
+      source_code_path: ../mcp_server
+
+    signal_desk_frontend:
+      name: signal-desk-frontend-${bundle.target}
+      description: Signal Desk Flask research workflow
+      source_code_path: ../dashboard

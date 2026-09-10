@@ -1,0 +1,127 @@
+from __future__ import annotations
+
+import importlib.util
+import sys
+from pathlib import Path
+from unittest.mock import Mock
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+MCP_ROOT = ROOT / "mcp_server"
+if str(MCP_ROOT) not in sys.path:
+    sys.path.insert(0, str(MCP_ROOT))
+
+import research_broker as broker  # noqa: E402
+from massive_client import MassiveClient  # noqa: E402
+
+
+def test_existing_ticker_normalization_is_characterized() -> None:
+    assert broker._symbol(" brk.b ") == "BRK.B"
+    with pytest.raises(ValueError):
+        broker._symbol("not a ticker")
+
+
+def test_existing_http_error_mapping_is_characterized() -> None:
+    response = Mock(status_code=429)
+    error = broker.requests.HTTPError(response=response)
+    result = broker._error(error)
+    assert result == {
+        "status": "error",
+        "error_code": "massive_http_429",
+        "message": "The Massive API rate limit was reached. Try again shortly.",
+    }
+
+
+def test_existing_massive_pagination_is_characterized(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = MassiveClient(api_key="fixture-key")
+    responses = [
+        {"results": [{"id": 1}, {"id": 2}], "next_url": "https://example.test/page/2"},
+        {"results": [{"id": 3}]},
+    ]
+    get = Mock(side_effect=responses)
+    monkeypatch.setattr(client, "get", get)
+    assert list(client.paginated_get("/page/1", {"ticker": "AAPL"})) == [
+        {"id": 1},
+        {"id": 2},
+        {"id": 3},
+    ]
+    assert get.call_args_list[1].args == ("https://example.test/page/2", None)
+
+
+def test_existing_watchlist_add_semantics_are_characterized(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_write(sql, _params=None, returning=False):
+        if "RETURNING id" in sql:
+            return {"id": 7 if "users" in sql else 11}
+        return 1
+
+    monkeypatch.setattr(broker.lakebase, "write", fake_write)
+    monkeypatch.setattr(broker.lakebase, "query", lambda *_args: [])
+    result = broker.update_watchlist("person@example.com", " aapl ", "add")
+    assert result["status"] == "success"
+    assert result["ticker"] == "AAPL"
+    assert result["action"] == "add"
+    assert result["tickers"] == []
+
+
+def test_existing_note_and_report_response_shapes_are_characterized(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_write(sql, _params=None, returning=False):
+        if "INSERT INTO users" in sql:
+            return {"id": 7}
+        if "INSERT INTO research_notes" in sql:
+            return {"id": 21, "created_at": "2026-09-10T12:00:00Z"}
+        if "INSERT INTO analysis_reports" in sql:
+            return {"id": 22, "created_at": "2026-09-10T12:01:00Z"}
+        return 1
+
+    monkeypatch.setattr(broker.lakebase, "write", fake_write)
+    note = broker.save_research_note("person@example.com", "aapl", "Thesis", "Evidence")
+    report = broker.save_analysis_report(
+        "person@example.com",
+        "Comparison",
+        "Relative value",
+        ["aapl", "msft"],
+        "Evidence-backed report",
+    )
+    assert set(note) == {"status", "note_id", "ticker", "created_at"}
+    assert note["note_id"] == 21
+    assert report["report_id"] == 22
+    assert report["tickers"] == ["AAPL", "MSFT"]
+
+
+def test_all_nine_mcp_tool_functions_remain_declared() -> None:
+    source = (MCP_ROOT / "stock_research_mcp_server.py").read_text()
+    expected = {
+        "get_stock_performance",
+        "get_company_research",
+        "compare_stocks",
+        "get_watchlist",
+        "update_watchlist",
+        "save_research_note",
+        "save_analysis_report",
+        "semantic_research",
+        "get_notable_updates",
+    }
+    declared = {
+        line.removeprefix("def ").split("(", 1)[0]
+        for line in source.splitlines()
+        if line.startswith("def ")
+    }
+    assert expected <= declared
+
+
+def test_embedding_chunk_boundaries_are_characterized(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Avoid loading the heavyweight embedding/database packages merely to test
+    # the prototype's pure chunk generator.
+    monkeypatch.setitem(sys.modules, "pg8000", Mock())
+    monkeypatch.setitem(sys.modules, "pg8000.dbapi", Mock())
+    monkeypatch.setitem(sys.modules, "sentence_transformers", Mock())
+    spec = importlib.util.spec_from_file_location("embedding_job", ROOT / "jobs" / "ingest_research_embeddings.py")
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert list(module.chunks("alpha beta gamma delta", size=12, overlap=2)) == ["alpha beta", "ta gamma", "ma delta"]

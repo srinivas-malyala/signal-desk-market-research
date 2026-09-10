@@ -1,0 +1,35 @@
+bundle:
+  name: signal-desk-capstone
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog catalog for Signal Desk datasets
+    default: main
+  schema:
+    description: Unity Catalog schema for Signal Desk datasets
+    default: signal_desk_dev
+  raw_volume:
+    description: Managed volume used for immutable API landing files
+    default: signal_desk_raw
+  warehouse_id:
+    description: SQL warehouse ID used by the frontend for analytics
+    default: replace-before-deploy
+  pipeline_development:
+    description: Whether the Lakeflow pipeline uses development mode
+    default: true
+
+targets:
+  dev:
+    default: true
+    mode: development
+    variables:
+      schema: signal_desk_dev
+
+  prod:
+    mode: production
+    variables:
+      schema: signal_desk
+      pipeline_development: false

@@ -1,0 +1,62 @@
+[project]
+name = "signal-desk-capstone"
+version = "0.1.0"
+description = "Evidence-grounded stock research agent capstone"
+requires-python = ">=3.11,<3.15"
+dependencies = [
+  "databricks-sdk>=0.81,<1",
+  "psycopg2-binary>=2.9,<3",
+  "pydantic>=2.10,<3",
+  "requests>=2.32,<3",
+  "urllib3>=2.2,<3",
+]
+
+[project.optional-dependencies]
+mcp = [
+  "fastmcp>=2.12,<3",
+  "sentence-transformers>=3.0,<4",
+]
+dashboard = [
+  "Flask>=3.0,<4",
+  "gunicorn>=22,<24",
+]
+embeddings = [
+  "pg8000>=1.31,<2",
+  "sentence-transformers>=3.0,<4",
+]
+
+[dependency-groups]
+dev = [
+  "mypy>=1.14,<2",
+  "pytest>=8.3,<9",
+  "pytest-cov>=6,<7",
+  "ruff>=0.9,<1",
+  "types-requests>=2.32,<3",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "mcp_server/tests"]
+pythonpath = ["."]
+addopts = "--strict-markers --strict-config -ra"
+markers = [
+  "contract: external or inter-component contract tests",
+  "integration: tests requiring a database, network, or Databricks workspace",
+  "e2e: deployed end-to-end tests",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+extend-exclude = [".venv", "build"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.coverage.run]
+branch = true
+source = ["shared", "tools"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

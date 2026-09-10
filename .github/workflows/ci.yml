@@ -1,0 +1,26 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  fast-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - name: Install fast-test dependencies
+        run: uv sync --extra dashboard --dev
+      - name: Check formatting and static rules
+        run: uv run ruff check shared tools tests mcp_server/tests
+      - name: Run unit and contract tests
+        run: uv run pytest -m "not integration and not e2e"
+      - name: Scan tracked files for prohibited credential assignments
+        run: uv run python tools/check_no_secrets.py
