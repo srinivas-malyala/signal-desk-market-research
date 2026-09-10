@@ -13,6 +13,7 @@ import fcntl
 import json
 import os
 import random
+import tempfile
 import time
 import uuid
 from collections import deque
@@ -38,6 +39,25 @@ class MassiveResponseError(RuntimeError):
 
 class RateLimiterStateError(RuntimeError):
     """Raised when quota state is corrupt so callers fail closed."""
+
+
+def _atomic_json_write(path: Path, value: Any) -> None:
+    """Write JSON through a same-directory rename supported by UC Volumes."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as temporary:
+            json.dump(value, temporary, separators=(",", ":"), sort_keys=True)
+            temporary.write("\n")
+            temporary.flush()
+            os.fsync(temporary.fileno())
+        os.replace(temporary_path, path)
+    finally:
+        if temporary_path.exists():
+            temporary_path.unlink()
 
 
 @dataclass(frozen=True)
@@ -82,7 +102,8 @@ class ProcessSafeRollingLimiter:
         if limit < 1 or window_seconds <= 0:
             raise ValueError("limit and window_seconds must be positive")
         self.state_path = state_path
-        self.audit_path = audit_path or state_path.with_name(f"{state_path.stem}_audit.jsonl")
+        self.lock_path = state_path.with_suffix(f"{state_path.suffix}.lock")
+        self.audit_path = audit_path or state_path.with_name(f"{state_path.stem}_audit")
         self.limit = limit
         self.window_seconds = window_seconds
         self.clock = clock
@@ -92,10 +113,9 @@ class ProcessSafeRollingLimiter:
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
         self.audit_path.parent.mkdir(parents=True, exist_ok=True)
         while True:
-            with self.state_path.open("a+", encoding="utf-8") as state_file:
-                fcntl.flock(state_file.fileno(), fcntl.LOCK_EX)
-                state_file.seek(0)
-                raw = state_file.read().strip()
+            with self.lock_path.open("a+", encoding="utf-8") as lock_file:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+                raw = self.state_path.read_text(encoding="utf-8").strip() if self.state_path.exists() else ""
                 try:
                     released = json.loads(raw) if raw else []
                     if not isinstance(released, list) or not all(isinstance(value, (int, float)) for value in released):
@@ -107,27 +127,15 @@ class ProcessSafeRollingLimiter:
                 active = [float(value) for value in released if now - float(value) < self.window_seconds]
                 if len(active) < self.limit:
                     active.append(now)
-                    state_file.seek(0)
-                    state_file.truncate()
-                    json.dump(active, state_file)
-                    state_file.flush()
-                    os.fsync(state_file.fileno())
-                    with self.audit_path.open("a", encoding="utf-8") as audit_file:
-                        audit_file.write(
-                            json.dumps(
-                                {
-                                    "version": 1,
-                                    "acquired_at_epoch": now,
-                                    "limit": self.limit,
-                                    "window_seconds": self.window_seconds,
-                                },
-                                separators=(",", ":"),
-                                sort_keys=True,
-                            )
-                            + "\n"
-                        )
-                        audit_file.flush()
-                        os.fsync(audit_file.fileno())
+                    _atomic_json_write(self.state_path, active)
+                    audit_record = {
+                        "version": 1,
+                        "acquired_at_epoch": now,
+                        "limit": self.limit,
+                        "window_seconds": self.window_seconds,
+                    }
+                    audit_name = f"attempt-{int(now * 1_000_000):020d}-{uuid.uuid4()}.json"
+                    _atomic_json_write(self.audit_path / audit_name, audit_record)
                     return
                 wait_for = max(self.window_seconds - (now - min(active)), 0.001)
             self.sleeper(wait_for)

@@ -51,9 +51,10 @@ def test_limiter_releases_no_more_than_four_attempts_per_rolling_minute(tmp_path
         limiter.acquire()
         released.append(fake.value)
     assert released == [1000.0] * 4 + [1060.0] * 4 + [1120.0]
-    audit = [json.loads(line) for line in (tmp_path / "quota_audit.jsonl").read_text().splitlines()]
+    audit = [json.loads(path.read_text()) for path in sorted((tmp_path / "quota_audit").glob("*.json"))]
     assert [item["acquired_at_epoch"] for item in audit] == released
     assert all(item["limit"] == 4 and item["window_seconds"] == 60 for item in audit)
+    assert len({path.name for path in (tmp_path / "quota_audit").glob("*.json")}) == 9
 
 
 def test_limiter_instances_share_the_same_state_file(tmp_path: Path) -> None:

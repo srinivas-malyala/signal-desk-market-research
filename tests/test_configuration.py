@@ -86,3 +86,4 @@ def test_serverless_python_entry_points_do_not_require_dunder_file() -> None:
         text = path.read_text()
         assert 'globals().get("filename")' in text, path
         assert "Path(__file__)" not in text, path
+        assert "raise SystemExit(main())" not in text, path

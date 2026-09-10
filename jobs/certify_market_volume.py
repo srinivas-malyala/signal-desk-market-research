@@ -56,11 +56,19 @@ def main(argv: list[str] | None = None) -> int:
     ).first()
     duplicate_keys = silver.groupBy("ticker", "trading_date").count().filter(F.col("count") > 1)
 
-    audit_path = f"/Volumes/{args.catalog}/{args.schema}/{args.volume}/_control/massive_rate_limit_audit.jsonl"
+    control_path = Path(f"/Volumes/{args.catalog}/{args.schema}/{args.volume}/_control")
+    audit_files = sorted((control_path / "massive_rate_limit_audit").glob("*.json"))
+    legacy_audit = control_path / "massive_rate_limit_audit.jsonl"
     audit_timestamps = [
-        float(row["acquired_at_epoch"])
-        for row in spark.read.json(audit_path).select("acquired_at_epoch").collect()
+        float(json.loads(path.read_text(encoding="utf-8"))["acquired_at_epoch"])
+        for path in audit_files
     ]
+    if legacy_audit.exists():
+        audit_timestamps.extend(
+            float(json.loads(line)["acquired_at_epoch"])
+            for line in legacy_audit.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        )
     metrics = MarketCertificationMetrics(
         api_attempts=len(audit_timestamps),
         max_attempts_in_rolling_minute=max_events_in_rolling_window(audit_timestamps),
@@ -94,4 +102,6 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    exit_code = main()
+    if exit_code:
+        raise SystemExit(exit_code)
