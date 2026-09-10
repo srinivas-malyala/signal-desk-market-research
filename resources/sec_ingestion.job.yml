@@ -1,0 +1,53 @@
+resources:
+  jobs:
+    sec_ingestion:
+      name: signal-desk-sec-ingestion-${bundle.target}
+      description: Lands identified, rate-limited SEC submissions, Company Facts, and filing documents
+      max_concurrent_runs: 1
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: volume
+          default: ${var.raw_volume}
+        - name: company_one
+          default: AAPL:0000320193
+        - name: company_two
+          default: MSFT:0000789019
+        - name: max_filings_per_company
+          default: "6"
+      environments:
+        - environment_key: default
+          spec:
+            client: "4"
+            dependencies:
+              - databricks-sdk>=0.81,<1
+              - pydantic>=2.10,<3
+              - requests>=2.32,<3
+      tasks:
+        - task_key: land_sec_research
+          environment_key: default
+          spark_python_task:
+            python_file: ../ingestion/sec_landing.py
+            parameters:
+              - --catalog
+              - "{{job.parameters.catalog}}"
+              - --schema
+              - "{{job.parameters.schema}}"
+              - --volume
+              - "{{job.parameters.volume}}"
+              - --company
+              - "{{job.parameters.company_one}}"
+              - --company
+              - "{{job.parameters.company_two}}"
+              - --max-filings-per-company
+              - "{{job.parameters.max_filings_per_company}}"
+              - --max-workers
+              - "2"
+          timeout_seconds: 1800
+          max_retries: 1
+          min_retry_interval_millis: 60000
+      permissions:
+        - level: CAN_VIEW
+          group_name: users

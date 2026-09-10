@@ -1,0 +1,20 @@
+{
+  "cik": "0000320193",
+  "name": "Apple Inc.",
+  "tickers": ["AAPL"],
+  "exchanges": ["Nasdaq"],
+  "sic": "3571",
+  "sicDescription": "Electronic Computers",
+  "fiscalYearEnd": "0926",
+  "filings": {
+    "recent": {
+      "accessionNumber": ["0000320193-25-000079", "0000320193-25-000057", "0000320193-25-000999"],
+      "filingDate": ["2025-08-01", "2025-05-02", "2025-04-01"],
+      "reportDate": ["2025-06-28", "2025-03-29", "2025-03-01"],
+      "acceptanceDateTime": ["2025-08-01T16:31:12.000Z", "2025-05-02T16:30:22.000Z", "2025-04-01T10:00:00.000Z"],
+      "form": ["10-Q", "10-Q/A", "4"],
+      "primaryDocument": ["aapl-20250628.htm", "aapl-20250329x10qa.htm", "ownership.xml"],
+      "primaryDocDescription": ["10-Q", "10-Q amendment", "Statement of changes"]
+    }
+  }
+}
