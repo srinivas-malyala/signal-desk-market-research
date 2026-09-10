@@ -11,8 +11,13 @@ resources:
           default: ${var.schema}
         - name: volume
           default: ${var.raw_volume}
+      environments:
+        - environment_key: default
+          spec:
+            client: "4"
       tasks:
         - task_key: grouped_daily_landing
+          environment_key: default
           spark_python_task:
             python_file: ../ingestion/market_backfill.py
             parameters:
@@ -25,23 +30,6 @@ resources:
           timeout_seconds: 3600
           max_retries: 2
           min_retry_interval_millis: 60000
-      permissions:
-        - level: CAN_VIEW
-          group_name: users
-
-    research_embeddings:
-      name: signal-desk-research-embeddings-${bundle.target}
-      description: Existing embedding workload, scheduled and dependency wiring added in Phase 5
-      max_concurrent_runs: 1
-      tasks:
-        - task_key: embed_research_content
-          spark_python_task:
-            python_file: ../jobs/ingest_research_embeddings.py
-            parameters:
-              - --batch-size
-              - "100"
-          timeout_seconds: 3600
-          max_retries: 1
       permissions:
         - level: CAN_VIEW
           group_name: users

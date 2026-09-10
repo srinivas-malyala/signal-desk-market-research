@@ -1,0 +1,28 @@
+resources:
+  jobs:
+    research_embeddings:
+      name: signal-desk-research-embeddings-${bundle.target}
+      description: Existing embedding workload, scheduled and dependency wiring added in Phase 5
+      max_concurrent_runs: 1
+      environments:
+        - environment_key: embeddings
+          spec:
+            client: "4"
+            dependencies:
+              - databricks-sdk>=0.81,<1
+              - psycopg2-binary>=2.9,<3
+              - pg8000>=1.31,<2
+              - sentence-transformers>=3.0,<4
+      tasks:
+        - task_key: embed_research_content
+          environment_key: embeddings
+          spark_python_task:
+            python_file: ../jobs/ingest_research_embeddings.py
+            parameters:
+              - --batch-size
+              - "100"
+          timeout_seconds: 3600
+          max_retries: 1
+      permissions:
+        - level: CAN_VIEW
+          group_name: users

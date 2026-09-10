@@ -1,6 +1,16 @@
 # Phase 0 Feasibility Report
 
-Status: Local harness implemented; live checks pending explicit credentials and workspace selection.
+Status: Workspace and Massive checks passed on 2026-09-10; SEC and Lakebase CDF checks remain gated as described below.
+
+## Verified results
+
+- Databricks profile: `dataexpertio_srini` (passed current-user, Apps, Lakeflow Pipelines, and Lakebase project-list checks).
+- Bundle: strict development-target validation passed.
+- Massive: five grouped-daily calls returned 82,714 rows with no failures.
+- Observed average: 16,542.8 rows per trading date.
+- One-million-row projection: 61 trading dates/calls, with a theoretical minimum of 15.25 API minutes at the configured four-calls-per-minute limit.
+- Secret handling: the existing `massive/api-key` Databricks secret was decoded in memory and was not logged or written to evidence.
+- SEC: not run because a compliant identifying `SEC_USER_AGENT` contact has not been provided.
 
 ## Safety envelope
 
@@ -18,6 +28,16 @@ export SEC_USER_AGENT='Signal Desk student-project contact@example.com'
 uv run python tools/phase0_feasibility.py --profile '<user-selected-profile>'
 ```
 
+When the key already exists in a Databricks secret scope, keep it out of the
+local environment and read it in memory:
+
+```bash
+uv run python tools/phase0_feasibility.py \
+  --profile '<user-selected-profile>' \
+  --massive-secret-scope massive \
+  --massive-secret-key api-key
+```
+
 The sanitized machine-readable result is written to `build/phase0/feasibility.json`.
 
 Bundle validation is separate so configuration failures are obvious:
@@ -28,7 +48,7 @@ databricks bundle validate --strict --target dev --profile '<user-selected-profi
 
 ## Remaining workspace gates
 
-1. Select one authenticated Databricks CLI profile.
+1. Provide a compliant SEC `User-Agent` value containing an application identifier and contact information.
 2. Select an existing Lakebase project/branch/database or authorize a dedicated development project.
 3. Deploy the minimal app before it initializes its schema so the app service principal becomes schema owner.
 4. Insert, update, and delete a uniquely labeled disposable row.

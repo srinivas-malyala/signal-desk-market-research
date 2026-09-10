@@ -7,6 +7,7 @@ Databricks checks require an explicitly supplied profile.
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import math
 import os
@@ -180,6 +181,16 @@ def check_sec(user_agent: str) -> dict:
     return {"status": "passed", "observations": observations}
 
 
+def get_databricks_secret(profile: str, scope: str, key: str) -> str:
+    """Read a Databricks secret into memory without logging its value."""
+    from databricks.sdk import WorkspaceClient
+
+    secret = WorkspaceClient(profile=profile).secrets.get_secret(scope=scope, key=key)
+    if not secret.value:
+        raise ValueError(f"Databricks secret {scope}/{key} has no value")
+    return base64.b64decode(secret.value).decode("utf-8")
+
+
 def _databricks_command(profile: str, arguments: list[str]) -> dict:
     command = ["databricks", *arguments, "--profile", profile, "--output", "json"]
     result = subprocess.run(command, text=True, capture_output=True, check=False, timeout=60)
@@ -195,7 +206,7 @@ def check_databricks(profile: str) -> dict:
     checks = [
         _databricks_command(profile, ["current-user", "me"]),
         _databricks_command(profile, ["apps", "list"]),
-        _databricks_command(profile, ["pipelines", "list"]),
+        _databricks_command(profile, ["pipelines", "list-pipelines"]),
         _databricks_command(profile, ["postgres", "list-projects"]),
     ]
     return {
@@ -212,7 +223,12 @@ def check_databricks(profile: str) -> dict:
     }
 
 
-def build_report(profile: str | None, dates: list[date]) -> dict:
+def build_report(
+    profile: str | None,
+    dates: list[date],
+    massive_secret_scope: str | None = None,
+    massive_secret_key: str = "api-key",
+) -> dict:
     report: dict = {
         "report_version": "1.0",
         "generated_at": datetime.now(UTC).isoformat(),
@@ -221,7 +237,10 @@ def build_report(profile: str | None, dates: list[date]) -> dict:
         "sec": {"status": "blocked", "reason": "SEC_USER_AGENT is not set"},
         "databricks": {"status": "blocked", "reason": "No explicit --profile was supplied"},
     }
-    if api_key := os.getenv("MASSIVE_API_KEY"):
+    api_key = os.getenv("MASSIVE_API_KEY")
+    if not api_key and profile and massive_secret_scope:
+        api_key = get_databricks_secret(profile, massive_secret_scope, massive_secret_key)
+    if api_key:
         report["massive"] = check_massive(api_key, dates)
     if user_agent := os.getenv("SEC_USER_AGENT"):
         report["sec"] = check_sec(user_agent)
@@ -233,6 +252,11 @@ def build_report(profile: str | None, dates: list[date]) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile", help="Explicit Databricks CLI profile; never inferred")
+    parser.add_argument(
+        "--massive-secret-scope",
+        help="Databricks secret scope containing the Massive key; requires --profile",
+    )
+    parser.add_argument("--massive-secret-key", default="api-key")
     parser.add_argument(
         "--date",
         action="append",
@@ -248,7 +272,14 @@ def main() -> int:
     dates = [date.fromisoformat(value) for value in args.dates] if args.dates else recent_weekdays(5)
     if not 1 <= len(dates) <= 5:
         parser.error("provide between one and five dates")
-    report = build_report(args.profile, dates)
+    if args.massive_secret_scope and not args.profile:
+        parser.error("--massive-secret-scope requires --profile")
+    report = build_report(
+        args.profile,
+        dates,
+        massive_secret_scope=args.massive_secret_scope,
+        massive_secret_key=args.massive_secret_key,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(f"Wrote sanitized feasibility evidence to {args.output}")

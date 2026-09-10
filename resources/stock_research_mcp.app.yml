@@ -1,0 +1,6 @@
+resources:
+  apps:
+    stock_research_mcp:
+      name: signal-desk-mcp-${bundle.target}
+      description: Signal Desk FastMCP retrieval and action service
+      source_code_path: ../mcp_server
