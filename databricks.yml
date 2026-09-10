@@ -7,10 +7,8 @@ include:
 variables:
   catalog:
     description: Unity Catalog catalog for Signal Desk datasets
-    default: main
   schema:
     description: Unity Catalog schema for Signal Desk datasets
-    default: signal_desk_dev
   raw_volume:
     description: Managed volume used for immutable API landing files
     default: signal_desk_raw
@@ -26,10 +24,10 @@ targets:
     default: true
     mode: development
     variables:
-      schema: signal_desk_dev
+      catalog: bootcamp_students
+      schema: student_sri
 
   prod:
     mode: production
     variables:
-      schema: signal_desk
       pipeline_development: false

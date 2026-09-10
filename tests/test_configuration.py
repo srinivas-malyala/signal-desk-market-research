@@ -10,6 +10,20 @@ def test_bundle_never_selects_a_databricks_profile() -> None:
     assert "profile:" not in text
 
 
+def test_development_target_uses_selected_unity_catalog_schema() -> None:
+    text = (ROOT / "databricks.yml").read_text()
+    assert "catalog: bootcamp_students" in text
+    assert "schema: student_sri" in text
+    assert "default: main" not in text
+    assert "schema: signal_desk_dev" not in text
+
+
+def test_existing_unity_catalog_schema_is_not_bundle_managed() -> None:
+    text = (ROOT / "resources" / "storage.yml").read_text()
+    assert "schemas:" not in text
+    assert "schema_name: ${var.schema}" in text
+
+
 def test_apps_use_resource_references_instead_of_scope_names() -> None:
     for path in (ROOT / "mcp_server" / "app.yaml", ROOT / "dashboard" / "app.yaml"):
         text = path.read_text()

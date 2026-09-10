@@ -1,14 +1,8 @@
 resources:
-  schemas:
-    signal_desk:
-      name: ${var.schema}
-      catalog_name: ${var.catalog}
-      comment: Signal Desk capstone analytical datasets
-
   volumes:
     signal_desk_raw:
       name: ${var.raw_volume}
       catalog_name: ${var.catalog}
-      schema_name: ${resources.schemas.signal_desk.name}
+      schema_name: ${var.schema}
       volume_type: MANAGED
       comment: Immutable raw landing area for Massive and SEC responses

@@ -1,6 +1,8 @@
 # Configuration Contract
 
-Configuration names are stable contracts. Values shown here are examples only; credentials and workspace resource identifiers must not be committed.
+Configuration names are stable contracts. Credentials and sensitive resource identifiers must not be committed; approved non-secret development namespaces are recorded explicitly.
+
+The development analytical namespace is Unity Catalog `bootcamp_students.student_sri`. The operational PostgreSQL schema is also named `student_sri`, but it is a separate namespace inside Lakebase; the shared name does not imply shared storage.
 
 | Name | Component | Required when | Source |
 |---|---|---|---|
