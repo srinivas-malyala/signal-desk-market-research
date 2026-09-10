@@ -49,3 +49,17 @@ def test_article_bridge_preserves_many_to_many_ticker_relationships() -> None:
     assert 'Window.partitionBy("article_id")' in articles
     assert 'F.explode("tickers")' in bridge
     assert '.dropDuplicates(["article_id", "ticker"])' in bridge
+
+
+def test_document_pipeline_uses_binary_autoloader_and_traceable_chunks() -> None:
+    bronze = source("bronze_sec_filing_documents.py")
+    chunks = source("silver_research_chunks.py")
+    catalog = source("gold_research_catalog.py")
+    reconciliation = source("research_chunk_reconciliation.py")
+    assert 'cloudFiles.format", "binaryFile"' in bronze
+    assert '"_metadata.file_path"' in bronze
+    assert 'F.explode(chunk_document(' in chunks
+    assert 'F.lit("filing").alias("source_type")' in chunks
+    assert 'F.lit("article").alias("source_type")' in chunks
+    assert "source_content_hash" in catalog
+    assert "untraceable_chunks = 0" in reconciliation
