@@ -9,7 +9,7 @@ This is the living tracker for implementation progress and external gates. A uni
 | 0 — Foundation | Substantially complete | Architecture/contracts, quality tooling, bundle, Unity Catalog and warehouse validation, Massive and SEC feasibility; first selective development deployment completed | Lakebase live CRUD/CDF check |
 | 1 — Massive ingestion | Workspace pilot complete | 1.1 rate-safe client; 1.2 atomic checkpoints; 1.3 immutable landing; managed Volume and ingestion job deployed; 10-date workspace pilot reconciled 149,051 rows and identical rerun made zero API calls | Cross-host limiter coordination after Lakebase access |
 | 2 — Spark market pipeline | Workspace pilot complete; volume proof pending | Dedicated deployed market pipeline; 10/10 manifest dates match; 149,051 Bronze rows conserved as 149,031 unique Silver rows plus 20 deterministic duplicate quarantines; Gold coverage complete | Execute bounded backfill; persist passing >1M-row certification; add sector/industry enrichment after Phase 3 reference data |
-| 3 — SEC pipeline | Isolated and locally validated; workspace proof pending | Dedicated research pipeline resource; identified/rate-limited SEC client; immutable submissions, Company Facts, and selected filings; dynamic XBRL normalization; company/filing/article relationships; HTML section extraction; deterministic chunks; Gold research catalog | Provision `sec/user-agent`; deploy and run two-company refresh; inspect pipeline expectations and reconciliation; retain live evidence |
+| 3 — SEC pipeline | Workspace acceptance complete | Dedicated deployed research pipeline; two-company landing and cached rerun completed; 2 companies, 12 filings, 57,806 facts, 86 articles, 549 article/ticker links, and 507 traceable chunks with zero integrity violations; cached rerun made no external calls | None for the bounded two-company workflow |
 | 4 — Lakebase | Blocked externally | Provisional student DSN and `student_sri` schema contract | Usable password, CRUD proof, versioned migrations, pooling, and identity isolation |
 | 5 — MCP agent tools | Prototype available | Existing retrieval/write tools characterized | Production contracts, safe traces, confirmation, repository boundaries, and semantic retrieval |
 | 6 — CDF analytics | Pending | Architecture selected | Lakebase change feed, Silver activity, and Gold usage metrics |
@@ -19,11 +19,9 @@ This is the living tracker for implementation progress and external gates. A uni
 
 ## Active sequence
 
-1. Split the shared pipeline resource into independently deployable market and research pipelines.
-2. Deploy and test the Phase 2 market pipeline, then execute the bounded market-volume certification.
-3. Provision the approved SEC identifying contact as runtime secret `sec/user-agent` without committing it.
-4. Deploy and run the Phase 3 two-company research refresh and inspect SEC/chunk reconciliation datasets.
-5. Finalize cross-host rate coordination before enabling interactive Massive traffic.
+1. Deploy and run the bounded Phase 2 market-volume backfill and >1M-row certification.
+2. Retain certification and reconciliation evidence in this tracker.
+3. Finalize cross-host rate coordination before enabling interactive Massive traffic.
 
 ## Current external inputs
 
@@ -58,4 +56,12 @@ This is the living tracker for implementation progress and external gates. A uni
 - 2026-09-10 — Deployed the corrected market pipeline. Reprocessing the 10-date development tables now requires an explicitly approved full refresh because Auto Loader has already checkpointed those files.
 - 2026-09-10 — With explicit approval, full-refresh update `ca1bbd17-bab5-40d8-a05b-6bf248d03f15` rebuilt only the development `market_pipeline` tables and reached `COMPLETED`; immutable Volume files were not changed.
 - 2026-09-10 — Warehouse verification passed: 10 `MATCH` dates and 149,051 manifest/Bronze rows; 149,031 unique Silver rows plus 20 `duplicate_ticker_date` quarantines; zero duplicate Silver keys; 10 `COMPLETE` Gold coverage dates from 2026-08-27 through 2026-09-09; bounded Gold performance query succeeded.
-- Lakebase-dependent applications and `research_embeddings`, plus all Phase 2/3 jobs and pipelines, remained undeployed at this milestone.
+- 2026-09-10 — Created the Databricks-backed `sec` secret scope for the approved SEC identifying contact; the contact value remains uncommitted.
+- 2026-09-10 — Provisioned and key-only verified `sec/user-agent`; the secret value was not read back or written to repository files.
+- 2026-09-10 — Phase 3 pre-deployment gate passed: 34 SEC/article/document/configuration tests and lint succeeded locally.
+- 2026-09-10 — Selectively deployed Phase 3: SEC job `380855220996785`, article job `129689732201837`, research pipeline `82ec186f-f38e-4ebe-b121-0b1faeea946d`, and refresh job `321391048242098`. Both applications and `research_embeddings` remained undeployed.
+- 2026-09-10 — Two-company Phase 3 orchestrator run `562225890540150` reached `TERMINATED SUCCESS`; sanitized child metrics and pipeline reconciliation are being retained as the remaining acceptance evidence.
+- 2026-09-10 — Run `562225890540150` landed 2 submissions, 2 Company Facts snapshots, 12 filing documents, and 100 article query results using 16 SEC and 2 Massive attempts with zero retries/failures. Research update `e8dac8a4-a967-4aff-948e-f4fa5d7af170` completed.
+- 2026-09-10 — Warehouse reconciliation passed: 2 companies, 12 unique filings, 57,806 unique facts, zero orphan CIKs, 507 chunks across 98 sources, zero duplicate/untraceable chunks, 86 distinct articles, 549 article/ticker links, and bounded industry/Gold queries succeeded.
+- 2026-09-10 — Phase 3 cache/idempotency orchestrator run `892606879283451` reached `TERMINATED SUCCESS`. Article task run `1114483094003228` reused 2 cached queries with zero API calls/HTTP attempts; SEC task run `57407285384248` reused 4 structured requests and 12 filing documents with zero HTTP attempts. Incremental research update `fcff5d1b-fced-48c5-9d32-1e4be504bdbd` completed.
+- Lakebase-dependent applications and `research_embeddings` remain undeployed.
