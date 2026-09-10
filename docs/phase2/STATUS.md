@@ -2,13 +2,13 @@
 
 Updated: 2026-09-10
 
-Phase 2 is implemented and deterministically tested locally. Workspace execution and the measured one-million-row result remain explicit acceptance gates; this document does not claim those external proofs have passed.
+Phase 2 is implemented, deterministically tested, and verified on a 10-date workspace pilot. The measured one-million-row result remains an explicit acceptance gate.
 
 | Unit | Implementation | Local evidence | Remaining workspace gate |
 |---|---|---|---|
-| 2.1 Bronze market streaming tables | Isolated pipeline deployed | Dedicated `market_pipeline` resource, modern Spark Declarative Pipelines API, Auto Loader, explicit response/manifest schemas, rescued data, immutable file/request lineage, and per-date reconciliation | Process the Volume pilot exactly once and prove every manifest row count matches Bronze |
-| 2.2 Silver market bars | Complete locally | Ordered quality rules, deterministic `(ticker, trading_date)` ranking, accepted/quarantine conservation, and uniqueness assertion | Run expectations and reconciliation on Databricks serverless pipeline compute |
-| 2.3 Gold market analytics | Complete locally | Daily returns, volume change, complete 20-session high/low/average-volume/annualized-volatility windows, broad-market percentile comparison, and coverage metrics; known-answer tests pass | Query bounded results through warehouse `b15d3d6f837ba428`; sector/industry peers wait for Phase 3 company enrichment |
+| 2.1 Bronze market streaming tables | Workspace verified | Dedicated deployed `market_pipeline`; 10 manifest dates and 149,051 rows exactly match Bronze | Scale through the bounded backfill |
+| 2.2 Silver market bars | Workspace verified | 149,031 accepted rows plus 20 deterministic duplicate quarantines equal Bronze; zero duplicate Silver keys | Scale through the bounded backfill |
+| 2.3 Gold market analytics | Workspace verified | Ten `COMPLETE` coverage dates and bounded performance query through warehouse `b15d3d6f837ba428`; local known-answer tests pass | Sector/industry peers wait for Phase 3 company enrichment |
 | 2.4 One-million-row certification | Complete locally; measured result pending | Every limiter acquisition is appended to an audit ledger; job orchestrates landing → pipeline → certification; strict checks cover >1M distinct keys, rate limit, uniqueness, date range, and layer reconciliation | Deploy and run against `bootcamp_students.student_sri`, then retain the passing Delta certification record |
 
 ## Free Massive API budget
@@ -48,4 +48,6 @@ The corrected envelope schema passes 20 focused Phase 2 tests and lint.
 
 The correction is deployed. A full refresh of this development-only market pipeline is pending explicit approval so Auto Loader can rebuild the nine managed Phase 2 tables from the same immutable 10-date source files.
 
-Pipeline `6d6d9a79-3b5d-4fca-af6d-61765d0aae60` was redeployed with this correction; a new incremental update is the next gate.
+Full-refresh update `ca1bbd17-bab5-40d8-a05b-6bf248d03f15` was explicitly approved and completed successfully, rebuilding only the development market tables from the immutable 10-date Volume source.
+
+Warehouse acceptance passed: all 10 dates report `MATCH`; 149,051 manifest rows equal 149,051 Bronze rows; Silver contains 149,031 accepted rows and 20 `duplicate_ticker_date` quarantines with zero duplicate accepted keys; all 10 coverage dates are `COMPLETE`; and the bounded Gold performance query succeeded.
