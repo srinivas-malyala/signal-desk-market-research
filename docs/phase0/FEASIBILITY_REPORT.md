@@ -1,6 +1,6 @@
 # Phase 0 Feasibility Report
 
-Status: Workspace, Massive, and SEC checks passed on 2026-09-10. The admin-managed Lakebase URL secret and shared-table namespace were confirmed on 2026-09-11; connectivity, CRUD, and CDF execution remain Phase 4 gates.
+Status: Workspace, Massive, and SEC checks passed on 2026-09-10. Lakebase PostgreSQL 17+ connectivity, permissions, idempotent migrations, CRUD cleanup, and CDC prerequisites passed on 2026-09-11. End-to-end Lakehouse Sync remains a Phase 6 gate.
 
 ## Verified results
 
@@ -48,8 +48,6 @@ databricks bundle validate --strict --target dev --profile '<user-selected-profi
 
 ## Remaining workspace gates
 
-1. Refactor operational SQL from the obsolete private `student_sri` schema assumption to fully qualified `bootcamp_students.<table>_srini` names.
-2. Fetch the connection URL from admin-managed secret `database/lakebase-url` and verify connectivity without exposing it.
-3. Verify create/read/write permissions for `_srini` tables without creating or modifying the shared schemas.
-4. Insert, update, and delete a uniquely labeled disposable row.
-5. Configure or inspect Lakebase Lakehouse Sync and verify ordered changes in the shared `bootcamp_cdc` namespace. If unavailable, implement the approved Lakeflow event-table fallback.
+1. Configure Lakebase Lakehouse Sync through the workspace UI and select the destination Unity Catalog namespace.
+2. Verify ordered insert/update/delete history and measured propagation latency in Phase 6.
+3. If Lakehouse Sync is unavailable, implement the approved Lakeflow event-table fallback.

@@ -67,7 +67,7 @@
   <text x="1010" y="310" class="box-text">Sessions • tool events • recent cache</text>
   <text x="1010" y="338" class="box-text">pgvector research embeddings</text>
   <text x="1010" y="372" class="small">Low-latency operational state</text>
-  <text x="1010" y="397" class="small">App-owned schema + authenticated identity</text>
+  <text x="1010" y="397" class="small">Shared schema • owned _srini tables</text>
 
   <rect x="980" y="485" width="390" height="140" class="box agent"/>
   <text x="1010" y="525" class="box-title">FastMCP research tools</text>

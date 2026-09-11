@@ -2,7 +2,7 @@
 
 Configuration names are stable contracts. Credentials and sensitive resource identifiers must not be committed; approved non-secret development namespaces are recorded explicitly.
 
-The development analytical namespace remains Unity Catalog `bootcamp_students.student_sri`. Lakebase uses a different classroom convention: all students share PostgreSQL schema `bootcamp_students`, and this application owns only tables whose base names end in `_srini`. CDF-synced graph tables live in PostgreSQL schema `bootcamp_cdc` and also end in `_srini`.
+The development analytical namespace remains Unity Catalog `bootcamp_students.student_sri`. Lakebase uses a different classroom convention: all students share PostgreSQL schema `bootcamp_students`, and this application owns only tables whose base names end in `_srini`. Unity-Catalog-to-Lakebase synced graph tables live in PostgreSQL schema `bootcamp_cdc` and also end in `_srini`.
 
 The verified development SQL compute is the serverless `Serverless Starter Warehouse`:
 
@@ -37,7 +37,7 @@ Both Databricks Apps receive `DATABRICKS_WAREHOUSE_ID` from an attached `sql-war
 
 | App | Key | Resource | Permission intent |
 |---|---|---|---|
-| MCP | `postgres` | Lakebase Autoscaling branch/database | Can connect and create; app owns its schema |
+| MCP | `lakebase-url` | Admin-managed Lakebase URL secret | Can read; app accesses only `_srini` tables |
 | MCP | `massive-api-key` | Secret | Read |
 | MCP | `sql-warehouse` | SQL warehouse | Can use |
 | Frontend | `mcp-connection` | UC/external MCP connection or service endpoint | Use/query only |
@@ -47,4 +47,4 @@ The complete PostgreSQL URL is stored only in Databricks secret `database/lakeba
 
 Connections must validate that both shared schemas exist, but must not create, drop, or claim ownership of either schema. Every operational table reference is fully qualified as `bootcamp_students.<base_table>_srini`; setting only a search path is insufficient because it does not enforce the required suffix. Replicated graph objects are referenced as `bootcamp_cdc.<base_table>_srini`. Dynamic schema, base-table, and suffix components must be allowlisted and identifier-validated before SQL composition.
 
-The current application SQL still assumes unsuffixed tables in a private `student_sri` PostgreSQL schema. Phase 4 must replace that behavior before either application is deployed. `setup_secrets.py` must not be used for deployment because the administrator already owns secret provisioning.
+All operational SQL and migrations resolve through an allowlisted table registry and target only fully qualified `_srini` objects. `setup_secrets.py` must not be used for deployment because the administrator already owns secret provisioning.

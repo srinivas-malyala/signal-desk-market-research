@@ -7,7 +7,7 @@
 
 Use a single Declarative Automation Bundle with `dev` and `prod` targets. Catalog, schema, volume, warehouse, app names, and Lakebase attachment identifiers are parameters. No target embeds or silently chooses a Databricks CLI profile; every operator command supplies `--profile` explicitly.
 
-Development defaults to serverless jobs and pipelines. Destructive operations, production deployment, Lakebase project creation, branch deletion, and schema removal require explicit user authorization. The MCP app is deployed before schema initialization so its service principal owns the application schema.
+Development defaults to serverless jobs and pipelines. Destructive operations, production deployment, Lakebase project creation, branch deletion, and schema removal require explicit user authorization. The administrator owns the shared Lakebase schemas; migrations create or alter only allowlisted `_srini` tables.
 
 ## Consequences
 

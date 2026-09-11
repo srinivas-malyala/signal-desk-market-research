@@ -88,7 +88,9 @@ def table_name(base_table: str, *, graph: bool = False) -> str:
 def index_name(base_index: str) -> str:
     if base_index not in INDEX_BASES:
         raise ValueError(f"Unknown Signal Desk index: {base_index!r}")
-    return f"{get_schema_name()}.{base_index}_{get_table_suffix()}"
+    # PostgreSQL creates the index in its table's schema and rejects a
+    # schema-qualified index name in CREATE INDEX.
+    return f"{base_index}_{get_table_suffix()}"
 
 
 def render_migration(template: str) -> str:

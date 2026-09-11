@@ -417,23 +417,23 @@ Market + documents + Lakebase tools
 
 # Phase 4 — Lakebase operational foundation
 
-## Unit 4.1 — Lakebase project, branch, and ownership bootstrap
+## Unit 4.1 — Lakebase connection and shared-table ownership bootstrap
 
 **Goal:** Establish a safe operational database before application writes.
 
 **Implement:**
 
-- User chooses a development Lakebase project/branch/database or explicitly authorizes a new one.
-- Deploy a minimal MCP Databricks App first, attach the current `postgres` resource, and let its service principal create the dedicated application schema.
-- Document which service principal owns the schema and how other components access data.
+- Use the administrator-managed `database/lakebase-url` secret without exposing the decoded connection URL.
+- Use the existing shared PostgreSQL schema `bootcamp_students`; never create or drop the shared schema.
+- Namespace every application object with the `_srini` suffix and document which role owns those tables.
 - Frontend will not connect directly to the operational schema; it will use authenticated service APIs, avoiding cross-service-principal ownership conflicts.
 
 **Tests:**
 
-- Connectivity, SSL, role, schema ownership, and create/read/update/delete smoke tests.
-- Negative permission test from an unauthorized role.
+- Connectivity, SSL, PostgreSQL version, shared-schema permission, and create/read/update/delete smoke tests.
+- Identifier-allowlist and two-user scoped-write tests prevent cross-student table names and cross-user mutations.
 
-**Exit criterion:** The MCP app service principal owns the schema and an unauthorized principal cannot read it.
+**Exit criterion:** All Signal Desk objects are fully qualified `_srini` tables in the shared schema, disposable CRUD cleans up, and wrong-owner mutations affect zero rows.
 
 ## Unit 4.2 — Lakebase migrations and relational model
 
@@ -441,14 +441,14 @@ Market + documents + Lakebase tools
 
 **Implement:**
 
-- Adopt the existing `schema.sql` tables—users, watchlists, watchlist tickers, companies, price snapshots, news, notes, reports, embeddings, and traces—as migration version 1 rather than recreating them.
+- Adopt the existing operational model as checksum-protected migration version 1, rendering fully qualified `_srini` objects rather than running unversioned SQL.
 - Add versioned migrations for agent sessions, tool events, idempotency records, CDF-safe metadata, multi-ticker article relationships, and any missing ownership/status fields.
 - Foreign keys, uniqueness, cascade behavior, timestamps, indexes, status checks, and bounded payload columns.
 - Seed only non-sensitive development reference data.
 
 **Tests:**
 
-- Apply migrations to an empty database, apply again idempotently, and upgrade a database created by the current `schema.sql` without losing rows.
+- Apply migrations to an empty `_srini` namespace and apply again idempotently; reject changed checksums for already-applied versions.
 - Constraint, rollback, cascade, index-existence, and transaction tests.
 - Data-preservation test compares counts and representative user records before and after the upgrade.
 

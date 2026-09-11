@@ -77,7 +77,7 @@ def test_migration_rendering_qualifies_student_objects() -> None:
         "CREATE INDEX {{index:idx_price_ticker_time}} ON {{table:users}}(id);"
     )
     assert "bootcamp_students.users_srini" in rendered
-    assert "bootcamp_students.idx_price_ticker_time_srini" in rendered
+    assert "CREATE INDEX idx_price_ticker_time_srini" in rendered
     assert "{{" not in rendered
 
 

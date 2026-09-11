@@ -6,11 +6,11 @@ This is the living tracker for implementation progress and external gates. A uni
 
 | Phase | Status | Completed | Pending or external gate |
 |---|---|---|---|
-| 0 — Foundation | Substantially complete | Architecture/contracts, quality tooling, bundle, Unity Catalog and warehouse validation, Massive and SEC feasibility; first selective development deployment completed | Lakebase live CRUD/CDF check |
+| 0 — Foundation | Complete | Architecture/contracts, quality tooling, bundle, Unity Catalog and warehouse validation, Massive, SEC, and Lakebase feasibility verified | CI execution on a remote runner |
 | 1 — Massive ingestion | Workspace pilot complete | 1.1 rate-safe client; 1.2 atomic checkpoints; 1.3 immutable landing; managed Volume and ingestion job deployed; 10-date workspace pilot reconciled 149,051 rows and identical rerun made zero API calls | Cross-host limiter coordination after Lakebase access |
 | 2 — Spark market pipeline | Workspace acceptance complete | Dedicated deployed market pipeline; 81 manifest dates and 1,255,677 Bronze rows reconcile to 1,255,489 unique Silver rows plus 188 deterministic quarantines; measured free-plan maximum is 4 attempts per rolling minute; Gold coverage and persisted certification passed | None for the volume-certification workflow |
 | 3 — SEC pipeline | Workspace acceptance complete | Dedicated deployed research pipeline; two-company landing and cached rerun completed; 2 companies, 12 filings, 57,806 facts, 86 articles, 549 article/ticker links, and 507 traceable chunks with zero integrity violations; cached rerun made no external calls | None for the bounded two-company workflow |
-| 4 — Lakebase | Local implementation complete; workspace proof pending | Admin-managed secret verified; all runtime SQL uses strict `_srini` table registry; checksum-protected migrations, CDC replica identity, bounded stale-safe pools, rollback behavior, and app secret resources validate locally | Verify live permissions, apply migrations, run CRUD, and prove isolation |
+| 4 — Lakebase | Workspace acceptance complete | PostgreSQL 17+ connectivity; 14 owned `_srini` tables; three idempotent checksum-protected migrations; five CDC-ready tables; vector; bounded stale-safe pools; rollback; repeatable two-user CRUD/isolation and cleanup all verified | Cross-principal identity proof continues with MCP/frontend deployment |
 | 5 — MCP agent tools | Prototype available | Existing retrieval/write tools characterized | Production contracts, safe traces, confirmation, repository boundaries, and semantic retrieval |
 | 6 — CDF analytics | Pending | Architecture selected | Lakebase change feed, Silver activity, and Gold usage metrics |
 | 7 — Agent integration | Prototype assets available | Prompt and configuration inventoried | Deployed supervisor, MCP connection, evaluation, and identity propagation |
@@ -19,9 +19,9 @@ This is the living tracker for implementation progress and external gates. A uni
 
 ## Active sequence
 
-1. Refactor Phase 4 operational SQL and migrations for bootcamp_students.<table>_srini.
-2. Verify Lakebase connectivity, schema/table permissions, and disposable CRUD through the admin-managed secret.
-3. Implement CDF replication into bootcamp_cdc and resume agent/frontend integration.
+1. Proceed to Phase 5 MCP retrieval/action hardening against the accepted Lakebase model.
+2. Configure Lakebase-to-Unity-Catalog Lakehouse Sync in Phase 6 and build usage analytics.
+3. Deploy the authenticated frontend/MCP path and prove cross-principal identity propagation.
 4. Finalize cross-host rate coordination before enabling interactive Massive traffic.
 
 ## Current external inputs
@@ -70,7 +70,10 @@ This is the living tracker for implementation progress and external gates. A uni
 - 2026-09-10 — The landing stage completed successfully: 71 API dates produced 1,106,626 newly available raw rows and 116,806,780 landed bytes, with 2 no-data dates, zero retries, and zero failures. The managed Volume now contains 81 market-date partitions including the earlier pilot.
 - 2026-09-10 — Market pipeline update a854185a-a1c8-4edc-b887-115998831964 completed incrementally. Orchestrator run 748482763142265 and all three tasks reached TERMINATED SUCCESS.
 - 2026-09-10 — Persisted certification status is PASSED: 1,255,677 manifest/Bronze rows reconcile to 1,255,489 distinct Silver keys plus 188 quarantined rows; zero duplicate Silver keys; 81 dates from 2025-09-23 through 2026-09-09; 83 audited API attempts with an observed maximum of 4 in any rolling minute. Independent warehouse statement 01f1ad75-a4ec-18b6-b06a-f495785e1152 confirmed the layer counts.
-- 2026-09-11 — Admin-managed Lakebase secret database/lakebase-url was key-only verified without reading its value. Phase 4 now targets shared schema bootcamp_students with all application tables suffixed _srini; CDF-synced graph tables use bootcamp_cdc and the same suffix. Existing private-schema SQL must be refactored before deployment.
+- 2026-09-11 — Admin-managed Lakebase secret database/lakebase-url was key-only verified without reading its value. Phase 4 targets shared schema bootcamp_students with all application tables suffixed _srini; Unity-Catalog-to-Lakebase synced graph tables use bootcamp_cdc and the same suffix.
 - 2026-09-11 — Phase 4 namespace/migration unit passed 14 focused tests and lint: strict table/index allowlists, `_srini` qualification, three checksum-protected migrations, shared-schema validation without schema DDL, secret decoding, bounded pooling, rollback, and explicit pool shutdown are implemented.
 - 2026-09-11 — Refactored all Flask, MCP broker, trace, and embedding SQL through the allowlisted `_srini` table registry; removed obsolete unversioned `schema.sql`; added stale-connection replacement and rollback tests. Forty-one focused tests and lint pass, and bundle validation confirms both apps receive the admin-managed Lakebase secret resource.
+- 2026-09-11 — Sanitized Lakebase preflight connected successfully through `database/lakebase-url`: PostgreSQL 17+, `bootcamp_students` and `bootcamp_cdc` usage, and create permission for `_srini` operational tables were verified. The initial preflight found `vector` absent; the migration then installed it successfully.
+- 2026-09-11 — Phase 4 migrations `0001`–`0003` created 14 `_srini` tables and installed vector; all tables are owned by the connected role, repeat migration runs applied nothing, and five selected CDC tables have `REPLICA IDENTITY FULL`.
+- 2026-09-11 — Repeatable two-user Lakebase smoke passed: owner insert/update/read succeeded, wrong-owner update affected zero rows, and deletion/cascade cleanup removed both disposable users and the note. The complete suite passes 122 tests and whole-repository lint.
 - Lakebase-dependent applications and `research_embeddings` remain undeployed.

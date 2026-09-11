@@ -115,7 +115,7 @@ Streaming tables will be used for append-only or incremental inputs. Materialize
 
 ## 3. Lakebase operational data model
 
-Lakebase Postgres Autoscaling will store low-latency relational state. A new application-owned schema will define:
+Lakebase Postgres Autoscaling will store low-latency relational state. In the administrator-managed shared schema `bootcamp_students`, Signal Desk will own only tables suffixed `_srini`, including:
 
 - `users`
 - `watchlists`
@@ -131,7 +131,7 @@ Lakebase Postgres Autoscaling will store low-latency relational state. A new app
 
 High-volume historical market records will remain in Delta rather than being duplicated in the operational database. Lakebase will contain only the user-facing transactional records and a bounded cache of recent research data required for responsive application and agent operations.
 
-The Databricks App service principal will own a dedicated application schema. Database access will use the attached Lakebase resource, OAuth-compatible credentials, SSL, connection pooling, and parameterized queries. The authenticated identity supplied by Databricks will be enforced in the server; the agent will not be allowed to select an arbitrary `user_email` argument.
+The application role will own only its `_srini` tables and will neither create nor drop the shared schemas. Database access will use the administrator-managed `database/lakebase-url` secret, SSL, bounded connection pooling, and parameterized queries with allowlisted fully qualified table identifiers. The authenticated identity supplied by Databricks will be enforced in the server; the agent will not be allowed to select an arbitrary `user_email` argument.
 
 ## 4. Action-taking AI agent
 
@@ -218,7 +218,7 @@ A Databricks Declarative Automation Bundle will version and deploy:
 - the FastMCP Databricks App;
 - Unity Catalog schemas, volumes, and resource variables where supported.
 
-Lakebase Autoscaling, its app-owned schema, attached resources, secrets, Agent Bricks registration, and Lakebase CDF setup will be documented as environment bootstrap steps where they cannot be completely represented in the bundle. Separate development and production targets will parameterize catalog, schema, application names, and resource identifiers.
+Lakebase Autoscaling, the shared-schema `_srini` table contract, attached secret resources, Agent Bricks registration, and Lakebase CDF setup will be documented as environment bootstrap steps where they cannot be completely represented in the bundle. Separate development and production targets will parameterize catalog, schema, application names, and resource identifiers.
 
 ## 8. Big Data requirements
 

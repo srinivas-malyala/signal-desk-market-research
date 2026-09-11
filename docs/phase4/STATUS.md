@@ -2,15 +2,15 @@
 
 Updated: 2026-09-11
 
-Phase 4 configuration inputs are now available, but no live Lakebase write is claimed yet. The existing private-schema implementation must be revised before migration or application deployment.
+Phase 4 workspace acceptance is complete. The shared-schema migrations, pooled access layer, CDC prerequisites, and self-cleaning CRUD/isolation proof all passed against Lakebase.
 
 | Unit | Current status | Confirmed contract | Next testable unit |
 |---|---|---|---|
-| 4.1 Connection secret | Implemented locally | Databricks secret `database/lakebase-url`; fetched with `WorkspaceClient`, Base64-decoded only in memory; key existence and deterministic decoding verified without disclosing the value | Perform a sanitized connectivity check |
-| 4.2 Shared table namespace | Implemented locally | Strict table/index allowlists render three checksum-protected migrations into fully qualified `bootcamp_students.<base>_srini` objects without schema DDL; all runtime SQL uses the registry | Apply migrations live and inspect objects |
-| 4.3 Graph/CDF namespace | Contract confirmed | Synced graph tables are `bootcamp_cdc.<base>_srini` | Confirm source/target table names and inspect Lakehouse Sync before configuring replication |
-| 4.4 CRUD and isolation | Pending | Writes are restricted to `_srini` tables and application user identity remains row-level data | Run disposable insert/update/delete, verify cleanup, and prove no unsuffixed or other-student table access |
-| 4.5 Connection lifecycle | Implemented locally | Lazy bounded thread-safe pools, stale-checkout replacement, rollback on failure, and explicit MCP pool shutdown are implemented and tested | Verify live behavior |
+| 4.1 Connection secret | Workspace verified | Databricks secret `database/lakebase-url` connected successfully without disclosure; PostgreSQL 17+, both shared schemas, operational `USAGE`/`CREATE`, and graph `USAGE` were verified | None |
+| 4.2 Shared table namespace | Workspace verified | Three checksum-protected migrations created 14 fully qualified `_srini` tables without schema DDL; all 14 are owned by the connected role and a second migration pass applied nothing | None |
+| 4.3 Graph/CDF namespace | CDC prerequisites verified | Five operational source tables use `REPLICA IDENTITY FULL`; `bootcamp_cdc` is reserved for UC-to-Lakebase synced tables, while the Lakebase-to-UC history destination is selected during Phase 6 UI setup | Configure and test Lakehouse Sync in Phase 6 |
+| 4.4 CRUD and isolation | Workspace verified | Two disposable users and one note exercised insert/read/update/delete and cascade cleanup; a wrong-owner update affected zero rows; table names are allowlisted | Cross-principal deployed-app identity proof continues in Phase 5/8 |
+| 4.5 Connection lifecycle | Workspace verified | Lazy bounded thread-safe pools, stale-checkout replacement, rollback on failure, and explicit MCP pool shutdown are implemented and exercised by live operations | None for Phase 4 |
 
 ## Important namespace distinction
 
@@ -20,10 +20,16 @@ Phase 4 configuration inputs are now available, but no live Lakebase write is cl
 
 These are separate systems and must not share a single `schema` configuration variable.
 
-## Safety gate
+## Acceptance evidence
 
 The helper and versioned migration layer enforce shared-schema `_srini` names and never create either shared schema. Application, trace, dashboard, and embedding SQL now resolve through the same allowlisted table registry; the obsolete unversioned `schema.sql` entry point has been removed.
 
 Local gate: 41 configuration, namespace, migration, pooled-connection, dashboard, broker, and compatibility tests pass; focused lint is clean. Strict bundle validation also confirms both apps receive `database/lakebase-url` as the `lakebase-url` resource and retain their SQL warehouse resources.
+
+Live preflight and migrations passed on 2026-09-11. The role can connect, use both shared schemas, and create `_srini` objects in `bootcamp_students`; the database is PostgreSQL 17 or newer and the `vector` extension is installed. Migration versions `0001`, `0002`, and `0003` applied once; the immediate and later reruns applied nothing.
+
+All 14 expected tables exist and are owned by the connected role. All five CDC source tables report full replica identity. The repeatable two-user CRUD smoke test created two users and one note, updated the owner-scoped row, proved a wrong-owner update count of zero, deleted both users, and verified cascade cleanup left zero disposable notes.
+
+Repository acceptance passes 122 tests and whole-repository lint. The sanitized smoke harness is `tools/phase4_lakebase_smoke.py`; it prints no role, host, URL, password, or user-authored content.
 
 The attached administrator samples are reference implementations only. Their secret-fetching pattern and identifier-validation rationale are adopted; their GitHub-specific tables, username session flow, and application behavior are not part of Signal Desk.
