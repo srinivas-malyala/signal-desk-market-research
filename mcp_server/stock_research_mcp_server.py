@@ -1,4 +1,5 @@
 """FastMCP stock-market research server for Databricks Agent Bricks."""
+
 from __future__ import annotations
 
 import inspect
@@ -6,50 +7,71 @@ import json
 import time
 import uuid
 from contextvars import ContextVar
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import wraps
 
+import lakebase
+import research_broker as broker
 from fastmcp import FastMCP
 from starlette.middleware import Middleware as ASGIMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
-import lakebase
-import research_broker as broker
-
 mcp = FastMCP("stock-market-research")
-_identity: ContextVar[dict] = ContextVar("identity", default={})
+_identity: ContextVar[dict | None] = ContextVar("identity", default=None)
 _session: ContextVar[str] = ContextVar("session", default="")
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        identity = _identity.set({"email": request.headers.get("x-forwarded-email") or request.headers.get("x-forwarded-user")})
+        identity = _identity.set(
+            {"email": request.headers.get("x-forwarded-email") or request.headers.get("x-forwarded-user")}
+        )
         session = _session.set(str(uuid.uuid4()))
-        try: return await call_next(request)
+        try:
+            return await call_next(request)
         finally:
-            _identity.reset(identity); _session.reset(session)
+            _identity.reset(identity)
+            _session.reset(session)
 
 
 def traced(function):
     """Persist a safe tool trace; tracing failures never fail the tool."""
+
     @wraps(function)
     def wrapper(*args, **kwargs):
-        started = datetime.now(timezone.utc); timer = time.perf_counter()
-        bound = inspect.signature(function).bind(*args, **kwargs); bound.apply_defaults()
+        started = datetime.now(UTC)
+        timer = time.perf_counter()
+        bound = inspect.signature(function).bind(*args, **kwargs)
+        bound.apply_defaults()
         try:
             result = function(*args, **kwargs)
         except Exception:
-            result = {"status": "error", "error_code": "tool_error", "message": "The research tool could not complete this request."}
+            result = {
+                "status": "error",
+                "error_code": "tool_error",
+                "message": "The research tool could not complete this request.",
+            }
         try:
-            lakebase.write("""INSERT INTO stock_research_mcp_traces(session_id,server_name,tool_name,tool_parameters,
+            lakebase.write(
+                f"""INSERT INTO {lakebase.table_name("stock_research_mcp_traces")}(session_id,server_name,tool_name,tool_parameters,
               user_email,started_at,duration_ms,status,result,error_message) VALUES(%s,'stock-market-research',%s,%s::jsonb,%s,%s,%s,%s,%s::jsonb,%s)""",
-              (_session.get() or str(uuid.uuid4()), function.__name__, json.dumps(bound.arguments), _identity.get().get("email"),
-               started, int((time.perf_counter()-timer)*1000), result.get("status", "success"), json.dumps(result, default=str),
-               result.get("message") if result.get("status") == "error" else None))
+                (
+                    _session.get() or str(uuid.uuid4()),
+                    function.__name__,
+                    json.dumps(bound.arguments),
+                    (_identity.get() or {}).get("email"),
+                    started,
+                    int((time.perf_counter() - timer) * 1000),
+                    result.get("status", "success"),
+                    json.dumps(result, default=str),
+                    result.get("message") if result.get("status") == "error" else None,
+                ),
+            )
         except Exception:
             pass
         return result
+
     return wrapper
 
 
@@ -127,7 +149,9 @@ def update_watchlist(user_email: str, ticker: str, action: str, watchlist_name: 
 
 @mcp.tool
 @traced
-def save_research_note(user_email: str, ticker: str, title: str, note_text: str, thesis_tags: list[str] | None = None) -> dict:
+def save_research_note(
+    user_email: str, ticker: str, title: str, note_text: str, thesis_tags: list[str] | None = None
+) -> dict:
     """Persist a user's explicit research note tied to one ticker.
 
     Args:
@@ -144,7 +168,9 @@ def save_research_note(user_email: str, ticker: str, title: str, note_text: str,
 
 @mcp.tool
 @traced
-def save_analysis_report(user_email: str, title: str, thesis: str, tickers: list[str], report_text: str, source_context: dict | None = None) -> dict:
+def save_analysis_report(
+    user_email: str, title: str, thesis: str, tickers: list[str], report_text: str, source_context: dict | None = None
+) -> dict:
     """Persist an analysis report only after the user asks to save it.
 
     Args:

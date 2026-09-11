@@ -5,6 +5,12 @@ resources:
       description: Signal Desk Flask research workflow
       source_code_path: ../dashboard
       resources:
+        - name: lakebase-url
+          description: Admin-managed Lakebase PostgreSQL connection URL
+          secret:
+            scope: database
+            key: lakebase-url
+            permission: READ
         - name: sql-warehouse
           description: Serverless SQL warehouse for governed analytics queries
           sql_warehouse:

@@ -18,6 +18,7 @@ def app_module(monkeypatch: pytest.MonkeyPatch):
     fake_db = Mock()
     fake_db.write.return_value = {"id": 1}
     fake_db.query.return_value = []
+    fake_db.table_name.side_effect = lambda base: f"bootcamp_students.{base}_srini"
     monkeypatch.setitem(sys.modules, "lakebase", fake_db)
     spec = importlib.util.spec_from_file_location("dashboard_app", DASHBOARD_ROOT / "app.py")
     assert spec and spec.loader
@@ -37,3 +38,16 @@ def test_existing_watchlist_validation(app_module) -> None:
     response = app_module.app.test_client().post("/api/watchlist", json={"ticker": "not valid"})
     assert response.status_code == 400
     assert response.get_json()["status"] == "error"
+
+
+def test_dashboard_sql_uses_student_suffixed_tables(app_module) -> None:
+    response = app_module.app.test_client().get(
+        "/api/overview",
+        headers={"X-Forwarded-Email": "student@example.com"},
+    )
+    assert response.status_code == 200
+    statements = [call.args[0] for call in app_module.lakebase.query.call_args_list]
+    statements += [call.args[0] for call in app_module.lakebase.write.call_args_list]
+    assert statements
+    assert all("bootcamp_students." in statement for statement in statements)
+    assert all("_srini" in statement for statement in statements)

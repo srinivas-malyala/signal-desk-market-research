@@ -7,4 +7,8 @@ env:
   - name: LAKEBASE_URL
     valueFrom: lakebase-url
   - name: SIGNAL_DESK_SCHEMA
-    value: student_sri
+    value: bootcamp_students
+  - name: SIGNAL_DESK_TABLE_SUFFIX
+    value: srini
+  - name: SIGNAL_DESK_GRAPH_SCHEMA
+    value: bootcamp_cdc

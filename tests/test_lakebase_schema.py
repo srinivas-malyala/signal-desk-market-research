@@ -4,6 +4,7 @@ import base64
 from types import SimpleNamespace
 
 import pytest
+from psycopg2 import OperationalError
 
 from mcp_server import lakebase
 
@@ -139,3 +140,76 @@ def test_pool_bounds_are_bounded(monkeypatch: pytest.MonkeyPatch, minimum: str, 
     monkeypatch.setenv("LAKEBASE_POOL_MAX", maximum)
     with pytest.raises(ValueError, match="pool bounds"):
         lakebase._pool_bounds()
+
+
+def test_checkout_replaces_one_stale_connection() -> None:
+    class Cursor:
+        def __init__(self, stale: bool) -> None:
+            self.stale = stale
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args) -> None:
+            return None
+
+        def execute(self, _statement) -> None:
+            if self.stale:
+                raise OperationalError("stale")
+
+    class Connection:
+        def __init__(self, stale: bool) -> None:
+            self.stale = stale
+
+        def cursor(self):
+            return Cursor(self.stale)
+
+    stale = Connection(True)
+    fresh = Connection(False)
+
+    class ConnectionPool:
+        def __init__(self) -> None:
+            self.connections = iter((stale, fresh))
+            self.returned = []
+
+        def getconn(self):
+            return next(self.connections)
+
+        def putconn(self, connection, close=False) -> None:
+            self.returned.append((connection, close))
+
+    connection_pool = ConnectionPool()
+    assert lakebase._checkout(connection_pool) is fresh
+    assert connection_pool.returned == [(stale, True)]
+
+
+def test_connection_rolls_back_and_returns_to_pool(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Connection:
+        closed = 0
+
+        def __init__(self) -> None:
+            self.rolled_back = False
+
+        def rollback(self) -> None:
+            self.rolled_back = True
+
+    connection = Connection()
+
+    class ConnectionPool:
+        def __init__(self) -> None:
+            self.returned = []
+
+        def putconn(self, value, close=False) -> None:
+            self.returned.append((value, close))
+
+    connection_pool = ConnectionPool()
+    monkeypatch.setattr(lakebase, "get_pool", lambda: connection_pool)
+    monkeypatch.setattr(lakebase, "_checkout", lambda _pool: connection)
+    monkeypatch.setattr(lakebase, "configure_schema", lambda _connection: None)
+
+    with pytest.raises(RuntimeError, match="boom"):
+        with lakebase.get_connection():
+            raise RuntimeError("boom")
+
+    assert connection.rolled_back is True
+    assert connection_pool.returned == [(connection, False)]

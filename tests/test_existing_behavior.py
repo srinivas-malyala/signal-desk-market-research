@@ -70,11 +70,11 @@ def test_existing_note_and_report_response_shapes_are_characterized(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def fake_write(sql, _params=None, returning=False):
-        if "INSERT INTO users" in sql:
+        if "users_srini" in sql:
             return {"id": 7}
-        if "INSERT INTO research_notes" in sql:
+        if "research_notes_srini" in sql:
             return {"id": 21, "created_at": "2026-09-10T12:00:00Z"}
-        if "INSERT INTO analysis_reports" in sql:
+        if "analysis_reports_srini" in sql:
             return {"id": 22, "created_at": "2026-09-10T12:01:00Z"}
         return 1
 

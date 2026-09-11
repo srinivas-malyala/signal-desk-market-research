@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from databricks.sdk import WorkspaceClient
-from psycopg2 import pool
+from psycopg2 import InterfaceError, OperationalError, pool
 from psycopg2.extras import RealDictCursor
 
 DEFAULT_SCHEMA = "bootcamp_students"
@@ -163,10 +163,22 @@ def close_pool() -> None:
             _pool = None
 
 
+def _checkout(connection_pool: pool.ThreadedConnectionPool):
+    """Return a live pooled connection, replacing one stale connection once."""
+    connection = connection_pool.getconn()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+    except (InterfaceError, OperationalError):
+        connection_pool.putconn(connection, close=True)
+        connection = connection_pool.getconn()
+    return connection
+
+
 @contextmanager
 def get_connection():
     connection_pool = get_pool()
-    connection = connection_pool.getconn()
+    connection = _checkout(connection_pool)
     try:
         configure_schema(connection)
         yield connection

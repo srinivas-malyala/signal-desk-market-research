@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,7 +35,11 @@ def test_apps_use_resource_references_instead_of_scope_names() -> None:
         assert "DATABRICKS_WAREHOUSE_ID" in text
         assert "valueFrom: sql-warehouse" in text
         assert "SIGNAL_DESK_SCHEMA" in text
-        assert "student_sri" in text
+        assert "value: bootcamp_students" in text
+        assert "SIGNAL_DESK_TABLE_SUFFIX" in text
+        assert "value: srini" in text
+        assert "SIGNAL_DESK_GRAPH_SCHEMA" in text
+        assert "value: bootcamp_cdc" in text
 
 
 def test_apps_attach_selected_warehouse_with_can_use() -> None:
@@ -46,6 +51,18 @@ def test_apps_attach_selected_warehouse_with_can_use() -> None:
         assert "name: sql-warehouse" in text
         assert "id: ${var.warehouse_id}" in text
         assert "permission: CAN_USE" in text
+
+
+def test_apps_attach_admin_managed_lakebase_secret() -> None:
+    for path in (
+        ROOT / "resources" / "stock_research_mcp.app.yml",
+        ROOT / "resources" / "signal_desk_frontend.app.yml",
+    ):
+        text = path.read_text()
+        assert "name: lakebase-url" in text
+        assert "scope: database" in text
+        assert "key: lakebase-url" in text
+        assert "permission: READ" in text
 
 
 def test_market_job_has_phase1_safety_controls() -> None:
@@ -103,3 +120,18 @@ def test_serverless_python_entry_points_do_not_require_dunder_file() -> None:
         assert 'globals().get("filename")' in text, path
         assert "Path(__file__)" not in text, path
         assert "raise SystemExit(main())" not in text, path
+
+
+def test_runtime_sql_contains_no_unqualified_operational_tables() -> None:
+    tables = (
+        "users|watchlists|watchlist_tickers|companies|price_snapshots|news_articles|"
+        "research_notes|analysis_reports|research_embeddings|stock_research_mcp_traces"
+    )
+    pattern = re.compile(rf"\b(?:FROM|INTO|JOIN|UPDATE|USING)\s+(?:{tables})\b", re.IGNORECASE)
+    for path in (
+        ROOT / "dashboard" / "app.py",
+        ROOT / "mcp_server" / "research_broker.py",
+        ROOT / "mcp_server" / "stock_research_mcp_server.py",
+        ROOT / "jobs" / "ingest_research_embeddings.py",
+    ):
+        assert not pattern.search(path.read_text()), path

@@ -12,7 +12,7 @@ The capstone proposal presents Signal Desk as a new solution. Implementation sta
 | `mcp_server/research_broker.py` | Massive orchestration, calculations, SQL, and persistence | Retain verified calculations; separate API, service, and repository boundaries | Phases 4–5 |
 | `mcp_server/massive_client.py` | Authenticated REST calls, retries, pagination, ticker endpoints | Extend; add grouped daily endpoint and one shared limiter | Phase 1 |
 | `mcp_server/lakebase.py` | URL secret, new psycopg2 connection per operation, schema execution | Preserve call surface temporarily; replace internals with attached Autoscaling Lakebase and pooling | Phase 4 |
-| `mcp_server/schema.sql` | Ten operational/research tables plus pgvector | Adopt as schema baseline; migrate forward without data loss | Phase 4 |
+| `mcp_server/migrations/*.sql` | Versioned operational, agent, and CDC-ready tables plus pgvector | Render only allowlisted, fully qualified `_srini` tables and checksum every applied version | Phase 4 |
 | `jobs/ingest_research_embeddings.py` | Chunks four source types, embeds with MiniLM, upserts pgvector | Preserve chunk semantics; make incremental and deploy as a job | Phase 5 |
 | `dashboard/app.py` | Flask overview and watchlist CRUD with direct Lakebase access | Retain UI shell/routes; remove demo identity and direct database sharing | Phase 8 |
 | `agent/*` | Prompt, configuration example, and manual demo scenarios | Convert into deployable Supervisor Agent configuration and evaluations | Phase 7 |
