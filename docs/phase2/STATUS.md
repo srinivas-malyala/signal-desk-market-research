@@ -2,14 +2,14 @@
 
 Updated: 2026-09-10
 
-Phase 2 is implemented, deterministically tested, and verified on a 10-date workspace pilot. The measured one-million-row result remains an explicit acceptance gate.
+Phase 2 workspace acceptance is complete, including the measured one-million-row and Massive free-rate-limit certification.
 
 | Unit | Implementation | Local evidence | Remaining workspace gate |
 |---|---|---|---|
-| 2.1 Bronze market streaming tables | Workspace verified | Dedicated deployed `market_pipeline`; 10 manifest dates and 149,051 rows exactly match Bronze | Scale through the bounded backfill |
-| 2.2 Silver market bars | Workspace verified | 149,031 accepted rows plus 20 deterministic duplicate quarantines equal Bronze; zero duplicate Silver keys | Scale through the bounded backfill |
-| 2.3 Gold market analytics | Workspace verified | Ten `COMPLETE` coverage dates and bounded performance query through warehouse `b15d3d6f837ba428`; local known-answer tests pass | Sector/industry peers wait for Phase 3 company enrichment |
-| 2.4 One-million-row certification | Complete locally; measured result pending | Every limiter acquisition is appended to an audit ledger; job orchestrates landing → pipeline → certification; strict checks cover >1M distinct keys, rate limit, uniqueness, date range, and layer reconciliation | Deploy and run against `bootcamp_students.student_sri`, then retain the passing Delta certification record |
+| 2.1 Bronze market streaming tables | Workspace verified | Dedicated deployed market pipeline; 81 manifest dates and 1,255,677 rows exactly match Bronze | None |
+| 2.2 Silver market bars | Workspace verified | 1,255,489 accepted rows plus 188 deterministic quarantines equal Bronze; zero duplicate Silver keys | None |
+| 2.3 Gold market analytics | Workspace verified | Coverage spans 2025-09-23 through 2026-09-09; bounded performance and peer queries pass | None for Phase 2 |
+| 2.4 One-million-row certification | Workspace verified | Persisted PASSED report proves 1,255,489 distinct Silver keys and a measured maximum of 4 Massive attempts per rolling minute | None |
 
 ## Free Massive API budget
 
@@ -51,3 +51,11 @@ The correction is deployed. A full refresh of this development-only market pipel
 Full-refresh update `ca1bbd17-bab5-40d8-a05b-6bf248d03f15` was explicitly approved and completed successfully, rebuilding only the development market tables from the immutable 10-date Volume source.
 
 Warehouse acceptance passed: all 10 dates report `MATCH`; 149,051 manifest rows equal 149,051 Bronze rows; Silver contains 149,031 accepted rows and 20 `duplicate_ticker_date` quarantines with zero duplicate accepted keys; all 10 coverage dates are `COMPLETE`; and the bounded Gold performance query succeeded.
+
+After Phase 3 acceptance, strict bundle validation passed and the Lakebase-independent volume orchestration was selectively deployed as job `356134100996112`. Its bounded run retains the existing four-attempts-per-rolling-minute limiter, scans at most 252 dates, and stops landing when the available raw estimate reaches 1.1 million rows before refreshing and certifying the Spark tables.
+
+Bounded certification run 748482763142265 completed successfully with the default limits.
+
+Its landing stage completed successfully: 71 API dates produced 1,106,626 newly available raw rows and 116,806,780 landed bytes, including 69 data dates and 2 no-data dates, with zero retries or failures. Together with the earlier pilot, the Volume contains 81 market-date partitions.
+
+Incremental market update a854185a-a1c8-4edc-b887-115998831964 completed. The persisted certification is PASSED: 1,255,677 manifest and Bronze rows reconcile exactly to 1,255,489 distinct Silver keys plus 188 quarantined rows, with zero duplicate Silver keys. The evidence covers 81 dates from 2025-09-23 through 2026-09-09 and records 83 audited API attempts with an observed maximum of 4 in any rolling minute. Independent SQL warehouse statement 01f1ad75-a4ec-18b6-b06a-f495785e1152 confirmed the layer counts.
