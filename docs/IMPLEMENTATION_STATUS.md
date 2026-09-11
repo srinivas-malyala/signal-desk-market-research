@@ -1,6 +1,6 @@
 # Capstone Implementation Status
 
-Updated: 2026-09-10
+Updated: 2026-09-11
 
 This is the living tracker for implementation progress and external gates. A unit is complete only when its code and deterministic tests pass; workspace-dependent proof is listed separately.
 
@@ -10,7 +10,7 @@ This is the living tracker for implementation progress and external gates. A uni
 | 1 — Massive ingestion | Workspace pilot complete | 1.1 rate-safe client; 1.2 atomic checkpoints; 1.3 immutable landing; managed Volume and ingestion job deployed; 10-date workspace pilot reconciled 149,051 rows and identical rerun made zero API calls | Cross-host limiter coordination after Lakebase access |
 | 2 — Spark market pipeline | Workspace acceptance complete | Dedicated deployed market pipeline; 81 manifest dates and 1,255,677 Bronze rows reconcile to 1,255,489 unique Silver rows plus 188 deterministic quarantines; measured free-plan maximum is 4 attempts per rolling minute; Gold coverage and persisted certification passed | None for the volume-certification workflow |
 | 3 — SEC pipeline | Workspace acceptance complete | Dedicated deployed research pipeline; two-company landing and cached rerun completed; 2 companies, 12 filings, 57,806 facts, 86 articles, 549 article/ticker links, and 507 traceable chunks with zero integrity violations; cached rerun made no external calls | None for the bounded two-company workflow |
-| 4 — Lakebase | Blocked externally | Provisional student DSN and `student_sri` schema contract | Usable password, CRUD proof, versioned migrations, pooling, and identity isolation |
+| 4 — Lakebase | Configuration available; implementation pending | Admin-managed connection URL is available through secret database/lakebase-url; shared-schema contract is bootcamp_students with every application table suffixed _srini; synced graph schema is bootcamp_cdc | Replace private-schema assumptions, version migrations for suffixed tables, verify live permissions and CRUD, add pooling, and prove identity isolation |
 | 5 — MCP agent tools | Prototype available | Existing retrieval/write tools characterized | Production contracts, safe traces, confirmation, repository boundaries, and semantic retrieval |
 | 6 — CDF analytics | Pending | Architecture selected | Lakebase change feed, Silver activity, and Gold usage metrics |
 | 7 — Agent integration | Prototype assets available | Prompt and configuration inventoried | Deployed supervisor, MCP connection, evaluation, and identity propagation |
@@ -19,8 +19,10 @@ This is the living tracker for implementation progress and external gates. A uni
 
 ## Active sequence
 
-1. Finalize cross-host rate coordination after Lakebase access before enabling interactive Massive traffic.
-2. Resume Phase 4 Lakebase CRUD and CDF work when credentials are available.
+1. Refactor Phase 4 operational SQL and migrations for bootcamp_students.<table>_srini.
+2. Verify Lakebase connectivity, schema/table permissions, and disposable CRUD through the admin-managed secret.
+3. Implement CDF replication into bootcamp_cdc and resume agent/frontend integration.
+4. Finalize cross-host rate coordination before enabling interactive Massive traffic.
 
 ## Current external inputs
 
@@ -29,7 +31,7 @@ This is the living tracker for implementation progress and external gates. A uni
 - SQL warehouse: `b15d3d6f837ba428` — verified serverless access.
 - Massive key: Databricks secret `massive/api-key` — verified without disclosure.
 - SEC identifying contact — verified live and retained only at runtime.
-- Lakebase: approved provisional host/role/database/schema contract; usable password pending.
+- Lakebase: database/lakebase-url secret is provisioned and key-only verified; shared schema bootcamp_students, table suffix _srini, and graph schema bootcamp_cdc are confirmed.
 
 ## Workspace deployment evidence
 
@@ -68,4 +70,5 @@ This is the living tracker for implementation progress and external gates. A uni
 - 2026-09-10 — The landing stage completed successfully: 71 API dates produced 1,106,626 newly available raw rows and 116,806,780 landed bytes, with 2 no-data dates, zero retries, and zero failures. The managed Volume now contains 81 market-date partitions including the earlier pilot.
 - 2026-09-10 — Market pipeline update a854185a-a1c8-4edc-b887-115998831964 completed incrementally. Orchestrator run 748482763142265 and all three tasks reached TERMINATED SUCCESS.
 - 2026-09-10 — Persisted certification status is PASSED: 1,255,677 manifest/Bronze rows reconcile to 1,255,489 distinct Silver keys plus 188 quarantined rows; zero duplicate Silver keys; 81 dates from 2025-09-23 through 2026-09-09; 83 audited API attempts with an observed maximum of 4 in any rolling minute. Independent warehouse statement 01f1ad75-a4ec-18b6-b06a-f495785e1152 confirmed the layer counts.
+- 2026-09-11 — Admin-managed Lakebase secret database/lakebase-url was key-only verified without reading its value. Phase 4 now targets shared schema bootcamp_students with all application tables suffixed _srini; CDF-synced graph tables use bootcamp_cdc and the same suffix. Existing private-schema SQL must be refactored before deployment.
 - Lakebase-dependent applications and `research_embeddings` remain undeployed.

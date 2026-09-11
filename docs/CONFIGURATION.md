@@ -2,7 +2,7 @@
 
 Configuration names are stable contracts. Credentials and sensitive resource identifiers must not be committed; approved non-secret development namespaces are recorded explicitly.
 
-The development analytical namespace is Unity Catalog `bootcamp_students.student_sri`. The operational PostgreSQL schema is also named `student_sri`, but it is a separate namespace inside Lakebase; the shared name does not imply shared storage.
+The development analytical namespace remains Unity Catalog `bootcamp_students.student_sri`. Lakebase uses a different classroom convention: all students share PostgreSQL schema `bootcamp_students`, and this application owns only tables whose base names end in `_srini`. CDF-synced graph tables live in PostgreSQL schema `bootcamp_cdc` and also end in `_srini`.
 
 The verified development SQL compute is the serverless `Serverless Starter Warehouse`:
 
@@ -25,8 +25,12 @@ Both Databricks Apps receive `DATABRICKS_WAREHOUSE_ID` from an attached `sql-war
 | `USE_MOCK_BACKEND` | apps | Local development only | Literal `true`; deployed target must use `false` |
 | `DATABRICKS_WAREHOUSE_ID` | frontend/MCP analytics | Delta SQL access | App resource `valueFrom` |
 | `PGHOST`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, `PGPORT` | MCP operational store | Future attached Lakebase access | Attached `postgres` resource; never logged |
-| `LAKEBASE_URL` | MCP/frontend compatibility path | Student connection-string access | Runtime secret; PostgreSQL URL with `sslmode=require` |
-| `SIGNAL_DESK_SCHEMA` | MCP/frontend | Lakebase schema selection | Non-secret environment value; provisional value `student_sri` |
+| `LAKEBASE_URL` | MCP/frontend local override | Explicit local-only connection override | Runtime environment only; PostgreSQL URL with `sslmode=require` |
+| `LAKEBASE_SECRET_SCOPE` | MCP/frontend | Deployed Lakebase connection | Defaults to admin-managed scope `database` |
+| `LAKEBASE_SECRET_KEY` | MCP/frontend | Deployed Lakebase connection | Defaults to admin-managed key `lakebase-url` |
+| `SIGNAL_DESK_SCHEMA` | MCP/frontend | Lakebase operational schema | Non-secret environment value; `bootcamp_students` |
+| `SIGNAL_DESK_TABLE_SUFFIX` | MCP/frontend/migrations | Per-student Lakebase table namespace | Non-secret lowercase identifier; `srini` |
+| `SIGNAL_DESK_GRAPH_SCHEMA` | MCP/frontend/CDF reads | Lakebase schema containing replicated graph tables | Non-secret environment value; `bootcamp_cdc` |
 | `RAW_VOLUME_PATH` | ingestion/pipeline | Raw file landing | Bundle-derived `/Volumes/...` path |
 
 ## Required Databricks app resource keys
@@ -39,16 +43,8 @@ Both Databricks Apps receive `DATABRICKS_WAREHOUSE_ID` from an attached `sql-war
 | Frontend | `mcp-connection` | UC/external MCP connection or service endpoint | Use/query only |
 | Frontend | `sql-warehouse` | SQL warehouse | Can use |
 
-Until the final Lakebase project resource is available, both apps accept a runtime-only URL assembled from this approved contract:
+The complete PostgreSQL URL is stored only in Databricks secret `database/lakebase-url`. The deployed helpers fetch the secret with `WorkspaceClient`, Base64-decode it in memory, and never log or persist it. `LAKEBASE_URL` remains an explicit local-test override only.
 
-```text
-host=ep-odd-union-d1792avs.database.us-west-2.cloud.databricks.com
-database=databricks_postgres
-user=student
-password=<runtime-secret>
-sslmode=require
-```
+Connections must validate that both shared schemas exist, but must not create, drop, or claim ownership of either schema. Every operational table reference is fully qualified as `bootcamp_students.<base_table>_srini`; setting only a search path is insufficient because it does not enforce the required suffix. Replicated graph objects are referenced as `bootcamp_cdc.<base_table>_srini`. Dynamic schema, base-table, and suffix components must be allowlisted and identifier-validated before SQL composition.
 
-The password and complete URL must remain in a secret or runtime environment. Every connection validates `SIGNAL_DESK_SCHEMA`, verifies that it exists, and then sets its session search path to `student_sri,public`; application tables therefore resolve in the student schema rather than `public`. The schema is assumed to be pre-created and must be owned by, or grant create/read/write privileges to, the `student` role. A missing schema fails the connection instead of falling back to `public`.
-
-The URL-secret variables (`LAKEBASE_URL`, `LAKEBASE_SECRET_SCOPE`, and `LAKEBASE_SECRET_KEY`) remain a compatibility path and can be retired when an Autoscaling Lakebase project is attached in Phase 4. `setup_secrets.py` must not be used for a deployment because it selects credentials implicitly.
+The current application SQL still assumes unsuffixed tables in a private `student_sri` PostgreSQL schema. Phase 4 must replace that behavior before either application is deployed. `setup_secrets.py` must not be used for deployment because the administrator already owns secret provisioning.

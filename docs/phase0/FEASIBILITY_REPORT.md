@@ -1,6 +1,6 @@
 # Phase 0 Feasibility Report
 
-Status: Workspace, Massive, and SEC checks passed on 2026-09-10; the Lakebase CDF check remains gated as described below.
+Status: Workspace, Massive, and SEC checks passed on 2026-09-10. The admin-managed Lakebase URL secret and shared-table namespace were confirmed on 2026-09-11; connectivity, CRUD, and CDF execution remain Phase 4 gates.
 
 ## Verified results
 
@@ -48,7 +48,8 @@ databricks bundle validate --strict --target dev --profile '<user-selected-profi
 
 ## Remaining workspace gates
 
-1. Replace the approved student-role placeholder with the usable Lakebase connection secret when it becomes available.
-2. Verify that the `student` role can connect and create/read/write tables in the pre-created `student_sri` schema.
-3. Insert, update, and delete a uniquely labeled disposable row.
-4. Configure or inspect Lakebase Lakehouse Sync in the UI and verify ordered Delta changes and latency. If unavailable, implement the approved Lakeflow event-table fallback.
+1. Refactor operational SQL from the obsolete private `student_sri` schema assumption to fully qualified `bootcamp_students.<table>_srini` names.
+2. Fetch the connection URL from admin-managed secret `database/lakebase-url` and verify connectivity without exposing it.
+3. Verify create/read/write permissions for `_srini` tables without creating or modifying the shared schemas.
+4. Insert, update, and delete a uniquely labeled disposable row.
+5. Configure or inspect Lakebase Lakehouse Sync and verify ordered changes in the shared `bootcamp_cdc` namespace. If unavailable, implement the approved Lakeflow event-table fallback.
