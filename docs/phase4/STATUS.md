@@ -6,11 +6,11 @@ Phase 4 configuration inputs are now available, but no live Lakebase write is cl
 
 | Unit | Current status | Confirmed contract | Next testable unit |
 |---|---|---|---|
-| 4.1 Connection secret | Ready for implementation | Databricks secret `database/lakebase-url`; fetched with `WorkspaceClient`, Base64-decoded only in memory; key existence verified without reading the value | Add deterministic secret/override tests, then perform a sanitized connectivity check |
-| 4.2 Shared table namespace | Refactor required | Operational schema `bootcamp_students`; every application table is `<base>_srini`; applications must not create or drop the shared schema | Add validated table-name registry and render versioned migrations with fully qualified names |
+| 4.1 Connection secret | Implemented locally | Databricks secret `database/lakebase-url`; fetched with `WorkspaceClient`, Base64-decoded only in memory; key existence and deterministic decoding verified without disclosing the value | Perform a sanitized connectivity check |
+| 4.2 Shared table namespace | Migration layer implemented | Strict table/index allowlists render three checksum-protected migrations into fully qualified `bootcamp_students.<base>_srini` objects without schema DDL | Refactor all application SQL, then apply migrations live |
 | 4.3 Graph/CDF namespace | Contract confirmed | Synced graph tables are `bootcamp_cdc.<base>_srini` | Confirm source/target table names and inspect Lakehouse Sync before configuring replication |
 | 4.4 CRUD and isolation | Pending | Writes are restricted to `_srini` tables and application user identity remains row-level data | Run disposable insert/update/delete, verify cleanup, and prove no unsuffixed or other-student table access |
-| 4.5 Connection lifecycle | Pending | SSL is encoded in the secret URL; credentials must never be logged | Add pooling, connection health checks, rollback handling, and retry on stale connections |
+| 4.5 Connection lifecycle | Partially implemented | Lazy bounded thread-safe pool, rollback on failure, and explicit pool shutdown are implemented | Add checkout health/reconnect tests and verify live behavior |
 
 ## Important namespace distinction
 
@@ -22,6 +22,8 @@ These are separate systems and must not share a single `schema` configuration va
 
 ## Safety gate
 
-The current helpers correctly default to secret scope `database` and key `lakebase-url`, but they set the Lakebase search path to private schema `student_sri`; `schema.sql` and application queries also use unsuffixed table names. Do not run the current migration or deploy either application until the table-name registry and migration rendering enforce the shared-schema suffix contract.
+The helper and migration layer now enforce shared-schema `_srini` names and never create either shared schema. Application and embedding SQL still contains unsuffixed table names, so do not apply migrations or deploy either application until that next refactor is complete.
+
+Local gate: 14 namespace, secret, migration-rendering, schema-validation, and pool-bound tests pass; focused lint is clean.
 
 The attached administrator samples are reference implementations only. Their secret-fetching pattern and identifier-validation rationale are adopted; their GitHub-specific tables, username session flow, and application behavior are not part of Signal Desk.
