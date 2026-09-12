@@ -52,6 +52,11 @@ Updated: 2026-09-11
   provenance completeness, and filter-violation metrics. Two fixture-backed smoke
   labels validate the harness; live acceptance intentionally requires at least 50
   workspace labels. Whole-repository lint and 145 tests pass.
+- 2026-09-11 — Selectively deployed the research pipeline and completed graph
+  validation update `ca094e65-f38e-4ebe-b121-0b1faeea946d` plus chunk refresh
+  `56c5df46-e1a8-4d14-bd93-d467aadb554e`. SQL Warehouse reconciliation found
+  393 complete chunks from 98 sources (86 articles and 12 filings), with zero
+  duplicate chunk IDs, duplicate source indexes, or untraceable chunks.
 
 ## Workspace acceptance
 
@@ -61,7 +66,6 @@ validation passes after changing the Vector Search endpoint permission to the
 supported `CAN_USE` level. No committed code contains a token, Massive key, SEC
 contact, or Lakebase URL.
 
-Remaining workspace acceptance is: deploy/update the research pipeline, apply
-Lakebase migration 0004, provision the endpoint/index and sync job, run the 50+
-case retrieval set, deploy MCP, and exercise two authenticated principals plus
-retry/trace checks.
+Remaining workspace acceptance is: apply Lakebase migration 0004, provision the
+endpoint/index and sync job, run the 50+ case retrieval set, deploy MCP, and
+exercise two authenticated principals plus retry/trace checks.
