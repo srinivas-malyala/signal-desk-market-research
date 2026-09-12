@@ -96,3 +96,6 @@ Remaining workspace acceptance is: resolve the managed-secret binding
 permission, deploy MCP, and exercise health, action, idempotency, and bounded
 trace checks. The final isolation test requires two real authenticated account
 principals.
+
+The administrator/student workspace-UI procedure is documented in
+`docs/phase5/MANUAL_MCP_APP_DEPLOYMENT.md`.
