@@ -38,7 +38,3 @@ resources:
           - parent_text
           - parent_token_count
           - source_content_hash
-      grants:
-        - principal: users
-          privileges:
-            - SELECT

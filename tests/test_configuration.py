@@ -149,6 +149,7 @@ def test_managed_research_search_resources_replace_in_process_embeddings() -> No
     assert "databricks-qwen3-embedding-0-6b" in search
     assert "research_search_documents" in search
     assert "chunk_to_embed" in search and "chunk_to_retrieve" in search
+    assert "principal: users" not in search
     assert "publish_research_search_documents.py" in publish_job
     assert "resources.jobs.research_search_publish.id" in refresh_job
     assert refresh_job.index("publish_research_search_documents") < refresh_job.index(
