@@ -27,3 +27,8 @@ def test_publish_sql_creates_cdf_table_and_incrementally_merges() -> None:
 def test_publish_sql_rejects_untrusted_identifiers() -> None:
     with pytest.raises(ValueError, match="simple SQL identifiers"):
         publish_sql("bootcamp_students; DROP CATALOG main", "student_sri")
+
+
+def test_serverless_entrypoint_does_not_raise_system_exit() -> None:
+    script = (ROOT / "jobs" / "publish_research_search_documents.py").read_text()
+    assert "raise SystemExit" not in script
