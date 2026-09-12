@@ -1,0 +1,30 @@
+resources:
+  jobs:
+    research_search_publish:
+      name: signal-desk-research-search-publish-${bundle.target}
+      description: Merge canonical Spark chunks into the CDF-enabled Delta source used by AI Search
+      max_concurrent_runs: 1
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+      environments:
+        - environment_key: default
+          spec:
+            client: "4"
+      tasks:
+        - task_key: publish_research_search_documents
+          environment_key: default
+          spark_python_task:
+            python_file: ../jobs/publish_research_search_documents.py
+            parameters:
+              - --catalog
+              - "{{job.parameters.catalog}}"
+              - --schema
+              - "{{job.parameters.schema}}"
+          timeout_seconds: 3600
+          max_retries: 1
+      permissions:
+        - level: CAN_VIEW
+          group_name: users

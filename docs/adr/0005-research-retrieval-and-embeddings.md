@@ -56,8 +56,10 @@ Vector Search index.
   keyword/vector retrieval, metadata filters, and Databricks reranking when
   available.
 - Request 20 candidates, rerank, and expose at most five passages to the agent.
-- Enable Change Data Feed and row tracking on the canonical Delta chunk table so
-  the index can update incrementally.
+- Keep the canonical chunks in the Lakeflow materialized view, then MERGE them
+  into a stable regular Delta serving table with Change Data Feed and row
+  tracking. This workspace does not enable materialized views as AI Search
+  sources, while the regular Delta boundary preserves incremental index updates.
 - Keep GTE (`databricks-gte-large-en`) as the production fallback if Qwen3 preview
   availability or quality is unacceptable. Retain MiniLM only as an evaluation
   baseline, not as the production serving path.
@@ -91,8 +93,9 @@ evaluation evidence.
 
 - Chunking exists in one Spark-owned implementation instead of both the pipeline
   and embedding job.
-- Corpus changes flow Delta table -> Change Data Feed -> managed Vector Search;
-  application requests do not synchronously create embeddings.
+- Corpus changes flow Spark materialized view -> idempotent Delta MERGE -> Change
+  Data Feed -> managed Vector Search; application requests do not synchronously
+  create embeddings.
 - Search serving no longer consumes Lakebase connection-pool capacity.
 - A Qwen3-to-GTE change requires rebuilding or versioning the index and rerunning
   the same labeled evaluation set.
@@ -112,4 +115,3 @@ evaluation evidence.
 - [MiniLM baseline model card](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)
 - [Chunking evaluation study](https://arxiv.org/abs/2608.12335)
 - [Contextual retrieval study](https://arxiv.org/abs/2511.18177)
-

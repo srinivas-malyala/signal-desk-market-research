@@ -83,11 +83,13 @@ Snapshots preserve OHLCV/VWAP and derived prior-session changes. Notes and
 reports are always tied to a user; reports can span several tickers.
 
 The Spark research pipeline owns one section-aware parent/child chunk contract.
-It persists contextual embedding text separately from faithful passage text and
-enables Change Data Feed plus row tracking. A triggered Delta Sync index uses
-`databricks-qwen3-embedding-0-6b`, hybrid retrieval, metadata filters, and
-reranking. The compatibility-named embedding job now requests an incremental
-managed-index sync; it does not load a local model or write pgvector rows.
+It persists contextual embedding text separately from faithful passage text. A
+small Spark publish job idempotently MERGEs those chunks into the CDF- and
+row-tracking-enabled `research_search_documents` Delta table supported by AI
+Search. A triggered Delta Sync index uses `databricks-qwen3-embedding-0-6b`,
+hybrid retrieval, metadata filters, and reranking. The compatibility-named
+embedding job requests an incremental managed-index sync; it does not load a
+local model or write pgvector rows.
 
 ## Repository layout
 
@@ -150,16 +152,20 @@ pipeline; the embedding job automatically includes them.
 
 ### 5. Synchronize semantic search
 
-Deploy the Vector Search endpoint/index after the research pipeline has created
-`silver_research_chunks`, then run the synchronization job:
+Deploy and run the serving-table publisher after the research pipeline has
+created `silver_research_chunks`; then deploy the Vector Search endpoint/index
+and run the synchronization job. The two-stage bootstrap is required because an
+index source table must exist before the index resource can be created:
 
 ```bash
-databricks bundle deploy -t dev -p dataexpertio_srini
+databricks bundle deploy -t dev -p dataexpertio_srini --select jobs.research_search_publish
+databricks bundle run research_search_publish -t dev -p dataexpertio_srini
+databricks bundle deploy -t dev -p dataexpertio_srini --select vector_search_endpoints.research_search --select vector_search_indexes.research_chunks --select jobs.research_embeddings
 databricks bundle run research_embeddings -t dev -p dataexpertio_srini
 ```
 
-The `research_refresh` orchestration requests the same triggered sync after a
-successful pipeline update.
+The `research_refresh` orchestration publishes the Delta serving table and then
+requests the triggered index sync after a successful pipeline update.
 
 ### 6. Register and test the Agent Bricks agent
 

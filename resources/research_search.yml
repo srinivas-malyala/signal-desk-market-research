@@ -15,7 +15,7 @@ resources:
       index_subtype: HYBRID
       primary_key: chunk_id
       delta_sync_index_spec:
-        source_table: ${var.catalog}.${var.schema}.silver_research_chunks
+        source_table: ${var.catalog}.${var.schema}.research_search_documents
         pipeline_type: TRIGGERED
         embedding_source_columns:
           - name: chunk_to_embed
