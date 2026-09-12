@@ -112,39 +112,99 @@ def build_research_chunks(
     source_id: str,
     text: str | None,
     *,
-    chunk_size: int = 1800,
-    overlap: int = 200,
+    title: str | None = None,
+    ticker: str | None = None,
+    source_date: object | None = None,
+    document_kind: str | None = None,
+    target_tokens: int | None = None,
+    max_tokens: int | None = None,
+    overlap_tokens: int | None = None,
+    parent_tokens: int = 1600,
 ) -> list[dict[str, object]]:
-    if chunk_size < 200 or overlap < 0 or overlap >= chunk_size:
-        raise ValueError("chunk_size must be >= 200 and overlap must be smaller than chunk_size")
-    clean = re.sub(r"[ \t]+", " ", (text or "")).strip()
+    """Build stable, section-aware parent/child passages.
+
+    Counts use deterministic whitespace-delimited lexical tokens rather than a
+    model-specific tokenizer. This keeps the Spark pipeline lightweight while
+    maintaining a conservative bound for the serving embedding model.
+    """
+    is_article = source_type.casefold() == "article"
+    target = target_tokens if target_tokens is not None else (375 if is_article else 500)
+    maximum = max_tokens if max_tokens is not None else (450 if is_article else 650)
+    overlap = overlap_tokens if overlap_tokens is not None else (50 if is_article else 75)
+    if target < 50 or maximum < target or overlap < 0 or overlap >= target:
+        raise ValueError("invalid child token targets")
+    if parent_tokens < maximum or parent_tokens <= overlap:
+        raise ValueError("parent_tokens must be at least max_tokens")
+
+    clean = "\n".join(
+        line.strip() for line in re.sub(r"[ \t]+", " ", (text or "")).splitlines() if line.strip()
+    )
     if not clean:
         return []
     source_content_hash = hashlib.sha256(clean.encode("utf-8")).hexdigest()
+
+    heading_matches = list(ITEM_HEADING.finditer(clean)) if not is_article else []
+    sections: list[tuple[str | None, str]] = []
+    if heading_matches:
+        for section_index, match in enumerate(heading_matches):
+            end = heading_matches[section_index + 1].start() if section_index + 1 < len(heading_matches) else len(clean)
+            section_text = clean[match.start() : end].strip()
+            if section_text:
+                sections.append((match.group(1).strip(), section_text))
+    else:
+        sections.append((None, clean))
+
+    def windows(tokens: list[str], size: int, token_overlap: int = 0) -> list[list[str]]:
+        result: list[list[str]] = []
+        start = 0
+        while start < len(tokens):
+            end = min(start + size, len(tokens))
+            result.append(tokens[start:end])
+            if end == len(tokens):
+                break
+            start = end - token_overlap
+        return result
+
+    context_values = [
+        ("Company", title),
+        ("Ticker", ticker),
+        ("Document", document_kind or source_type),
+        ("Date", str(source_date) if source_date is not None else None),
+    ]
+    context_lines = [f"{label}: {value}" for label, value in context_values if value]
     chunks: list[dict[str, object]] = []
-    start = 0
-    while start < len(clean):
-        end = min(start + chunk_size, len(clean))
-        if end < len(clean):
-            boundary = max(clean.rfind("\n", start + chunk_size // 2, end), clean.rfind(" ", start + chunk_size // 2, end))
-            if boundary > start:
-                end = boundary
-        chunk_text = clean[start:end].strip()
-        index = len(chunks)
-        chunk_hash = hashlib.sha256(chunk_text.encode("utf-8")).hexdigest()
-        chunk_id = hashlib.sha256(
-            f"{source_type}|{source_id}|{source_content_hash}|{index}".encode()
-        ).hexdigest()
-        chunks.append(
-            {
-                "chunk_id": chunk_id,
-                "chunk_index": index,
-                "chunk_text": chunk_text,
-                "chunk_content_hash": chunk_hash,
-                "source_content_hash": source_content_hash,
-            }
-        )
-        if end == len(clean):
-            break
-        start = max(end - overlap, start + 1)
+    for section_index, (section_name, section_text) in enumerate(sections):
+        section_tokens = section_text.split()
+        for parent_index, parent_window in enumerate(windows(section_tokens, parent_tokens)):
+            parent_text = " ".join(parent_window)
+            parent_id = hashlib.sha256(
+                f"{source_type}|{source_id}|{source_content_hash}|{section_index}|{parent_index}".encode()
+            ).hexdigest()
+            for child_index, child_window in enumerate(windows(parent_window, target, overlap)):
+                chunk_text = " ".join(child_window)
+                chunk_index = len(chunks)
+                chunk_hash = hashlib.sha256(chunk_text.encode("utf-8")).hexdigest()
+                chunk_id = hashlib.sha256(
+                    f"{parent_id}|{child_index}|{chunk_hash}".encode()
+                ).hexdigest()
+                embedding_context = [*context_lines]
+                if section_name:
+                    embedding_context.append(f"Section: {section_name}")
+                embedding_context.append(chunk_text)
+                chunks.append(
+                    {
+                        "chunk_id": chunk_id,
+                        "parent_id": parent_id,
+                        "chunk_index": chunk_index,
+                        "section_name": section_name,
+                        "chunk_text": chunk_text,
+                        "chunk_to_retrieve": chunk_text,
+                        "chunk_to_embed": "\n".join(embedding_context),
+                        "chunk_token_count": len(child_window),
+                        "parent_text": parent_text,
+                        "parent_token_count": len(parent_window),
+                        "chunk_content_hash": chunk_hash,
+                        "source_content_hash": source_content_hash,
+                    }
+                )
     return chunks

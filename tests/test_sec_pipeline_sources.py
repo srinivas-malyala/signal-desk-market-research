@@ -58,8 +58,11 @@ def test_document_pipeline_uses_binary_autoloader_and_traceable_chunks() -> None
     reconciliation = source("research_chunk_reconciliation.py")
     assert 'cloudFiles.format", "binaryFile"' in bronze
     assert '"_metadata.file_path"' in bronze
-    assert 'F.explode(chunk_document(' in chunks
+    assert "F.explode(" in chunks and "chunk_document(" in chunks
     assert 'F.lit("filing").alias("source_type")' in chunks
     assert 'F.lit("article").alias("source_type")' in chunks
+    assert '"delta.enableChangeDataFeed": "true"' in chunks
+    assert 'F.col("chunk.chunk_to_embed").alias("chunk_to_embed")' in chunks
+    assert 'F.col("chunk.parent_text").alias("parent_text")' in chunks
     assert "source_content_hash" in catalog
     assert "untraceable_chunks = 0" in reconciliation

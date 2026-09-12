@@ -46,16 +46,47 @@ def test_selected_item_extraction_records_headings() -> None:
 
 def test_chunk_boundaries_overlap_and_ids_are_stable() -> None:
     text = " ".join(f"word-{index}" for index in range(200))
-    first = build_research_chunks("filing", "accession-1", text, chunk_size=220, overlap=30)
-    second = build_research_chunks("filing", "accession-1", text, chunk_size=220, overlap=30)
-    changed = build_research_chunks("filing", "accession-1", text + " changed", chunk_size=220, overlap=30)
+    first = build_research_chunks(
+        "filing", "accession-1", text, target_tokens=80, max_tokens=100, overlap_tokens=20
+    )
+    second = build_research_chunks(
+        "filing", "accession-1", text, target_tokens=80, max_tokens=100, overlap_tokens=20
+    )
+    changed = build_research_chunks(
+        "filing", "accession-1", text + " changed", target_tokens=80, max_tokens=100, overlap_tokens=20
+    )
     assert len(first) > 1
     assert first == second
     assert first[0]["chunk_id"] != changed[0]["chunk_id"]
     assert first[0]["source_content_hash"] == first[-1]["source_content_hash"]
+    assert set(first[0]["chunk_text"].split()) & set(first[1]["chunk_text"].split())
+
+
+def test_chunks_preserve_sections_parents_and_contextual_embedding_text() -> None:
+    text = "Item 1. Business\n" + " ".join(["business"] * 90) + "\nItem 7. Discussion\n" + " ".join(
+        ["results"] * 90
+    )
+    chunks = build_research_chunks(
+        "filing",
+        "accession-2",
+        text,
+        title="Example Corp",
+        ticker="EXM",
+        source_date="2026-01-01",
+        document_kind="10-K",
+        target_tokens=60,
+        max_tokens=80,
+        overlap_tokens=10,
+    )
+    assert {chunk["section_name"] for chunk in chunks} == {"Item 1. Business", "Item 7. Discussion"}
+    assert all(chunk["chunk_token_count"] <= 80 for chunk in chunks)
+    assert all(chunk["parent_token_count"] <= 1600 for chunk in chunks)
+    assert all(chunk["chunk_to_retrieve"] == chunk["chunk_text"] for chunk in chunks)
+    assert "Company: Example Corp\nTicker: EXM\nDocument: 10-K" in chunks[0]["chunk_to_embed"]
+    assert not any("business" in chunk["chunk_text"] and "results" in chunk["chunk_text"] for chunk in chunks)
 
 
 def test_empty_document_has_no_chunks_and_invalid_boundaries_fail() -> None:
     assert build_research_chunks("filing", "id", "") == []
     with pytest.raises(ValueError):
-        build_research_chunks("filing", "id", "text", chunk_size=100)
+        build_research_chunks("filing", "id", "text", target_tokens=40)
