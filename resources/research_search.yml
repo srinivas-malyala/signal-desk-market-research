@@ -4,7 +4,7 @@ resources:
       name: signal-desk-research-${bundle.target}
       endpoint_type: STANDARD
       permissions:
-        - level: CAN_QUERY
+        - level: CAN_USE
           group_name: users
 
   vector_search_indexes:
@@ -42,4 +42,3 @@ resources:
         - principal: users
           privileges:
             - SELECT
-

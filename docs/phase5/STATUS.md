@@ -8,7 +8,7 @@ Updated: 2026-09-11
 | 5.1 Service and observability | Local implementation complete | Nine tool names retained; health route, correlation IDs, contract versions, structured completion logs, fail-closed trusted identity, pseudonymous bounded traces, and agent session/events pass tests | Deployed health, trace-failure, and cross-principal proof |
 | 5.2 Retrieval tools | Local implementation complete | Historical performance prefers bounded parameterized Silver/Gold SQL, Massive is a rate-limited fallback/on-demand source, requested windows are trimmed, sector is not invented, reads do not create state, and news uses a many-to-many bridge | Workspace known-answer and entitlement/freshness acceptance |
 | 5.3 Action tools | Local implementation complete | Watchlist/note/report writes require confirmation and transactional idempotency; different-payload key reuse fails; trusted request identity owns writes; rollback and bounded-input tests pass | Apply migration 0004 and prove two principals through deployed MCP |
-| 5.4 Semantic retrieval | Local implementation complete | Canonical chunks plus standard endpoint, triggered Qwen3 Delta Sync hybrid index, filtered/reranked SDK search, parent deduplication, provenance, on-behalf-of-user token support, and post-refresh sync job pass focused tests | Workspace provision/sync/live evaluation after profile reauthentication |
+| 5.4 Semantic retrieval | Workspace acceptance in progress | Canonical chunks plus standard endpoint, triggered Qwen3 Delta Sync hybrid index, filtered/reranked SDK search, parent deduplication, provenance, on-behalf-of-user token support, post-refresh sync job, restored OAuth, and strict bundle validation | Workspace provision/sync/live evaluation |
 
 ## Accepted implementation sequence
 
@@ -53,14 +53,15 @@ Updated: 2026-09-11
   labels validate the harness; live acceptance intentionally requires at least 50
   workspace labels. Whole-repository lint and 145 tests pass.
 
-## External gate
+## Workspace acceptance
 
-The selected profile is `dataexpertio_srini`. Its cached OAuth credentials were
-not valid when Phase 5 began, so workspace deployment and live Vector Search
-evaluation require profile reauthentication. No committed code contains a token,
-Massive key, SEC contact, or Lakebase URL.
+The selected profile is `dataexpertio_srini`. OAuth was restored on 2026-09-11
+and the authenticated identity is `malyalasrinivas@gmail.com`. Strict bundle
+validation passes after changing the Vector Search endpoint permission to the
+supported `CAN_USE` level. No committed code contains a token, Massive key, SEC
+contact, or Lakebase URL.
 
-After authentication, workspace acceptance is: deploy/update the research
-pipeline, apply Lakebase migration 0004, provision the endpoint/index and sync
-job, run the 50+ case retrieval set, deploy MCP, and exercise two authenticated
-principals plus retry/trace checks.
+Remaining workspace acceptance is: deploy/update the research pipeline, apply
+Lakebase migration 0004, provision the endpoint/index and sync job, run the 50+
+case retrieval set, deploy MCP, and exercise two authenticated principals plus
+retry/trace checks.

@@ -11,7 +11,7 @@ This is the living tracker for implementation progress and external gates. A uni
 | 2 — Spark market pipeline | Workspace acceptance complete | Dedicated deployed market pipeline; 81 manifest dates and 1,255,677 Bronze rows reconcile to 1,255,489 unique Silver rows plus 188 deterministic quarantines; measured free-plan maximum is 4 attempts per rolling minute; Gold coverage and persisted certification passed | None for the volume-certification workflow |
 | 3 — SEC pipeline | Workspace acceptance complete | Dedicated deployed research pipeline; two-company landing and cached rerun completed; 2 companies, 12 filings, 57,806 facts, 86 articles, 549 article/ticker links, and 507 traceable chunks with zero integrity violations; cached rerun made no external calls | None for the bounded two-company workflow |
 | 4 — Lakebase | Workspace acceptance complete | PostgreSQL 17+ connectivity; 14 owned `_srini` tables; three idempotent checksum-protected migrations; five CDC-ready tables; vector; bounded stale-safe pools; rollback; repeatable two-user CRUD/isolation and cleanup all verified | Cross-principal identity proof continues with MCP/frontend deployment |
-| 5 — MCP agent tools | Local implementation complete | Canonical Qwen3 AI Search; governed SQL retrieval with rate-limited fallback; trusted identity; confirmed transactional idempotent writes; bounded pseudonymous traces/events; article/ticker bridge; evaluation harness; 145 tests and lint | OAuth reauthentication, deploy/sync, 50+ labeled evaluation, two-principal MCP acceptance |
+| 5 — MCP agent tools | Workspace acceptance in progress | Canonical Qwen3 AI Search; governed SQL retrieval with rate-limited fallback; trusted identity; confirmed transactional idempotent writes; bounded pseudonymous traces/events; article/ticker bridge; evaluation harness; 145 tests and lint; authenticated strict bundle validation | Deploy/refresh/sync, migration 0004, 50+ labeled evaluation, two-principal MCP acceptance |
 | 6 — CDF analytics | Pending | Architecture selected | Lakebase change feed, Silver activity, and Gold usage metrics |
 | 7 — Agent integration | Prototype assets available | Prompt and configuration inventoried | Deployed supervisor, MCP connection, evaluation, and identity propagation |
 | 8 — Frontend | Prototype available | Existing Flask routes and core writes characterized | Authenticated research workflow, evidence UX, analytics page, and production states |
@@ -19,7 +19,7 @@ This is the living tracker for implementation progress and external gates. A uni
 
 ## Active sequence
 
-1. Reauthenticate `dataexpertio_srini` and run the Phase 5 workspace deployment/evaluation/identity acceptance gates.
+1. Run the Phase 5 workspace deployment, migration, retrieval evaluation, and identity acceptance gates with `dataexpertio_srini`.
 2. Configure Lakebase-to-Unity-Catalog Lakehouse Sync in Phase 6 and build usage analytics.
 3. Deploy the authenticated frontend/MCP path and prove cross-principal identity propagation.
 4. Finalize cross-host rate coordination before enabling interactive Massive traffic.
@@ -78,4 +78,5 @@ This is the living tracker for implementation progress and external gates. A uni
 - 2026-09-11 — Repeatable two-user Lakebase smoke passed: owner insert/update/read succeeded, wrong-owner update affected zero rows, and deletion/cascade cleanup removed both disposable users and the note. The complete suite passes 122 tests and whole-repository lint.
 - 2026-09-11 — Phase 5 research design was recorded in ADR 0005 and the proposal diagram was updated. The Spark corpus now owns section-aware parent/child chunks with contextual Qwen3 embedding text, faithful retrieval text, CDF, and row tracking.
 - 2026-09-11 — Managed semantic search is implemented as a standard endpoint plus triggered Delta Sync hybrid index, with filtered/reranked SDK retrieval, parent deduplication, source provenance, a post-refresh sync task, and no application-side model dependency. Thirty-five focused tests and lint pass; strict bundle validation is blocked only by expired cached OAuth for `dataexpertio_srini`.
+- 2026-09-11 — OAuth for `dataexpertio_srini` was restored and verified as `malyalasrinivas@gmail.com`. Strict dev bundle validation then exposed and corrected the Vector Search endpoint permission from invalid `CAN_QUERY` to supported least-privilege `CAN_USE`; strict validation now passes.
 - Lakebase-dependent applications, the managed AI Search resources, and the compatibility-named `research_embeddings` sync job remain undeployed.
