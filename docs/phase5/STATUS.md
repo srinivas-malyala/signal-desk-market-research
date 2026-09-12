@@ -8,7 +8,7 @@ Updated: 2026-09-11
 | 5.1 Service and observability | Local implementation complete | Nine tool names retained; health route, correlation IDs, contract versions, structured completion logs, fail-closed trusted identity, pseudonymous bounded traces, and agent session/events pass tests | Deployed health, trace-failure, and cross-principal proof |
 | 5.2 Retrieval tools | Local implementation complete | Historical performance prefers bounded parameterized Silver/Gold SQL, Massive is a rate-limited fallback/on-demand source, requested windows are trimmed, sector is not invented, reads do not create state, and news uses a many-to-many bridge | Workspace known-answer and entitlement/freshness acceptance |
 | 5.3 Action tools | Workspace acceptance in progress | Watchlist/note/report writes require confirmation and transactional idempotency; different-payload key reuse fails; trusted request identity owns writes; rollback and bounded-input tests pass; migration 0004 and disposable owner-isolation CRUD pass | Prove two principals through deployed MCP |
-| 5.4 Semantic retrieval | Workspace acceptance in progress | Canonical chunks plus CDF Delta serving-table publisher, standard endpoint, triggered Qwen3 Delta Sync hybrid index, filtered/reranked SDK search, parent deduplication, provenance, on-behalf-of-user token support, post-refresh sync job, restored OAuth, and strict bundle validation | Complete index provisioning/sync/live evaluation |
+| 5.4 Semantic retrieval | Workspace accepted | Canonical chunks plus CDF Delta serving-table publisher, ready standard endpoint, triggered Qwen3 Delta Sync hybrid index with 393 rows, filtered/reranked SDK search, parent deduplication, provenance, and a passing 51-case live evaluation | None for the current workspace corpus |
 
 ## Accepted implementation sequence
 
@@ -68,6 +68,15 @@ Updated: 2026-09-11
   CDF-enabled `research_search_documents` Delta table. After replacing a
   serverless-incompatible `SystemExit(0)` entry point, run `255439151353917`
   reconciled 393 source and target rows with zero duplicate chunk IDs.
+- 2026-09-11 — Provisioned standard endpoint `signal-desk-research-dev` and the
+  triggered Delta Sync index. Sync job run `52577799192254` succeeded, and the
+  ready index reports 393 indexed rows. The DAB plan preserves the existing index
+  rather than proposing recreation.
+- 2026-09-11 — Corrected the live reranker request contract and ran the committed
+  51-case workspace evaluation. Recall@5 is 1.0000, MRR is 0.9902, nDCG@5 is
+  0.9928, with zero provenance failures or filter violations. Focused regression
+  tests and lint pass. Detailed evidence is retained in
+  `docs/phase5/WORKSPACE_ACCEPTANCE_FINDINGS.md`.
 
 ## Workspace acceptance
 
@@ -77,6 +86,6 @@ validation passes after changing the Vector Search endpoint permission to the
 supported `CAN_USE` level. No committed code contains a token, Massive key, SEC
 contact, or Lakebase URL.
 
-Remaining workspace acceptance is: complete endpoint/index provisioning and
-sync, run the 50+ case retrieval set, deploy MCP, and exercise two authenticated
-principals plus retry/trace checks.
+Remaining workspace acceptance is: deploy MCP and exercise health, action,
+idempotency, and bounded trace checks. The final isolation test requires two real
+authenticated account principals.
