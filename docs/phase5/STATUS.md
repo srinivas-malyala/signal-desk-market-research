@@ -5,8 +5,8 @@ Updated: 2026-09-11
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
 | 5.0 Retrieval design | Complete | ADR 0005 records section-aware parent/child chunking, Qwen3 embeddings, Delta Sync AI Search, hybrid retrieval, provenance, and evaluation targets | None |
-| 5.1 Service and observability | Deployment permission blocked | Nine tool names retained; health route, correlation IDs, contract versions, structured completion logs, fail-closed trusted identity, pseudonymous bounded traces, and agent session/events pass tests; strict bundle validation passes | Administrator must permit managed-secret binding, then deployed health, trace-failure, and cross-principal proof |
-| 5.2 Retrieval tools | Local implementation complete | Historical performance prefers bounded parameterized Silver/Gold SQL, Massive is a rate-limited fallback/on-demand source, requested windows are trimmed, sector is not invented, reads do not create state, and news uses a many-to-many bridge | Workspace known-answer and entitlement/freshness acceptance |
+| 5.1 Service and observability | Deployment permission blocked | Nine tool names retained; health route, correlation IDs, contract versions, structured completion logs, fail-closed trusted identity, pseudonymous bounded traces, and agent session/events pass tests; a read-only-by-default post-deployment harness verifies tools, health, retrieval, reversible idempotent writes, and bounded traces | Administrator must permit managed-secret binding, then run deployed health, trace-failure, and cross-principal proof |
+| 5.2 Retrieval tools | Workspace accepted | Historical performance uses a bounded parameterized Silver/Gold SQL read; a live AAPL known-answer reconciled 9 rows, 0.24% return, two-day freshness, safe free-plan snapshot denial, and one Massive attempt; requested windows are trimmed, sector is not invented, reads do not create user state, and news uses a many-to-many bridge | None for the current workspace dataset |
 | 5.3 Action tools | Workspace acceptance in progress | Watchlist/note/report writes require confirmation and transactional idempotency; different-payload key reuse fails; trusted request identity owns writes; rollback and bounded-input tests pass; migration 0004 and disposable owner-isolation CRUD pass | Prove two principals through deployed MCP |
 | 5.4 Semantic retrieval | Workspace accepted | Canonical chunks plus CDF Delta serving-table publisher, ready standard endpoint, triggered Qwen3 Delta Sync hybrid index with 393 rows, filtered/reranked SDK search, parent deduplication, provenance, and a passing 51-case live evaluation | None for the current workspace corpus |
 
@@ -83,6 +83,17 @@ Updated: 2026-09-11
   `database` scope ACLs. An administrator must grant the deployer `MANAGE` on
   both secret resources or perform an equivalent administrator-managed binding.
   No partial `signal-desk-mcp-dev` app remains.
+- 2026-09-11 — Added a sanitized Phase 5.2 workspace acceptance runner and a
+  post-deployment MCP harness. The latter is read-only by default, never forges
+  forwarded identity headers, and requires `--exercise-writes` before it tests a
+  confirmed watchlist add, exact idempotent replay, changed-payload rejection,
+  and cleanup in a `finally` path. It also reconciles correlation IDs across
+  bounded trace and agent-event records.
+- 2026-09-11 — Live Phase 5.2 acceptance passed for AAPL. Two independent
+  warehouse reads reconciled 9 rows through 2026-09-09, the calculated 30-day
+  return matched at 0.24%, staleness was 2 days against a 7-day maximum, and the
+  unavailable free-plan snapshot degraded to the documented daily-aggregate
+  fallback after 1 physical Massive attempt against the 4-attempt budget.
 
 ## Workspace acceptance
 

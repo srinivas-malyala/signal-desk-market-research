@@ -6,7 +6,7 @@ Updated: 2026-09-11
 |---|---|---|---|
 | 0.1 Architecture decisions and contracts | Complete | Four ADRs, code inventory, configuration contract, Pydantic models, JSON fixtures | Review/acceptance only |
 | 0.2 Repository and quality tooling | Complete | `pyproject.toml`, `uv.lock`, CI workflow, secret scan, fast test suite | CI execution on remote runner |
-| 0.3 Databricks bundle foundation | Validated | Bundle targets verified schema `bootcamp_students.student_sri` and serverless warehouse `b15d3d6f837ba428`; both apps receive `CAN_USE`; strict validation passed with `dataexpertio_srini` | Perform the first development deployment |
+| 0.3 Databricks bundle foundation | Workspace verified | Bundle targets verified schema `bootcamp_students.student_sri` and serverless warehouse `b15d3d6f837ba428`; managed jobs, pipelines, Volume, and AI Search resources have been deployed selectively; strict validation passes with `dataexpertio_srini` | Application deployment continues in Phase 5/8 after managed-resource binding permission is resolved |
 | 0.4 Feasibility spike | Complete | Workspace, Massive, SEC, and Lakebase connectivity/permission/CRUD checks passed; shared `_srini` model and CDC prerequisites verified | Lakehouse Sync end-to-end test is Phase 6 |
 
 ## Current blockers recorded by the harness

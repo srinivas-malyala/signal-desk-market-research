@@ -354,6 +354,49 @@ databricks apps get signal-desk-mcp-dev --profile dataexpertio_srini
 databricks apps logs signal-desk-mcp-dev --profile dataexpertio_srini
 ```
 
+## Automated post-deployment acceptance
+
+After the app is running and the signed-in user has completed any Databricks
+authorization consent prompt, install the locked MCP development extra if needed:
+
+```bash
+UV_CACHE_DIR=.uv-cache uv sync --extra mcp --extra dashboard
+```
+
+Run the read-only gate first:
+
+```bash
+.venv/bin/python tools/phase5_mcp_smoke.py \
+  --profile dataexpertio_srini \
+  --app-name signal-desk-mcp-dev \
+  --output build/phase5/mcp_smoke_readonly.json
+```
+
+This verifies the health response, all nine tool contracts, governed market
+retrieval, semantic retrieval with provenance, and Lakebase trace/event
+reconciliation. It authenticates through the selected Databricks profile and
+does not construct forwarded identity headers.
+
+Only after the read-only gate passes, run the reversible action gate:
+
+```bash
+.venv/bin/python tools/phase5_mcp_smoke.py \
+  --profile dataexpertio_srini \
+  --app-name signal-desk-mcp-dev \
+  --exercise-writes \
+  --output build/phase5/mcp_smoke_write.json
+```
+
+The write gate selects an ETF ticker not already present in the Primary
+watchlist, performs a confirmed add, repeats the exact idempotency key, proves
+that the same key with changed parameters is rejected, and removes the ticker
+with a new key. Cleanup is attempted from a `finally` path even when the replay
+or conflict request fails.
+
+The reports contain counts, status, correlation evidence, and public market
+metadata only. They never include the OAuth token, secret values, Lakebase URL,
+user email, or raw idempotency keys.
+
 ## Official references
 
 - [Create a custom Databricks app](https://docs.databricks.com/aws/en/dev-tools/databricks-apps/create-custom-app)

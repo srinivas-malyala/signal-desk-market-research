@@ -41,7 +41,9 @@ only one principal was available during this acceptance session.
 | Managed AI Search | Passed | Standard endpoint and triggered Delta Sync hybrid index are ready with 393 indexed rows |
 | Index synchronization | Passed | Job `430452316532258`, run `52577799192254`, completed successfully |
 | Live retrieval evaluation | Passed | 51 cases; Recall@5 1.0000, MRR 0.9902, nDCG@5 0.9928, zero provenance failures, zero filter violations |
-| Focused local regression | Passed | 8 retrieval/evaluation tests and focused Ruff checks pass |
+| Governed market retrieval | Passed | 9 AAPL rows reconciled independently; 0.24% known-answer return; 2-day freshness; safe snapshot entitlement fallback; 1 Massive attempt |
+| Deployment acceptance harness | Locally verified | Discovers all nine tools; tests governed and semantic retrieval; opt-in writes prove replay/conflict/cleanup; reconciles bounded traces and events |
+| Full local regression | Passed | 157 non-integration tests and whole-repository Ruff checks pass |
 
 The corpus refresh completed through research-pipeline validation update
 `ca094e65-f38e-4ebe-b121-0b1faeea946d` and refresh update
@@ -145,6 +147,31 @@ yet a comprehensive semantic-quality benchmark because many labels use exact
 titles or constrained dates. Later evaluation should add harder paraphrases,
 multi-source questions, negative cases, and expert relevance judgments.
 
+## Governed market retrieval acceptance
+
+The Phase 5.2 runner performs two independent bounded reads of the selected
+Silver/Gold warehouse path and reconciles the tool response to the independently
+read rows. It then permits one rate-limited Massive snapshot request to prove
+that the free-plan entitlement either returns a usable snapshot or degrades to a
+safe daily-aggregate fallback.
+
+The 2026-09-11 AAPL run passed all eight checks:
+
+| Check | Result |
+|---|---:|
+| Warehouse/tool rows | 9 / 9 |
+| As-of date | 2026-09-09 |
+| Staleness | 2 days |
+| Independently calculated return | 0.24% |
+| Tool return | 0.24% |
+| Snapshot | Unavailable with safe entitlement fallback |
+| Massive physical attempts | 1 |
+| Maximum rolling-minute budget | 4 |
+
+The sanitized generated result is ignored at
+`build/phase5/retrieval_acceptance.json`; the runner and its deterministic tests
+are committed.
+
 ## Security and identity findings
 
 - The MCP tools no longer accept a model-supplied `user_email` for user-scoped
@@ -187,6 +214,8 @@ credential is available. It must not be simulated by forging request headers.
 - Phase status: `docs/phase5/STATUS.md`
 - Workspace evaluation fixture: `fixtures/retrieval/phase5_workspace.json`
 - Evaluation CLI: `tools/retrieval_eval.py`
+- Governed retrieval acceptance: `tools/phase5_retrieval_acceptance.py`
+- Post-deployment MCP smoke: `tools/phase5_mcp_smoke.py`
 - Managed retrieval client: `mcp_server/research_search.py`
 - Delta publisher: `jobs/publish_research_search_documents.py`
 - Search publisher job: `resources/research_search_publish.job.yml`
