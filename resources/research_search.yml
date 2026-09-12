@@ -1,0 +1,45 @@
+resources:
+  vector_search_endpoints:
+    research_search:
+      name: signal-desk-research-${bundle.target}
+      endpoint_type: STANDARD
+      permissions:
+        - level: CAN_QUERY
+          group_name: users
+
+  vector_search_indexes:
+    research_chunks:
+      name: ${var.catalog}.${var.schema}.signal_desk_research_chunks_index
+      endpoint_name: ${resources.vector_search_endpoints.research_search.name}
+      index_type: DELTA_SYNC
+      index_subtype: HYBRID
+      primary_key: chunk_id
+      delta_sync_index_spec:
+        source_table: ${var.catalog}.${var.schema}.silver_research_chunks
+        pipeline_type: TRIGGERED
+        embedding_source_columns:
+          - name: chunk_to_embed
+            embedding_model_endpoint_name: databricks-qwen3-embedding-0-6b
+            model_endpoint_name_for_query: databricks-qwen3-embedding-0-6b
+        columns_to_sync:
+          - parent_id
+          - source_type
+          - source_id
+          - tickers
+          - ticker
+          - title
+          - source_date
+          - source_url
+          - fetched_at
+          - section_name
+          - chunk_index
+          - chunk_to_retrieve
+          - chunk_token_count
+          - parent_text
+          - parent_token_count
+          - source_content_hash
+      grants:
+        - principal: users
+          privileges:
+            - SELECT
+

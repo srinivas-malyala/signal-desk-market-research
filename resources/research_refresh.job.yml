@@ -45,6 +45,11 @@ resources:
           pipeline_task:
             pipeline_id: ${resources.pipelines.research_pipeline.id}
             full_refresh: false
+        - task_key: sync_research_search_index
+          depends_on:
+            - task_key: refresh_research_pipeline
+          run_job_task:
+            job_id: ${resources.jobs.research_embeddings.id}
       permissions:
         - level: CAN_VIEW
           group_name: users

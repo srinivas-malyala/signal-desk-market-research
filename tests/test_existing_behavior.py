@@ -114,14 +114,13 @@ def test_all_nine_mcp_tool_functions_remain_declared() -> None:
     assert expected <= declared
 
 
-def test_embedding_chunk_boundaries_are_characterized(monkeypatch: pytest.MonkeyPatch) -> None:
-    # Avoid loading the heavyweight embedding/database packages merely to test
-    # the prototype's pure chunk generator.
-    monkeypatch.setitem(sys.modules, "pg8000", Mock())
-    monkeypatch.setitem(sys.modules, "pg8000.dbapi", Mock())
-    monkeypatch.setitem(sys.modules, "sentence_transformers", Mock())
+def test_embedding_job_compatibility_entry_point_now_requests_managed_sync() -> None:
     spec = importlib.util.spec_from_file_location("embedding_job", ROOT / "jobs" / "ingest_research_embeddings.py")
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    assert list(module.chunks("alpha beta gamma delta", size=12, overlap=2)) == ["alpha beta", "ta gamma", "ma delta"]
+    workspace = Mock()
+    workspace.vector_search_indexes.get_index.return_value.status.ready = True
+    result = module.run("catalog.schema.index", workspace)
+    assert result == {"status": "sync_requested", "index": "catalog.schema.index", "prior_ready": True}
+    workspace.vector_search_indexes.sync_index.assert_called_once_with(index_name="catalog.schema.index")

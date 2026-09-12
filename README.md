@@ -1,7 +1,7 @@
 # Signal Desk — AI Stock Market Research Assistant
 
 A Databricks capstone implementation that evolves the original standalone prototype combining a FastMCP
-server, Massive Stocks data, Lakebase Postgres/pgvector, an Agent Bricks agent,
+server, Massive Stocks data, Lakebase Postgres, managed Databricks AI Search, an Agent Bricks agent,
 and a small activity dashboard. The capstone proposal remains a new-project
 proposal; the implementation inventory and migration decisions are recorded in
 `docs/architecture/EXISTING_CODE_INVENTORY.md`.
@@ -57,7 +57,7 @@ committed. Fundamentals availability depends on the Massive subscription.
 | `update_watchlist` | Explicit add/remove mutation |
 | `save_research_note` | Save a confirmed ticker note |
 | `save_analysis_report` | Save a confirmed multi-ticker report |
-| `semantic_research` | Cosine search over embedded research passages |
+| `semantic_research` | Hybrid managed AI Search over attributable SEC/news passages |
 | `get_notable_updates` | Price moves and articles since the user's last visit |
 
 Tool functions are intentionally thin. `research_broker.py` owns HTTP calls,
@@ -67,9 +67,10 @@ normalization, persistence, calculations, and safe error envelopes.
 
 The requested operational tables are `users`, `watchlists`,
 `watchlist_tickers`, `companies`, `price_snapshots`, `news_articles`,
-`research_notes`, and `analysis_reports`. `research_embeddings` is the derived
-retrieval table, and `stock_research_mcp_traces` supports auditability and the
-dashboard.
+`research_notes`, and `analysis_reports`. `stock_research_mcp_traces` and the
+agent session/event tables support auditability and analytics. The governed
+research corpus and its managed search index stay in Unity Catalog rather than
+using Lakebase as the vector store.
 
 Company profiles keep normalized research columns plus raw JSON provenance.
 News has a stable Massive article ID, ticker, narrative fields, publisher,
@@ -77,22 +78,18 @@ published time, sentiment metadata, raw payload, and optional full text.
 Snapshots preserve OHLCV/VWAP and derived prior-session changes. Notes and
 reports are always tied to a user; reports can span several tickers.
 
-The embedding job combines:
-
-- company name, description, sector and industry;
-- `filing_excerpt` and `earnings_call_summary` when separately populated;
-- news title, description, full text and sentiment reasoning.
-
-It uses 800-character sliding chunks with 100-character overlap and
-`sentence-transformers/all-MiniLM-L6-v2` (`vector(384)`). Normalized vectors
-are written in batches with pg8000 and indexed with HNSW
-`vector_cosine_ops`. Retrieval ranks `1 - (embedding <=> query_vector)`.
+The Spark research pipeline owns one section-aware parent/child chunk contract.
+It persists contextual embedding text separately from faithful passage text and
+enables Change Data Feed plus row tracking. A triggered Delta Sync index uses
+`databricks-qwen3-embedding-0-6b`, hybrid retrieval, metadata filters, and
+reranking. The compatibility-named embedding job now requests an incremental
+managed-index sync; it does not load a local model or write pgvector rows.
 
 ## Repository layout
 
 ```text
 mcp_server/   FastMCP app, Massive client, adapter, Lakebase helper, DDL
-jobs/         pg8000 embedding ingestion job
+jobs/         ingestion, certification, and managed-index synchronization jobs
 agent/        system prompt, external-MCP config, evaluation scenarios
 dashboard/    independent Flask Databricks App
 ingestion/    market-wide landing job entry points
@@ -121,9 +118,10 @@ local-only execution, copy `mcp_server/.env.example` to `.env` and set
 
 ### 2. Create the schema
 
-Run `mcp_server/schema.sql` in the Lakebase SQL editor, or launch the MCP app
-once—its entry point calls `lakebase.migrate()` idempotently. The database must
-have pgvector available.
+Launch the MCP app once or run the Phase 4 migration preflight—its entry point
+calls `lakebase.migrate()` idempotently. Versioned migrations create only
+allowlisted `_srini` tables in the shared schema. The legacy pgvector table is
+retained for migration compatibility but is not used by Phase 5 search.
 
 ### 3. Deploy the MCP server as its own Databricks App
 
@@ -146,17 +144,18 @@ daily price snapshots into Lakebase. Optional filing excerpts and earnings-call
 summaries can be loaded into their columns by your approved filing/transcript
 pipeline; the embedding job automatically includes them.
 
-### 5. Build embeddings
+### 5. Synchronize semantic search
 
-Run the job from a Databricks notebook/job environment with the Lakebase secret:
+Deploy the Vector Search endpoint/index after the research pipeline has created
+`silver_research_chunks`, then run the synchronization job:
 
 ```bash
-pip install -r jobs/requirements.txt
-python jobs/ingest_research_embeddings.py --batch-size 100
+databricks bundle deploy -t dev -p dataexpertio_srini
+databricks bundle run research_embeddings -t dev -p dataexpertio_srini
 ```
 
-Re-run it after new research is synced. Upserts are deterministic by source,
-chunk index, and model.
+The `research_refresh` orchestration requests the same triggered sync after a
+successful pipeline update.
 
 ### 6. Register and test the Agent Bricks agent
 

@@ -8,7 +8,7 @@ Updated: 2026-09-11
 | 5.1 Service and observability | In progress | Existing nine-tool server and Lakebase traces are characterized | Trusted identity, bounded trace/event metadata, dependency/error contracts |
 | 5.2 Retrieval tools | In progress | Existing Massive, research, watchlist, and notable-update tools are characterized | Correct windows/mappings, evidence metadata, bounds, tests |
 | 5.3 Action tools | In progress | Watchlist, note, and report writes exist | Confirmation, transactional idempotency, trusted ownership, isolation tests |
-| 5.4 Semantic retrieval | In progress | Canonical section-aware child/parent chunks, contextual embedding text, faithful retrieval text, stable IDs, token bounds, CDF, and row tracking pass deterministic tests | Managed index, filtered search client, evaluation and workspace gates |
+| 5.4 Semantic retrieval | Local implementation complete | Canonical chunks plus standard endpoint, triggered Qwen3 Delta Sync hybrid index, filtered/reranked SDK search, parent deduplication, provenance, on-behalf-of-user token support, and post-refresh sync job pass focused tests | Workspace provision/sync/live evaluation after profile reauthentication |
 
 ## Accepted implementation sequence
 
@@ -26,6 +26,12 @@ Updated: 2026-09-11
   separately bounded profile; contextual embedding text and faithful retrieval
   text are persisted independently. Twelve document and pipeline contract tests
   plus focused lint pass.
+- 2026-09-11 — Replaced the MiniLM/pgvector runtime path with a DAB-managed
+  standard endpoint and triggered Delta Sync hybrid index using Qwen3 0.6B.
+  Added bounded filter/rerank/parent-expansion search, a post-pipeline sync task,
+  and on-behalf-of-user SDK authentication. Thirty-five focused tests and lint
+  pass. Strict bundle parsing reached the workspace-auth visitor and stopped only
+  because `dataexpertio_srini` has no cached OAuth credentials.
 
 ## External gate
 

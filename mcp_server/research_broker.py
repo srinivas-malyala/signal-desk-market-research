@@ -14,7 +14,6 @@ from psycopg2.extras import Json
 
 TICKER = re.compile(r"^[A-Z][A-Z0-9.-]{0,9}$")
 _client: MassiveClient | None = None
-_model = None
 
 
 def _table(base: str) -> str:
@@ -397,26 +396,27 @@ def save_analysis_report(
         return _error(error)
 
 
-def semantic_research(query: str, top_k: int = 5, tickers: list[str] | None = None) -> dict:
-    global _model
+def semantic_research(
+    query: str,
+    top_k: int = 5,
+    tickers: list[str] | None = None,
+    source_types: list[str] | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    access_token: str | None = None,
+) -> dict:
     try:
-        text = (query or "").strip()
-        limit = min(max(int(top_k), 1), 20)
-        if not text:
-            raise ValueError("A non-empty semantic research query is required.")
-        if _model is None:
-            from sentence_transformers import SentenceTransformer
+        from research_search import ResearchSearch
 
-            _model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-        vector = "[" + ",".join(str(float(x)) for x in _model.encode(text, normalize_embeddings=True)) + "]"
-        symbols = [_symbol(t) for t in tickers] if tickers else None
-        rows = lakebase.query(
-            f"""SELECT source_type,source_id,ticker,chunk_text,
-          1-(embedding <=> %s::vector) AS similarity FROM {_table("research_embeddings")}
-          WHERE (%s::text[] IS NULL OR ticker=ANY(%s::text[])) ORDER BY embedding <=> %s::vector LIMIT %s""",
-            (vector, symbols, symbols, vector, limit),
+        symbols = [_symbol(ticker) for ticker in tickers] if tickers else None
+        return ResearchSearch(access_token=access_token).search(
+            query,
+            top_k=top_k,
+            tickers=symbols,
+            source_types=source_types,
+            start_date=start_date,
+            end_date=end_date,
         )
-        return {"status": "success", "query": text, "matches": rows, "count": len(rows)}
     except Exception as error:
         return _error(error)
 

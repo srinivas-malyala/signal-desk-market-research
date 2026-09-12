@@ -1,8 +1,8 @@
 resources:
   jobs:
     research_embeddings:
-      name: signal-desk-research-embeddings-${bundle.target}
-      description: Existing embedding workload, scheduled and dependency wiring added in Phase 5
+      name: signal-desk-research-search-sync-${bundle.target}
+      description: Trigger the managed Delta Sync AI Search index after research-pipeline updates
       max_concurrent_runs: 1
       environments:
         - environment_key: embeddings
@@ -10,17 +10,14 @@ resources:
             client: "4"
             dependencies:
               - databricks-sdk>=0.81,<1
-              - psycopg2-binary>=2.9,<3
-              - pg8000>=1.31,<2
-              - sentence-transformers>=3.0,<4
       tasks:
-        - task_key: embed_research_content
+        - task_key: sync_research_index
           environment_key: embeddings
           spark_python_task:
             python_file: ../jobs/ingest_research_embeddings.py
             parameters:
-              - --batch-size
-              - "100"
+              - --index-name
+              - ${resources.vector_search_indexes.research_chunks.name}
           timeout_seconds: 3600
           max_retries: 1
       permissions:

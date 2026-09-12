@@ -135,3 +135,16 @@ def test_runtime_sql_contains_no_unqualified_operational_tables() -> None:
         ROOT / "jobs" / "ingest_research_embeddings.py",
     ):
         assert not pattern.search(path.read_text()), path
+
+
+def test_managed_research_search_resources_replace_in_process_embeddings() -> None:
+    search = (ROOT / "resources" / "research_search.yml").read_text()
+    sync_job = (ROOT / "resources" / "research_embeddings.job.yml").read_text()
+    requirements = (ROOT / "mcp_server" / "requirements.txt").read_text()
+    assert "endpoint_type: STANDARD" in search
+    assert "index_type: DELTA_SYNC" in search
+    assert "pipeline_type: TRIGGERED" in search
+    assert "databricks-qwen3-embedding-0-6b" in search
+    assert "chunk_to_embed" in search and "chunk_to_retrieve" in search
+    assert "sync_research_index" in sync_job
+    assert "sentence-transformers" not in requirements

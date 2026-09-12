@@ -25,7 +25,10 @@ _session: ContextVar[str] = ContextVar("session", default="")
 class RequestContextMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         identity = _identity.set(
-            {"email": request.headers.get("x-forwarded-email") or request.headers.get("x-forwarded-user")}
+            {
+                "email": request.headers.get("x-forwarded-email") or request.headers.get("x-forwarded-user"),
+                "access_token": request.headers.get("x-forwarded-access-token"),
+            }
         )
         session = _session.set(str(uuid.uuid4()))
         try:
@@ -188,15 +191,34 @@ def save_analysis_report(
 
 @mcp.tool
 @traced
-def semantic_research(query: str, top_k: int = 5, tickers: list[str] | None = None) -> dict:
-    """Retrieve semantically relevant profile, filing, earnings and news chunks.
+def semantic_research(
+    query: str,
+    top_k: int = 5,
+    tickers: list[str] | None = None,
+    source_types: list[str] | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> dict:
+    """Retrieve attributable SEC filing and news passages from managed AI Search.
 
     Args:
         query: Natural-language investing thesis or research question.
-        top_k: Number of cosine-ranked passages, 1-20.
+        top_k: Number of parent-deduplicated passages, 1-5.
         tickers: Optional ticker filter.
+        source_types: Optional ``filing`` or ``article`` filter.
+        start_date: Optional inclusive source date in YYYY-MM-DD format.
+        end_date: Optional inclusive source date in YYYY-MM-DD format.
     """
-    return broker.semantic_research(query, top_k, tickers)
+    identity = _identity.get() or {}
+    return broker.semantic_research(
+        query,
+        top_k,
+        tickers,
+        source_types,
+        start_date,
+        end_date,
+        identity.get("access_token"),
+    )
 
 
 @mcp.tool

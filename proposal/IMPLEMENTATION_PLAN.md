@@ -36,7 +36,7 @@ That foundation does **not** yet provide the required Spark/Lakeflow pipeline, g
 | `mcp_server/stock_research_mcp_server.py` | Harden | Preserve FastMCP tool surface; derive user identity from trusted request context, sanitize traces, add confirmation/idempotency controls, and version contracts. |
 | `mcp_server/schema.sql` | Migrate | Use the current model as migration version 1; add versioned upgrades for sessions, idempotency, tool events, CDF metadata, ownership, and indexes. |
 | `mcp_server/lakebase.py` | Replace internally | Keep repository-facing behavior while replacing URL-secret, connection-per-operation access with an attached Lakebase Autoscaling resource, OAuth/SDK configuration, pooling, and transactions. |
-| `jobs/ingest_research_embeddings.py` | Adapt | Preserve chunking and embedding concepts; make processing incremental, hash/model-version aware, batched, observable, and deployable as a Lakeflow Job. |
+| `jobs/ingest_research_embeddings.py` | Adapt | Retain the bundle entry point as a triggered managed Delta Sync operation; move canonical chunking to Spark and embedding/index lifecycle to Databricks AI Search. |
 | `dashboard/app.py`, templates, and static assets | Extend | Preserve the Flask shell and useful operational views; move data access behind authenticated services and add research chat, evidence, analytics, and complete UI states. |
 | Agent prompt, config, and demo scenarios | Adapt | Convert them into deployable Supervisor Agent/MCP configuration and a repeatable evaluation suite. |
 | `app.yaml` files and `setup_secrets.py` | Replace configuration | Use attached resource references and explicit Databricks profiles; eliminate implicit-profile and raw connection-secret assumptions. |

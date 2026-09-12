@@ -53,9 +53,9 @@
   <text x="465" y="680" class="small">Silver: bars, news, facts, filings, research chunks</text>
 
   <rect x="435" y="750" width="460" height="125" class="box delta"/>
-  <text x="465" y="790" class="box-title">Gold Delta tables</text>
+  <text x="465" y="790" class="box-title">Gold Delta + managed AI Search</text>
   <text x="465" y="820" class="box-text">Performance • peer metrics • research catalog</text>
-  <text x="465" y="848" class="small">Market coverage &amp; data-quality metrics</text>
+  <text x="465" y="848" class="small">Qwen3 Delta Sync hybrid index • quality metrics</text>
 
   <rect x="435" y="925" width="460" height="85" class="box analytics"/>
   <text x="465" y="960" class="box-title">SQL Warehouse</text>
@@ -65,7 +65,7 @@
   <text x="1010" y="250" class="box-title">Lakebase Postgres Autoscaling</text>
   <text x="1010" y="282" class="box-text">Users • watchlists • notes • reports</text>
   <text x="1010" y="310" class="box-text">Sessions • tool events • recent cache</text>
-  <text x="1010" y="338" class="box-text">pgvector research embeddings</text>
+  <text x="1010" y="338" class="box-text">Idempotency • confirmed write state</text>
   <text x="1010" y="372" class="small">Low-latency operational state</text>
   <text x="1010" y="397" class="small">Shared schema • owned _srini tables</text>
 

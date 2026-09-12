@@ -127,9 +127,10 @@ Lakebase Postgres Autoscaling will store low-latency relational state. In the ad
 - `companies_cache`
 - `price_snapshot_cache`
 - `news_cache`
-- `research_embeddings`
 
 High-volume historical market records will remain in Delta rather than being duplicated in the operational database. Lakebase will contain only the user-facing transactional records and a bounded cache of recent research data required for responsive application and agent operations.
+
+Separately, Unity Catalog will contain a managed Delta Sync AI Search index over `silver_research_chunks`; it is a Lakehouse retrieval resource, not an operational Lakebase table.
 
 The application role will own only its `_srini` tables and will neither create nor drop the shared schemas. Database access will use the administrator-managed `database/lakebase-url` secret, SSL, bounded connection pooling, and parameterized queries with allowlisted fully qualified table identifiers. The authenticated identity supplied by Databricks will be enforced in the server; the agent will not be allowed to select an arbitrary `user_email` argument.
 
@@ -153,7 +154,7 @@ Meaningful action tools will include:
 
 The agent will confirm consequential writes, use the authenticated user's identity, separate evidence from interpretation, expose sources and as-of dates, and never silently convert unavailable financial data into zero. Every tool call will create a sanitized audit event containing the tool name, duration, status, user, and bounded metadata.
 
-For semantic research, filing and news chunks will be embedded and indexed in Lakebase using pgvector. The system will retain source URL, document type, filing date, ticker, and chunk identifiers so retrieved evidence is inspectable.
+For semantic research, the Spark pipeline will produce section-aware parent/child filing and news chunks in Delta. A managed Delta Sync AI Search index will use `databricks-qwen3-embedding-0-6b`, hybrid retrieval, metadata filters, and reranking. The system will retain source URL, document type, filing date, ticker, section, parent, and chunk identifiers so every retrieved passage is inspectable. Exact financial values will continue to come from structured SEC Company Facts rather than similarity search.
 
 ## 5. Analytics pipeline using Lakebase Change Data Feed
 
@@ -254,7 +255,7 @@ The capstone will deliver the following newly implemented modules:
 | Spark transformations | A PySpark Lakeflow pipeline with bronze, silver, and gold Delta datasets and data-quality expectations. |
 | Operational database | A Lakebase Autoscaling schema, migrations, ownership rules, connection pooling, and CDF-enabled event tables. |
 | Agent service | A FastMCP server with retrieval and confirmed write tools, authenticated identity enforcement, and sanitized traces. |
-| Semantic research | Filing/news chunking, embeddings, pgvector indexing, provenance fields, and retrieval evaluation. |
+| Semantic research | Section-aware filing/news chunks, managed Qwen3 Delta Sync AI Search, hybrid filtered retrieval, provenance fields, and retrieval evaluation. |
 | Frontend | An authenticated Flask Databricks App for research, evidence inspection, watchlists, notes, reports, and usage analytics. |
 | Deployment | A Declarative Automation Bundle plus documented Lakebase, CDF, secrets, and Agent Bricks bootstrap steps. |
 
