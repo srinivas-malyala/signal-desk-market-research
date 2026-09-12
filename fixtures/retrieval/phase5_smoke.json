@@ -1,25 +1,4 @@
 [
-  {
-    "case_id": "aapl-services-sales-growth",
-    "query": "What business line contributed to Apple's net sales growth?",
-    "top_k": 5,
-    "filters": {
-      "tickers": ["AAPL"],
-      "source_types": ["filing"],
-      "start_date": "2025-01-01",
-      "end_date": "2025-12-31"
-    },
-    "expected_source_ids": ["0000320193-25-000079"]
-  },
-  {
-    "case_id": "aapl-management-discussion",
-    "query": "Find management's discussion of why net sales increased.",
-    "top_k": 5,
-    "filters": {
-      "tickers": ["AAPL"],
-      "source_types": ["filing"]
-    },
-    "expected_source_ids": ["0000320193-25-000079"]
-  }
+  {"case_id":"apple-foldable-production","query":"What production problems caused Apple stock to fall?","expected_source_ids":["0c487c9c183b421386ccad27efdde5b6173522e1834116355dc19f411c7b7af3"],"filters":{"tickers":["AAPL"],"source_types":["article"]}},
+  {"case_id":"apple-dividend-income","query":"How many Apple shares would produce twelve thousand dollars in annual dividends?","expected_source_ids":["bdeb98af43a76c8d672bf0eb7296afdf7f7ddd76febe17c7db0b7713e0b0de83"],"filters":{"tickers":["AAPL"],"source_types":["article"]}}
 ]
-

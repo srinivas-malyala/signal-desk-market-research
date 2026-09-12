@@ -8,7 +8,7 @@ from datetime import date, datetime
 from typing import Any
 
 from databricks.sdk import WorkspaceClient
-from databricks.sdk.service.vectorsearch import RerankerConfig
+from databricks.sdk.service.vectorsearch import RerankerConfig, RerankerConfigRerankerParameters
 
 DEFAULT_INDEX = "bootcamp_students.student_sri.signal_desk_research_chunks_index"
 EMBEDDING_MODEL = "databricks-qwen3-embedding-0-6b"
@@ -139,8 +139,12 @@ class ResearchSearch:
             query_type="HYBRID",
             num_results=candidate_limit,
             filters_json=json.dumps(filters, sort_keys=True) if filters else None,
-            columns_to_rerank=["chunk_to_retrieve"],
-            reranker=RerankerConfig(model="databricks_reranker"),
+            reranker=RerankerConfig(
+                model="databricks_reranker",
+                parameters=RerankerConfigRerankerParameters(
+                    columns_to_rerank=["chunk_to_retrieve"]
+                ),
+            ),
         )
         matches: list[dict[str, Any]] = []
         seen_parents: set[str] = set()
@@ -174,4 +178,3 @@ class ResearchSearch:
                 "Results reflect the most recently completed triggered index synchronization.",
             ],
         }
-

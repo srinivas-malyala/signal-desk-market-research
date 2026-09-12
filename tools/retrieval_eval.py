@@ -23,7 +23,12 @@ PROVENANCE_FIELDS = ("source_type", "source_id", "ticker", "title", "source_date
 def _case_metrics(case: dict[str, Any], matches: list[dict[str, Any]]) -> dict[str, Any]:
     expected = set(case["expected_source_ids"])
     ranked = [str(match.get("source_id")) for match in matches]
-    relevant_positions = [index for index, source_id in enumerate(ranked, start=1) if source_id in expected]
+    seen_relevant: set[str] = set()
+    relevant_positions = []
+    for index, source_id in enumerate(ranked, start=1):
+        if source_id in expected and source_id not in seen_relevant:
+            seen_relevant.add(source_id)
+            relevant_positions.append(index)
     retrieved_expected = expected.intersection(ranked)
     recall = len(retrieved_expected) / len(expected)
     reciprocal_rank = 1 / relevant_positions[0] if relevant_positions else 0.0
@@ -119,6 +124,7 @@ def main() -> int:
     report = evaluate_cases(load_cases(args.cases), search)
     rendered = json.dumps(report, indent=2, sort_keys=True)
     if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(f"{rendered}\n", encoding="utf-8")
     print(rendered)
     return 0 if report["summary"]["passed"] else 1
@@ -126,4 +132,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

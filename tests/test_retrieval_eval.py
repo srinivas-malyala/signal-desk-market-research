@@ -8,6 +8,8 @@ import pytest
 
 from tools.retrieval_eval import evaluate_cases, load_cases
 
+ROOT = Path(__file__).resolve().parents[1]
+
 
 def match(source_id: str, *, ticker: str = "AAPL", source_type: str = "filing") -> dict:
     return {
@@ -66,3 +68,26 @@ def test_case_loader_rejects_unlabeled_fixture(tmp_path: Path) -> None:
     path.write_text(json.dumps([{"case_id": "missing-label", "query": "question"}]))
     with pytest.raises(ValueError, match="expected_source_ids"):
         load_cases(path)
+
+
+def test_workspace_fixture_meets_minimum_case_count() -> None:
+    cases = load_cases(ROOT / "fixtures" / "retrieval" / "phase5_workspace.json")
+    assert len(cases) >= 50
+
+
+def test_duplicate_passages_from_one_source_do_not_inflate_ndcg() -> None:
+    search = Mock()
+    search.search.return_value = {
+        "matches": [match("source-a"), match("source-a"), match("source-a")]
+    }
+    result = evaluate_cases(
+        [
+            {
+                "case_id": "source-level-relevance",
+                "query": "question",
+                "expected_source_ids": ["source-a"],
+            }
+        ],
+        search,
+    )["cases"][0]
+    assert result["ndcg_at_k"] == 1.0

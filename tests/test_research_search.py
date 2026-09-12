@@ -59,7 +59,9 @@ def test_hybrid_search_reranks_filters_and_deduplicates_parents() -> None:
     assert call["query_type"] == "HYBRID"
     assert call["query_text"] == f"{QUERY_INSTRUCTION}material risks"
     assert call["num_results"] == 20
-    assert call["columns_to_rerank"] == ["chunk_to_retrieve"]
+    assert "columns_to_rerank" not in call
+    assert call["reranker"].model == "databricks_reranker"
+    assert call["reranker"].parameters.columns_to_rerank == ["chunk_to_retrieve"]
     assert json.loads(call["filters_json"]) == {"source_type": ["filing"], "tickers": ["AAPL"]}
 
 
