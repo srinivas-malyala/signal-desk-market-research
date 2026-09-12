@@ -5,6 +5,12 @@ resources:
       description: Signal Desk FastMCP retrieval and action service
       source_code_path: ../mcp_server
       resources:
+        - name: massive-api-key
+          description: Admin-managed Massive free-plan API key
+          secret:
+            scope: massive
+            key: api-key
+            permission: READ
         - name: lakebase-url
           description: Admin-managed Lakebase PostgreSQL connection URL
           secret:
@@ -27,4 +33,10 @@ resources:
           uc_securable:
             securable_type: TABLE
             securable_full_name: ${var.catalog}.${var.schema}.gold_stock_performance
+            permission: SELECT
+        - name: research-index
+          description: Managed hybrid AI Search index for filing and article retrieval
+          uc_securable:
+            securable_type: TABLE
+            securable_full_name: ${resources.vector_search_indexes.research_chunks.name}
             permission: SELECT

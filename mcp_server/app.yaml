@@ -13,7 +13,7 @@ env:
   - name: SIGNAL_DESK_GRAPH_SCHEMA
     value: bootcamp_cdc
   - name: SIGNAL_DESK_VECTOR_SEARCH_INDEX
-    value: bootcamp_students.student_sri.signal_desk_research_chunks_index
+    valueFrom: research-index
   - name: DATABRICKS_CATALOG
     value: bootcamp_students
   - name: DATABRICKS_SCHEMA

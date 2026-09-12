@@ -160,6 +160,10 @@ def test_managed_research_search_resources_replace_in_process_embeddings() -> No
 
 def test_mcp_app_has_governed_market_table_resources() -> None:
     app = (ROOT / "resources" / "stock_research_mcp.app.yml").read_text()
+    runtime = (ROOT / "mcp_server" / "app.yaml").read_text()
     assert "${var.catalog}.${var.schema}.silver_market_bars" in app
     assert "${var.catalog}.${var.schema}.gold_stock_performance" in app
-    assert app.count("permission: SELECT") >= 2
+    assert "${resources.vector_search_indexes.research_chunks.name}" in app
+    assert "scope: massive" in app and "key: api-key" in app
+    assert app.count("permission: SELECT") >= 3
+    assert "valueFrom: research-index" in runtime
