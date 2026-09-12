@@ -11,7 +11,7 @@ This is the living tracker for implementation progress and external gates. A uni
 | 2 — Spark market pipeline | Workspace acceptance complete | Dedicated deployed market pipeline; 81 manifest dates and 1,255,677 Bronze rows reconcile to 1,255,489 unique Silver rows plus 188 deterministic quarantines; measured free-plan maximum is 4 attempts per rolling minute; Gold coverage and persisted certification passed | None for the volume-certification workflow |
 | 3 — SEC pipeline | Workspace acceptance complete | Dedicated deployed research pipeline; two-company landing and cached rerun completed; 2 companies, 12 filings, 57,806 facts, 86 articles, 549 article/ticker links, and 507 traceable chunks with zero integrity violations; cached rerun made no external calls | None for the bounded two-company workflow |
 | 4 — Lakebase | Workspace acceptance complete | PostgreSQL 17+ connectivity; 14 owned `_srini` tables; three idempotent checksum-protected migrations; five CDC-ready tables; vector; bounded stale-safe pools; rollback; repeatable two-user CRUD/isolation and cleanup all verified | Cross-principal identity proof continues with MCP/frontend deployment |
-| 5 — MCP agent tools | In progress | ADR 0005; canonical chunks/CDF; DAB-managed Qwen3 Delta Sync hybrid index; filtered, reranked, parent-expanded SDK search and sync job implemented and tested | Safe traces, trusted identity, confirmation/idempotency, retrieval evaluation, workspace acceptance |
+| 5 — MCP agent tools | Local implementation complete | Canonical Qwen3 AI Search; governed SQL retrieval with rate-limited fallback; trusted identity; confirmed transactional idempotent writes; bounded pseudonymous traces/events; article/ticker bridge; evaluation harness; 145 tests and lint | OAuth reauthentication, deploy/sync, 50+ labeled evaluation, two-principal MCP acceptance |
 | 6 — CDF analytics | Pending | Architecture selected | Lakebase change feed, Silver activity, and Gold usage metrics |
 | 7 — Agent integration | Prototype assets available | Prompt and configuration inventoried | Deployed supervisor, MCP connection, evaluation, and identity propagation |
 | 8 — Frontend | Prototype available | Existing Flask routes and core writes characterized | Authenticated research workflow, evidence UX, analytics page, and production states |
@@ -19,7 +19,7 @@ This is the living tracker for implementation progress and external gates. A uni
 
 ## Active sequence
 
-1. Complete Phase 5 canonical chunks, managed AI Search, MCP retrieval/action hardening, and evaluation.
+1. Reauthenticate `dataexpertio_srini` and run the Phase 5 workspace deployment/evaluation/identity acceptance gates.
 2. Configure Lakebase-to-Unity-Catalog Lakehouse Sync in Phase 6 and build usage analytics.
 3. Deploy the authenticated frontend/MCP path and prove cross-principal identity propagation.
 4. Finalize cross-host rate coordination before enabling interactive Massive traffic.

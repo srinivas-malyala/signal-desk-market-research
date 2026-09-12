@@ -52,40 +52,44 @@ def test_existing_massive_pagination_is_characterized(monkeypatch: pytest.Monkey
 def test_existing_watchlist_add_semantics_are_characterized(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def fake_write(sql, _params=None, returning=False):
-        if "RETURNING id" in sql:
-            return {"id": 7 if "users" in sql else 11}
-        return 1
-
-    monkeypatch.setattr(broker.lakebase, "write", fake_write)
-    monkeypatch.setattr(broker.lakebase, "query", lambda *_args: [])
-    result = broker.update_watchlist("person@example.com", " aapl ", "add")
+    update = Mock(return_value={"status": "success", "ticker": "AAPL", "action": "add", "tickers": []})
+    monkeypatch.setattr(broker.actions, "update_watchlist", update)
+    result = broker.update_watchlist(
+        "person@example.com", " aapl ", "add", confirmed=True, idempotency_key="request-123"
+    )
     assert result["status"] == "success"
     assert result["ticker"] == "AAPL"
     assert result["action"] == "add"
     assert result["tickers"] == []
+    update.assert_called_once_with(
+        "person@example.com", "AAPL", "add", "Primary", confirmed=True, idempotency_key="request-123"
+    )
 
 
 def test_existing_note_and_report_response_shapes_are_characterized(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def fake_write(sql, _params=None, returning=False):
-        if "users_srini" in sql:
-            return {"id": 7}
-        if "research_notes_srini" in sql:
-            return {"id": 21, "created_at": "2026-09-10T12:00:00Z"}
-        if "analysis_reports_srini" in sql:
-            return {"id": 22, "created_at": "2026-09-10T12:01:00Z"}
-        return 1
-
-    monkeypatch.setattr(broker.lakebase, "write", fake_write)
-    note = broker.save_research_note("person@example.com", "aapl", "Thesis", "Evidence")
+    monkeypatch.setattr(
+        broker.actions,
+        "save_research_note",
+        Mock(return_value={"status": "success", "note_id": 21, "ticker": "AAPL", "created_at": "time"}),
+    )
+    monkeypatch.setattr(
+        broker.actions,
+        "save_analysis_report",
+        Mock(return_value={"status": "success", "report_id": 22, "tickers": ["AAPL", "MSFT"], "created_at": "time"}),
+    )
+    note = broker.save_research_note(
+        "person@example.com", "aapl", "Thesis", "Evidence", confirmed=True, idempotency_key="request-note-1"
+    )
     report = broker.save_analysis_report(
         "person@example.com",
         "Comparison",
         "Relative value",
         ["aapl", "msft"],
         "Evidence-backed report",
+        confirmed=True,
+        idempotency_key="request-report-1",
     )
     assert set(note) == {"status", "note_id", "ticker", "created_at"}
     assert note["note_id"] == 21
@@ -112,6 +116,11 @@ def test_all_nine_mcp_tool_functions_remain_declared() -> None:
         if line.startswith("def ")
     }
     assert expected <= declared
+    for function_name in ("get_watchlist", "update_watchlist", "save_research_note", "save_analysis_report", "get_notable_updates"):
+        declaration = next(line for line in source.splitlines() if line.startswith(f"def {function_name}(") )
+        assert "user_email" not in declaration
+    assert '@mcp.custom_route("/health", methods=["GET"])' in source
+    assert 'response.headers["x-request-id"]' in source
 
 
 def test_embedding_job_compatibility_entry_point_now_requests_managed_sync() -> None:

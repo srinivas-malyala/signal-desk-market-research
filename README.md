@@ -54,14 +54,18 @@ committed. Fundamentals availability depends on the Massive subscription.
 | `get_company_research` | Company profile, news and available reported fundamentals |
 | `compare_stocks` | Like-for-like price-action comparison for 2–5 tickers |
 | `get_watchlist` | User-scoped watchlist with latest locally synced price |
-| `update_watchlist` | Explicit add/remove mutation |
-| `save_research_note` | Save a confirmed ticker note |
-| `save_analysis_report` | Save a confirmed multi-ticker report |
+| `update_watchlist` | Confirmed, idempotent add/remove mutation |
+| `save_research_note` | Confirmed, idempotent ticker-note write |
+| `save_analysis_report` | Confirmed, idempotent multi-ticker report write |
 | `semantic_research` | Hybrid managed AI Search over attributable SEC/news passages |
 | `get_notable_updates` | Price moves and articles since the user's last visit |
 
 Tool functions are intentionally thin. `research_broker.py` owns HTTP calls,
 normalization, persistence, calculations, and safe error envelopes.
+User-scoped tools derive ownership from Databricks forwarded identity and do not
+accept a `user_email` argument. Every consequential write requires
+`confirmed=true` and a stable idempotency key; retries of the same request return
+the original result without repeating the write.
 
 ## Lakebase schema and context engineering
 

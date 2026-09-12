@@ -102,13 +102,21 @@ class Filing(ContractModel):
 
 
 class ResearchChunk(ContractModel):
-    chunk_id: str = Field(min_length=1, max_length=128)
-    source_type: Literal["company_profile", "filing", "news", "earnings_call"]
+    chunk_id: str = Field(pattern=r"^[a-f0-9]{64}$")
+    parent_id: str = Field(pattern=r"^[a-f0-9]{64}$")
+    source_type: Literal["filing", "article"]
     source_id: str = Field(min_length=1, max_length=256)
+    tickers: list[str] = Field(min_length=1)
     ticker: str | None = None
     chunk_index: int = Field(ge=0)
-    chunk_text: str = Field(min_length=1, max_length=5000)
-    content_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    section_name: str | None = Field(default=None, max_length=500)
+    chunk_to_retrieve: str = Field(min_length=1, max_length=20_000)
+    chunk_to_embed: str = Field(min_length=1, max_length=25_000)
+    chunk_token_count: int = Field(ge=1, le=650)
+    parent_text: str = Field(min_length=1, max_length=60_000)
+    parent_token_count: int = Field(ge=1, le=1600)
+    chunk_content_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    source_content_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
     source_url: str | None = None
 
     @field_validator("ticker")
@@ -116,13 +124,18 @@ class ResearchChunk(ContractModel):
     def validate_optional_ticker(cls, value: str | None) -> str | None:
         return None if value is None else Ticker(symbol=value).symbol
 
+    @field_validator("tickers")
+    @classmethod
+    def validate_tickers(cls, values: list[str]) -> list[str]:
+        return [Ticker(symbol=value).symbol for value in values]
+
 
 class AgentEvent(ContractModel):
     event_id: str = Field(min_length=1, max_length=100)
     session_id: str = Field(min_length=1, max_length=100)
     user_subject: str | None = Field(default=None, max_length=256)
     tool_name: str = Field(min_length=1, max_length=100)
-    action_type: Literal["read", "create", "update", "delete"]
+    action_type: Literal["retrieve", "create", "update", "delete"]
     status: Literal["success", "error"]
     started_at: datetime
     duration_ms: int = Field(ge=0)

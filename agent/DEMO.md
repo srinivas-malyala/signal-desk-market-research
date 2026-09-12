@@ -10,7 +10,8 @@ Capture the Agent Bricks tool trace and final answer for at least these flows:
    rising rates?” Expected tools: `get_watchlist`, `semantic_research`, followed
    by company research for the relevant tickers.
 4. **Mutation:** “Add NVDA to my watchlist.” Expected tool:
-   `update_watchlist(action="add")`; final answer lists the updated watchlist.
+   after explicit confirmation, `update_watchlist(action="add", confirmed=true,
+   idempotency_key="...")`; final answer lists the updated watchlist. Retrying
+   the exact call with the same key must not duplicate the write.
 5. **Error:** ask for ticker `NOT_A_REAL_TICKER`. The agent must present a clean
    correction request and must not invent a company or price.
-

@@ -1,0 +1,25 @@
+[
+  {
+    "case_id": "aapl-services-sales-growth",
+    "query": "What business line contributed to Apple's net sales growth?",
+    "top_k": 5,
+    "filters": {
+      "tickers": ["AAPL"],
+      "source_types": ["filing"],
+      "start_date": "2025-01-01",
+      "end_date": "2025-12-31"
+    },
+    "expected_source_ids": ["0000320193-25-000079"]
+  },
+  {
+    "case_id": "aapl-management-discussion",
+    "query": "Find management's discussion of why net sales increased.",
+    "top_k": 5,
+    "filters": {
+      "tickers": ["AAPL"],
+      "source_types": ["filing"]
+    },
+    "expected_source_ids": ["0000320193-25-000079"]
+  }
+]
+

@@ -148,3 +148,10 @@ def test_managed_research_search_resources_replace_in_process_embeddings() -> No
     assert "chunk_to_embed" in search and "chunk_to_retrieve" in search
     assert "sync_research_index" in sync_job
     assert "sentence-transformers" not in requirements
+
+
+def test_mcp_app_has_governed_market_table_resources() -> None:
+    app = (ROOT / "resources" / "stock_research_mcp.app.yml").read_text()
+    assert "${var.catalog}.${var.schema}.silver_market_bars" in app
+    assert "${var.catalog}.${var.schema}.gold_stock_performance" in app
+    assert app.count("permission: SELECT") >= 2

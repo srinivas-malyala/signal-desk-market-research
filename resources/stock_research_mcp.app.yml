@@ -16,3 +16,15 @@ resources:
           sql_warehouse:
             id: ${var.warehouse_id}
             permission: CAN_USE
+        - name: silver-market-bars
+          description: Governed historical OHLCV used by retrieval tools
+          uc_securable:
+            securable_type: TABLE
+            securable_full_name: ${var.catalog}.${var.schema}.silver_market_bars
+            permission: SELECT
+        - name: gold-stock-performance
+          description: Governed daily performance metrics used by retrieval tools
+          uc_securable:
+            securable_type: TABLE
+            securable_full_name: ${var.catalog}.${var.schema}.gold_stock_performance
+            permission: SELECT

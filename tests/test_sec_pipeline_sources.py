@@ -51,6 +51,13 @@ def test_article_bridge_preserves_many_to_many_ticker_relationships() -> None:
     assert '.dropDuplicates(["article_id", "ticker"])' in bridge
 
 
+def test_operational_news_cache_has_a_many_to_many_ticker_bridge() -> None:
+    migration = (Path(__file__).parents[1] / "mcp_server" / "migrations" / "0004_news_article_tickers.sql").read_text()
+    broker = (Path(__file__).parents[1] / "mcp_server" / "research_broker.py").read_text()
+    assert "PRIMARY KEY(article_id, ticker)" in migration
+    assert "news_article_tickers" in broker
+
+
 def test_document_pipeline_uses_binary_autoloader_and_traceable_chunks() -> None:
     bronze = source("bronze_sec_filing_documents.py")
     chunks = source("silver_research_chunks.py")

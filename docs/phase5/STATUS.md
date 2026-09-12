@@ -5,9 +5,9 @@ Updated: 2026-09-11
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
 | 5.0 Retrieval design | Complete | ADR 0005 records section-aware parent/child chunking, Qwen3 embeddings, Delta Sync AI Search, hybrid retrieval, provenance, and evaluation targets | None |
-| 5.1 Service and observability | In progress | Existing nine-tool server and Lakebase traces are characterized | Trusted identity, bounded trace/event metadata, dependency/error contracts |
-| 5.2 Retrieval tools | In progress | Existing Massive, research, watchlist, and notable-update tools are characterized | Correct windows/mappings, evidence metadata, bounds, tests |
-| 5.3 Action tools | In progress | Watchlist, note, and report writes exist | Confirmation, transactional idempotency, trusted ownership, isolation tests |
+| 5.1 Service and observability | Local implementation complete | Nine tool names retained; health route, correlation IDs, contract versions, structured completion logs, fail-closed trusted identity, pseudonymous bounded traces, and agent session/events pass tests | Deployed health, trace-failure, and cross-principal proof |
+| 5.2 Retrieval tools | Local implementation complete | Historical performance prefers bounded parameterized Silver/Gold SQL, Massive is a rate-limited fallback/on-demand source, requested windows are trimmed, sector is not invented, reads do not create state, and news uses a many-to-many bridge | Workspace known-answer and entitlement/freshness acceptance |
+| 5.3 Action tools | Local implementation complete | Watchlist/note/report writes require confirmation and transactional idempotency; different-payload key reuse fails; trusted request identity owns writes; rollback and bounded-input tests pass | Apply migration 0004 and prove two principals through deployed MCP |
 | 5.4 Semantic retrieval | Local implementation complete | Canonical chunks plus standard endpoint, triggered Qwen3 Delta Sync hybrid index, filtered/reranked SDK search, parent deduplication, provenance, on-behalf-of-user token support, and post-refresh sync job pass focused tests | Workspace provision/sync/live evaluation after profile reauthentication |
 
 ## Accepted implementation sequence
@@ -32,6 +32,26 @@ Updated: 2026-09-11
   and on-behalf-of-user SDK authentication. Thirty-five focused tests and lint
   pass. Strict bundle parsing reached the workspace-auth visitor and stopped only
   because `dataexpertio_srini` has no cached OAuth credentials.
+- 2026-09-11 — Removed model-supplied `user_email` from every user-scoped MCP
+  signature. Consequential writes now require `confirmed=true` and an
+  8–128-character idempotency key, reserve/store the key in the same transaction
+  as the write, reject key reuse with changed parameters, and roll back as one
+  unit. Watchlist reads no longer create users or lists.
+- 2026-09-11 — Added a health route, request correlation IDs, contract versions,
+  structured safe completion logs, pseudonymous trace subjects, bounded trace
+  summaries, and Lakebase agent session/tool events. Note/report bodies, source
+  context, access tokens, idempotency values, and large result arrays are not
+  retained in traces.
+- 2026-09-11 — Historical performance now prefers a parameterized, 370-row-bounded
+  SQL Warehouse read joining governed Silver bars to Gold performance and falls
+  back explicitly to the shared rate-limited Massive client. Requested calendar
+  windows are trimmed, actual trading periods are reported, sector is left null
+  rather than copied from SIC industry, and migration 0004 adds the operational
+  article/ticker bridge.
+- 2026-09-11 — Added a retrieval evaluation CLI with Recall@5, MRR, nDCG,
+  provenance completeness, and filter-violation metrics. Two fixture-backed smoke
+  labels validate the harness; live acceptance intentionally requires at least 50
+  workspace labels. Whole-repository lint and 145 tests pass.
 
 ## External gate
 
@@ -39,3 +59,8 @@ The selected profile is `dataexpertio_srini`. Its cached OAuth credentials were
 not valid when Phase 5 began, so workspace deployment and live Vector Search
 evaluation require profile reauthentication. No committed code contains a token,
 Massive key, SEC contact, or Lakebase URL.
+
+After authentication, workspace acceptance is: deploy/update the research
+pipeline, apply Lakebase migration 0004, provision the endpoint/index and sync
+job, run the 50+ case retrieval set, deploy MCP, and exercise two authenticated
+principals plus retry/trace checks.

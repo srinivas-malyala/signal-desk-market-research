@@ -24,6 +24,9 @@ Both Databricks Apps receive `DATABRICKS_WAREHOUSE_ID` from an attached `sql-war
 | `sec/user-agent` | deployed SEC ingestion | When `SEC_USER_AGENT` is not set | Databricks secret containing the approved identifying contact; decoded only in memory |
 | `USE_MOCK_BACKEND` | apps | Local development only | Literal `true`; deployed target must use `false` |
 | `DATABRICKS_WAREHOUSE_ID` | frontend/MCP analytics | Delta SQL access | App resource `valueFrom` |
+| `DATABRICKS_CATALOG` | MCP retrieval | Governed market tables | Non-secret environment value; `bootcamp_students` |
+| `DATABRICKS_SCHEMA` | MCP retrieval | Governed market tables | Non-secret environment value; `student_sri` |
+| `SIGNAL_DESK_VECTOR_SEARCH_INDEX` | MCP retrieval/index sync | Managed research index | Non-secret full name; `bootcamp_students.student_sri.signal_desk_research_chunks_index` |
 | `PGHOST`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, `PGPORT` | MCP operational store | Future attached Lakebase access | Attached `postgres` resource; never logged |
 | `LAKEBASE_URL` | MCP/frontend local override | Explicit local-only connection override | Runtime environment only; PostgreSQL URL with `sslmode=require` |
 | `LAKEBASE_SECRET_SCOPE` | MCP/frontend | Deployed Lakebase connection | Defaults to admin-managed scope `database` |
@@ -40,6 +43,8 @@ Both Databricks Apps receive `DATABRICKS_WAREHOUSE_ID` from an attached `sql-war
 | MCP | `lakebase-url` | Admin-managed Lakebase URL secret | Can read; app accesses only `_srini` tables |
 | MCP | `massive-api-key` | Secret | Read |
 | MCP | `sql-warehouse` | SQL warehouse | Can use |
+| MCP | `silver-market-bars` | Unity Catalog table | Select |
+| MCP | `gold-stock-performance` | Unity Catalog table | Select |
 | Frontend | `mcp-connection` | UC/external MCP connection or service endpoint | Use/query only |
 | Frontend | `sql-warehouse` | SQL warehouse | Can use |
 
