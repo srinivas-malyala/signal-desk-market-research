@@ -7,7 +7,7 @@ Updated: 2026-09-11
 | 5.0 Retrieval design | Complete | ADR 0005 records section-aware parent/child chunking, Qwen3 embeddings, Delta Sync AI Search, hybrid retrieval, provenance, and evaluation targets | None |
 | 5.1 Service and observability | Local implementation complete | Nine tool names retained; health route, correlation IDs, contract versions, structured completion logs, fail-closed trusted identity, pseudonymous bounded traces, and agent session/events pass tests | Deployed health, trace-failure, and cross-principal proof |
 | 5.2 Retrieval tools | Local implementation complete | Historical performance prefers bounded parameterized Silver/Gold SQL, Massive is a rate-limited fallback/on-demand source, requested windows are trimmed, sector is not invented, reads do not create state, and news uses a many-to-many bridge | Workspace known-answer and entitlement/freshness acceptance |
-| 5.3 Action tools | Local implementation complete | Watchlist/note/report writes require confirmation and transactional idempotency; different-payload key reuse fails; trusted request identity owns writes; rollback and bounded-input tests pass | Apply migration 0004 and prove two principals through deployed MCP |
+| 5.3 Action tools | Workspace acceptance in progress | Watchlist/note/report writes require confirmation and transactional idempotency; different-payload key reuse fails; trusted request identity owns writes; rollback and bounded-input tests pass; migration 0004 and disposable owner-isolation CRUD pass | Prove two principals through deployed MCP |
 | 5.4 Semantic retrieval | Workspace acceptance in progress | Canonical chunks plus standard endpoint, triggered Qwen3 Delta Sync hybrid index, filtered/reranked SDK search, parent deduplication, provenance, on-behalf-of-user token support, post-refresh sync job, restored OAuth, and strict bundle validation | Workspace provision/sync/live evaluation |
 
 ## Accepted implementation sequence
@@ -57,6 +57,11 @@ Updated: 2026-09-11
   `56c5df46-e1a8-4d14-bd93-d467aadb554e`. SQL Warehouse reconciliation found
   393 complete chunks from 98 sources (86 articles and 12 filings), with zero
   duplicate chunk IDs, duplicate source indexes, or untraceable chunks.
+- 2026-09-11 — Applied checksum-protected Lakebase migration `0004` using the
+  admin-managed `database/lakebase-url` secret. All 15 expected `_srini` tables
+  are present and owned by the current database role, the second apply was empty,
+  five CDC tables have full replica identity, and disposable owner-isolation CRUD
+  passed with complete cleanup.
 
 ## Workspace acceptance
 
@@ -66,6 +71,6 @@ validation passes after changing the Vector Search endpoint permission to the
 supported `CAN_USE` level. No committed code contains a token, Massive key, SEC
 contact, or Lakebase URL.
 
-Remaining workspace acceptance is: apply Lakebase migration 0004, provision the
-endpoint/index and sync job, run the 50+ case retrieval set, deploy MCP, and
-exercise two authenticated principals plus retry/trace checks.
+Remaining workspace acceptance is: provision the endpoint/index and sync job,
+run the 50+ case retrieval set, deploy MCP, and exercise two authenticated
+principals plus retry/trace checks.
