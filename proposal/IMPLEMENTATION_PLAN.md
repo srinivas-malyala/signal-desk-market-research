@@ -535,14 +535,16 @@ Market + documents + Lakebase tools
 
 **Implement:**
 
-- Convert the existing MiniLM embedding script and chunking behavior into an incremental Lakeflow Job keyed by content hash and model version.
-- Batch writes to Lakebase pgvector with indexes and bounded chunk metadata.
-- Refactor the existing `semantic_research` tool to add ticker/source/date filters, bounded top-k, and explicit similarity score/provenance.
+- Replace duplicate character-window chunking with one section-aware Spark contract: 500-token child passages (650 maximum, 75 overlap), 1,600-token parents, and separate contextual embedding text from faithful retrieval text.
+- Enable Change Data Feed and row tracking on the canonical Delta chunk table, then maintain a triggered managed Delta Sync Vector Search index.
+- Use `databricks-qwen3-embedding-0-6b` at 1,024 dimensions; retain GTE as a measured fallback and MiniLM only as an evaluation baseline.
+- Refactor `semantic_research` for hybrid retrieval, reranking, ticker/source/date filters, bounded top-k, parent expansion, and explicit score/provenance.
+- Continue to use structured SEC Company Facts, rather than semantic search, for exact financial values.
 
 **Tests:**
 
-- Chunk-to-embedding reconciliation, unchanged-content skip, model-version migration, empty index, filtered retrieval, and database failure tests.
-- Small labeled retrieval set measuring whether expected passages appear in top-k.
+- Chunk-to-index reconciliation, unchanged-content incremental sync, model-version migration, empty index, filtered retrieval, and service failure tests.
+- Labeled retrieval set measuring Recall@k, MRR, nDCG, provenance completeness, and filter correctness.
 - Regression fixtures verify that the current company/news chunk text remains discoverable after the job refactor.
 
 **Exit criterion:** Retrieval evaluation meets the documented target and every result exposes source provenance.
