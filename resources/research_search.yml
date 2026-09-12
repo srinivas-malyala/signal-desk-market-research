@@ -21,20 +21,3 @@ resources:
           - name: chunk_to_embed
             embedding_model_endpoint_name: databricks-qwen3-embedding-0-6b
             model_endpoint_name_for_query: databricks-qwen3-embedding-0-6b
-        columns_to_sync:
-          - parent_id
-          - source_type
-          - source_id
-          - tickers
-          - ticker
-          - title
-          - source_date
-          - source_url
-          - fetched_at
-          - section_name
-          - chunk_index
-          - chunk_to_retrieve
-          - chunk_token_count
-          - parent_text
-          - parent_token_count
-          - source_content_hash
