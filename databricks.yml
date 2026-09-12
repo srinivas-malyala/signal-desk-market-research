@@ -14,6 +14,8 @@ variables:
     default: signal_desk_raw
   warehouse_id:
     description: SQL warehouse ID used by the frontend for analytics
+  lakebase_table_suffix:
+    description: Per-student suffix on shared Lakebase source tables
   pipeline_development:
     description: Whether the Lakeflow pipeline uses development mode
     default: true
@@ -26,6 +28,7 @@ targets:
       catalog: bootcamp_students
       schema: student_sri
       warehouse_id: b15d3d6f837ba428
+      lakebase_table_suffix: srini
 
   prod:
     mode: production

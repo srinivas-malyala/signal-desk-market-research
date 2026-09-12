@@ -1,0 +1,236 @@
+{
+  "refreshed_at": "2026-09-11T00:30:00+00:00",
+  "events": [
+    {
+      "source_table": "agent_tool_events",
+      "_pg_change_type": "insert",
+      "_pg_lsn": 100,
+      "_pg_xid": 10,
+      "_sort_by": 100,
+      "_timestamp": "2026-09-11T00:02:00+00:00",
+      "row": {
+        "event_id": 101,
+        "session_id": "session-a",
+        "user_id": 1,
+        "user_email": "must-not-enter-analytics@example.test",
+        "tool_name": "get_stock_performance",
+        "action_type": "retrieve",
+        "status": "success",
+        "duration_ms": 100,
+        "created_at": "2026-09-10T23:58:00+00:00"
+      }
+    },
+    {
+      "source_table": "agent_tool_events",
+      "_pg_change_type": "insert",
+      "_pg_lsn": 100,
+      "_pg_xid": 10,
+      "_sort_by": 100,
+      "_timestamp": "2026-09-11T00:02:00+00:00",
+      "row": {
+        "event_id": 101,
+        "session_id": "session-a",
+        "user_id": 1,
+        "tool_name": "get_stock_performance",
+        "action_type": "retrieve",
+        "status": "success",
+        "duration_ms": 100,
+        "created_at": "2026-09-10T23:58:00+00:00"
+      }
+    },
+    {
+      "source_table": "agent_tool_events",
+      "_pg_change_type": "insert",
+      "_pg_lsn": 101,
+      "_pg_xid": 11,
+      "_sort_by": 101,
+      "_timestamp": "2026-09-11T00:04:00+00:00",
+      "row": {
+        "event_id": 102,
+        "session_id": "session-a",
+        "user_id": 1,
+        "tool_name": "semantic_research",
+        "action_type": "retrieve",
+        "status": "error",
+        "duration_ms": null,
+        "created_at": "2026-09-11T00:03:00+00:00"
+      }
+    },
+    {
+      "source_table": "agent_tool_events",
+      "_pg_change_type": "insert",
+      "_pg_lsn": 102,
+      "_pg_xid": 12,
+      "_sort_by": 102,
+      "_timestamp": "2026-09-11T00:06:00+00:00",
+      "row": {
+        "event_id": 103,
+        "session_id": "session-b",
+        "user_id": 2,
+        "tool_name": "update_watchlist",
+        "action_type": "create",
+        "status": "success",
+        "duration_ms": 220,
+        "created_at": "2026-09-11T00:05:00+00:00"
+      }
+    },
+    {
+      "source_table": "agent_tool_events",
+      "_pg_change_type": "insert",
+      "_pg_lsn": 103,
+      "_pg_xid": 13,
+      "_sort_by": 103,
+      "_timestamp": "2026-09-11T00:08:00+00:00",
+      "row": {
+        "event_id": 104,
+        "session_id": "session-b",
+        "user_id": 2,
+        "tool_name": "save_research_note",
+        "action_type": "create",
+        "status": "success",
+        "duration_ms": 180,
+        "created_at": "2026-09-11T00:07:00+00:00"
+      }
+    },
+    {
+      "source_table": "watchlist_tickers",
+      "_pg_change_type": "insert",
+      "_pg_lsn": 200,
+      "_pg_xid": 20,
+      "_sort_by": 200,
+      "_timestamp": "2026-09-11T00:07:00+00:00",
+      "row": {"watchlist_id": 10, "ticker": "AAPL", "added_at": "2026-09-11T00:05:00+00:00"}
+    },
+    {
+      "source_table": "watchlist_tickers",
+      "_pg_change_type": "delete",
+      "_pg_lsn": 201,
+      "_pg_xid": 21,
+      "_sort_by": 201,
+      "_timestamp": "2026-09-11T00:10:00+00:00",
+      "row": {"watchlist_id": 10, "ticker": "AAPL", "added_at": "2026-09-11T00:05:00+00:00"}
+    },
+    {
+      "source_table": "research_notes",
+      "_pg_change_type": "insert",
+      "_pg_lsn": 300,
+      "_pg_xid": 30,
+      "_sort_by": 300,
+      "_timestamp": "2026-09-11T00:08:00+00:00",
+      "row": {
+        "id": 501,
+        "user_id": 2,
+        "note_text": "private-note-sentinel",
+        "created_at": "2026-09-11T00:07:00+00:00",
+        "updated_at": "2026-09-11T00:07:00+00:00"
+      }
+    },
+    {
+      "source_table": "research_notes",
+      "_pg_change_type": "update_preimage",
+      "_pg_lsn": 301,
+      "_pg_xid": 31,
+      "_sort_by": 301,
+      "_timestamp": "2026-09-11T00:12:00+00:00",
+      "row": {
+        "id": 501,
+        "user_id": 2,
+        "note_text": "private-note-sentinel",
+        "created_at": "2026-09-11T00:07:00+00:00",
+        "updated_at": "2026-09-11T00:07:00+00:00"
+      }
+    },
+    {
+      "source_table": "research_notes",
+      "_pg_change_type": "update_postimage",
+      "_pg_lsn": 301,
+      "_pg_xid": 31,
+      "_sort_by": 302,
+      "_timestamp": "2026-09-11T00:12:00+00:00",
+      "row": {
+        "id": 501,
+        "user_id": 2,
+        "note_text": "updated-private-note-sentinel",
+        "created_at": "2026-09-11T00:07:00+00:00",
+        "updated_at": "2026-09-11T00:11:00+00:00"
+      }
+    },
+    {
+      "source_table": "research_notes",
+      "_pg_change_type": "update_postimage",
+      "_pg_lsn": 301,
+      "_pg_xid": 31,
+      "_sort_by": 302,
+      "_timestamp": "2026-09-11T00:12:00+00:00",
+      "row": {
+        "id": 501,
+        "user_id": 2,
+        "note_text": "updated-private-note-sentinel",
+        "created_at": "2026-09-11T00:07:00+00:00",
+        "updated_at": "2026-09-11T00:11:00+00:00"
+      }
+    },
+    {
+      "source_table": "research_notes",
+      "_pg_change_type": "delete",
+      "_pg_lsn": 302,
+      "_pg_xid": 32,
+      "_sort_by": 303,
+      "_timestamp": "2026-09-11T00:15:00+00:00",
+      "row": {
+        "id": 501,
+        "user_id": 2,
+        "note_text": "updated-private-note-sentinel",
+        "created_at": "2026-09-11T00:07:00+00:00",
+        "updated_at": "2026-09-11T00:11:00+00:00"
+      }
+    },
+    {
+      "source_table": "analysis_reports",
+      "_pg_change_type": "insert",
+      "_pg_lsn": 400,
+      "_pg_xid": 40,
+      "_sort_by": 400,
+      "_timestamp": "2026-09-11T00:14:00+00:00",
+      "row": {
+        "id": 601,
+        "user_id": 1,
+        "report_text": "private-report-sentinel",
+        "thesis": "private-thesis-sentinel",
+        "created_at": "2026-09-11T00:13:00+00:00"
+      }
+    },
+    {
+      "source_table": "agent_sessions",
+      "_pg_change_type": "insert",
+      "_pg_lsn": 500,
+      "_pg_xid": 50,
+      "_sort_by": 500,
+      "_timestamp": "2026-09-11T00:01:00+00:00",
+      "row": {
+        "session_id": "session-a",
+        "user_id": 1,
+        "status": "active",
+        "created_at": "2026-09-10T23:57:00+00:00",
+        "last_activity_at": "2026-09-11T00:03:00+00:00"
+      }
+    },
+    {
+      "source_table": "agent_tool_events",
+      "_pg_change_type": "insert",
+      "_pg_xid": 99,
+      "_sort_by": 999,
+      "_timestamp": "2026-09-11T00:20:00+00:00",
+      "row": {
+        "event_id": 999,
+        "session_id": "bad-event",
+        "user_id": 99,
+        "tool_name": "semantic_research",
+        "action_type": "retrieve",
+        "status": "success",
+        "duration_ms": 10,
+        "created_at": "2026-09-11T00:19:00+00:00"
+      }
+    }
+  ]
+}

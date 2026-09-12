@@ -1,0 +1,36 @@
+resources:
+  pipelines:
+    activity_analytics_pipeline:
+      name: signal-desk-activity-analytics-${bundle.target}
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      serverless: true
+      development: ${var.pipeline_development}
+      continuous: false
+      photon: true
+      channel: current
+      root_path: ../pipelines
+      libraries:
+        - glob:
+            include: ../pipelines/_activity_pipeline_common.py
+        - glob:
+            include: ../pipelines/bronze_lakebase_changes.py
+        - glob:
+            include: ../pipelines/silver_agent_activity.py
+        - glob:
+            include: ../pipelines/gold_daily_active_researchers.py
+        - glob:
+            include: ../pipelines/gold_tool_usage_latency.py
+        - glob:
+            include: ../pipelines/gold_agent_error_rate.py
+        - glob:
+            include: ../pipelines/gold_watchlist_changes.py
+        - glob:
+            include: ../pipelines/gold_research_saves.py
+      configuration:
+        signal_desk.cdc_source_catalog: ${var.catalog}
+        signal_desk.cdc_source_schema: ${var.schema}
+        signal_desk.lakebase_table_suffix: ${var.lakebase_table_suffix}
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
