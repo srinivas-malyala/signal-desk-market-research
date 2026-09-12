@@ -5,7 +5,7 @@ Updated: 2026-09-11
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
 | 5.0 Retrieval design | Complete | ADR 0005 records section-aware parent/child chunking, Qwen3 embeddings, Delta Sync AI Search, hybrid retrieval, provenance, and evaluation targets | None |
-| 5.1 Service and observability | Local implementation complete | Nine tool names retained; health route, correlation IDs, contract versions, structured completion logs, fail-closed trusted identity, pseudonymous bounded traces, and agent session/events pass tests | Deployed health, trace-failure, and cross-principal proof |
+| 5.1 Service and observability | Deployment permission blocked | Nine tool names retained; health route, correlation IDs, contract versions, structured completion logs, fail-closed trusted identity, pseudonymous bounded traces, and agent session/events pass tests; strict bundle validation passes | Administrator must permit managed-secret binding, then deployed health, trace-failure, and cross-principal proof |
 | 5.2 Retrieval tools | Local implementation complete | Historical performance prefers bounded parameterized Silver/Gold SQL, Massive is a rate-limited fallback/on-demand source, requested windows are trimmed, sector is not invented, reads do not create state, and news uses a many-to-many bridge | Workspace known-answer and entitlement/freshness acceptance |
 | 5.3 Action tools | Workspace acceptance in progress | Watchlist/note/report writes require confirmation and transactional idempotency; different-payload key reuse fails; trusted request identity owns writes; rollback and bounded-input tests pass; migration 0004 and disposable owner-isolation CRUD pass | Prove two principals through deployed MCP |
 | 5.4 Semantic retrieval | Workspace accepted | Canonical chunks plus CDF Delta serving-table publisher, ready standard endpoint, triggered Qwen3 Delta Sync hybrid index with 393 rows, filtered/reranked SDK search, parent deduplication, provenance, and a passing 51-case live evaluation | None for the current workspace corpus |
@@ -77,6 +77,12 @@ Updated: 2026-09-11
   0.9928, with zero provenance failures or filter violations. Focused regression
   tests and lint pass. Detailed evidence is retained in
   `docs/phase5/WORKSPACE_ACCEPTANCE_FINDINGS.md`.
+- 2026-09-11 — Selective MCP app deployment was rejected before app creation:
+  the deploying user lacks the permission required to attach the administrator-owned
+  `massive-api-key` resource. The same user cannot inspect the `massive` or
+  `database` scope ACLs. An administrator must grant the deployer `MANAGE` on
+  both secret resources or perform an equivalent administrator-managed binding.
+  No partial `signal-desk-mcp-dev` app remains.
 
 ## Workspace acceptance
 
@@ -86,6 +92,7 @@ validation passes after changing the Vector Search endpoint permission to the
 supported `CAN_USE` level. No committed code contains a token, Massive key, SEC
 contact, or Lakebase URL.
 
-Remaining workspace acceptance is: deploy MCP and exercise health, action,
-idempotency, and bounded trace checks. The final isolation test requires two real
-authenticated account principals.
+Remaining workspace acceptance is: resolve the managed-secret binding
+permission, deploy MCP, and exercise health, action, idempotency, and bounded
+trace checks. The final isolation test requires two real authenticated account
+principals.

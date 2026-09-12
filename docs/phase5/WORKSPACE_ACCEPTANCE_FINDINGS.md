@@ -161,16 +161,21 @@ multi-source questions, negative cases, and expert relevance judgments.
 
 ## Remaining acceptance gates
 
-1. Deploy the `stock_research_mcp` Databricks App with its SQL warehouse,
+1. Have a workspace administrator grant the deploying principal the ability to
+   manage and attach the `massive` and `database` secret resources, or have the
+   administrator perform an equivalent managed-resource binding. The first
+   selective deployment was rejected before app creation on the
+   `massive-api-key` binding, and no partial app remains.
+2. Deploy the `stock_research_mcp` Databricks App with its SQL warehouse,
    Lakebase, Massive secret, and managed-index resource bindings.
-2. Verify the deployed health route and inspect startup/runtime logs.
-3. Exercise a retrieval tool and at least one confirmed write action through the
+3. Verify the deployed health route and inspect startup/runtime logs.
+4. Exercise a retrieval tool and at least one confirmed write action through the
    deployed MCP interface.
-4. Repeat the same idempotency key and prove one logical write; retry it with a
+5. Repeat the same idempotency key and prove one logical write; retry it with a
    different payload and prove rejection.
-5. Confirm successful and failed tool calls create bounded Lakebase session/event
+6. Confirm successful and failed tool calls create bounded Lakebase session/event
    records without sensitive content.
-6. Use two real authenticated account principals to prove owner isolation and
+7. Use two real authenticated account principals to prove owner isolation and
    identity propagation end to end.
 
 The two-principal gate is externally blocked until a second account principal or
