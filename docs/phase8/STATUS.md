@@ -5,7 +5,7 @@ Updated: 2026-09-21
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
 | 8.1 Flask shell and authentication | Local hardening complete | Flask/Gunicorn retained; demo identity removed; forwarded email and user token required; health remains public; request IDs and security headers cover success/error responses; template escaping and startup configuration tested | Restore `dataexpertio_srini` OAuth, rerun strict bundle validation, bind the deployed MCP URL/resource, deploy the frontend, and run authenticated service-principal/user smoke tests |
-| 8.2 Research and evidence workflow | Pending | Existing overview shell retained | Add question workflow, agent status, evidence cards, as-of metadata, and complete UI states |
+| 8.2 Research and evidence workflow | Local implementation complete | Authenticated MCP routes support bounded performance, 2–5 ticker comparison, and hybrid filing/news evidence; UI exposes progress, empty/error/partial/rate-limit states, source links, context labels, as-of metadata, limitations, execution identity, and disclaimer | Deploy MCP/frontend and run the browser evidence-source acceptance flow |
 | 8.3 Watchlists, notes, and reports | In progress | Existing add/remove UX retained; watchlist writes now cross a typed MCP abstraction with explicit confirmation, per-action idempotency, user-token auth, response bounds, and safe failures | Deployed write/reload acceptance; add note/report actions and migrate remaining direct overview reads behind authenticated services |
 | 8.4 Usage analytics page | Pending | Phase 6.2 Gold contracts implemented locally | Add warehouse-backed analytics UI after Phase 6 deployment |
 
@@ -46,14 +46,27 @@ Lakebase directly so the current shell remains functional; moving those reads
 behind authenticated service APIs is explicitly pending rather than being
 misreported as complete.
 
+## Research-screen design contract
+
+The retained Flask app uses an analytic, stratified layout: bounded workflow
+controls first, source/freshness-aware results second, then personal operational
+state. Performance cards always show ticker, unit/window, as-of date, source,
+and limitations. Comparisons share one time window. Evidence cards show source
+type, ticker, date, context/similarity label, passage, and source URL. Loading,
+empty, dependency error, partial comparison, stale/index-sync, and Massive
+rolling-window states are visible text states rather than color alone. The
+signed-in identity and authenticated-user execution disclosure remain visible.
+
 ## Local acceptance
 
-Eighteen focused tests cover public health, missing email/token combinations,
+Twenty-three focused tests cover public health, missing email/token combinations,
 body-supplied identity rejection, Jinja escaping, security headers, UUID request
 IDs, invalid ticker/idempotency rejection, token/request-ID propagation into the
 client abstraction, direct-write removal, dependency failure redaction, endpoint
 TLS/configuration validation, confirmed MCP arguments, response size bounds,
 oversized request rejection, and absence of forged forwarded identity headers.
+They now also cover final-contract performance/comparison/evidence arguments,
+input bounds, optional company context, and a distinct rate-limited response.
 
 The complete local suite passes 178 tests and whole-repository lint. Strict
 bundle validation was attempted on 2026-09-21 with the required

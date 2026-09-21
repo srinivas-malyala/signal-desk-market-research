@@ -100,6 +100,37 @@ def test_watchlist_client_builds_confirmed_bounded_tool_request(
     }
 
 
+def test_research_methods_align_with_final_mcp_arguments(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = []
+
+    async def fake_call(self, name, arguments, access_token, request_id):
+        calls.append((name, arguments, access_token, request_id))
+        return {"status": "success"}
+
+    monkeypatch.setattr(FastMCPWatchlistClient, "_call", fake_call)
+    client = FastMCPWatchlistClient("https://mcp.example.test/mcp")
+    client.get_stock_performance(ticker="AAPL", lookback_days=30, access_token="token", request_id="req")
+    client.compare_stocks(tickers=["AAPL", "MSFT"], lookback_days=60, access_token="token", request_id="req")
+    client.semantic_research(
+        query="services growth",
+        tickers=["AAPL"],
+        source_types=["filing"],
+        start_date=None,
+        end_date=None,
+        access_token="token",
+        request_id="req",
+    )
+    client.get_company_research(ticker="AAPL", access_token="token", request_id="req")
+    assert [call[0] for call in calls] == [
+        "get_stock_performance",
+        "compare_stocks",
+        "semantic_research",
+        "get_company_research",
+    ]
+    assert calls[2][1]["top_k"] == 5
+    assert calls[3][1]["include_fundamentals"] is True
+
+
 def test_mcp_client_never_forges_forwarded_identity_headers() -> None:
     source = (DASHBOARD_ROOT / "mcp_client.py").read_text(encoding="utf-8").lower()
     assert "x-forwarded-email" not in source

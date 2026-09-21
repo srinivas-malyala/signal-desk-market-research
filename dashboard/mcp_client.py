@@ -29,8 +29,16 @@ class MCPUnavailableError(MCPClientError):
 class MCPToolError(MCPClientError):
     """The MCP tool rejected a valid frontend request."""
 
+    def __init__(self, message: str, error_code: str = "mcp_tool_error") -> None:
+        super().__init__(message)
+        self.error_code = error_code
 
-class WatchlistClient(Protocol):
+
+class SignalDeskClient(Protocol):
+    def get_stock_performance(self, *, ticker: str, lookback_days: int, access_token: str, request_id: str) -> dict[str, Any]: ...
+    def compare_stocks(self, *, tickers: list[str], lookback_days: int, access_token: str, request_id: str) -> dict[str, Any]: ...
+    def semantic_research(self, *, query: str, tickers: list[str] | None, source_types: list[str] | None, start_date: str | None, end_date: str | None, access_token: str, request_id: str) -> dict[str, Any]: ...
+    def get_company_research(self, *, ticker: str, access_token: str, request_id: str) -> dict[str, Any]: ...
     def update_watchlist(
         self,
         *,
@@ -63,17 +71,17 @@ def _payload(result: Any) -> dict[str, Any]:
         raise MCPUnavailableError("The research service response exceeded the allowed size.")
     if payload.get("status") == "error":
         message = str(payload.get("message") or "The research action was rejected.")
-        raise MCPToolError(message[:500])
+        raise MCPToolError(message[:500], str(payload.get("error_code") or "mcp_tool_error")[:100])
     return payload
 
 
 @dataclass(frozen=True)
-class FastMCPWatchlistClient:
+class FastMCPSignalDeskClient:
     endpoint: str
     timeout_seconds: int = 20
 
     @classmethod
-    def from_environment(cls) -> FastMCPWatchlistClient:
+    def from_environment(cls) -> FastMCPSignalDeskClient:
         raw_url = os.getenv("MCP_SERVER_URL", "").strip().rstrip("/")
         parsed = urlparse(raw_url)
         is_local = parsed.hostname in {"localhost", "127.0.0.1", "::1"}
@@ -141,3 +149,43 @@ class FastMCPWatchlistClient:
                 request_id,
             )
         )
+
+    def _run(self, name: str, arguments: dict[str, Any], access_token: str, request_id: str) -> dict[str, Any]:
+        return asyncio.run(self._call(name, arguments, access_token, request_id))
+
+    def get_stock_performance(self, *, ticker: str, lookback_days: int, access_token: str, request_id: str) -> dict[str, Any]:
+        return self._run("get_stock_performance", {"ticker": ticker, "lookback_days": lookback_days}, access_token, request_id)
+
+    def compare_stocks(self, *, tickers: list[str], lookback_days: int, access_token: str, request_id: str) -> dict[str, Any]:
+        return self._run("compare_stocks", {"tickers": tickers, "lookback_days": lookback_days}, access_token, request_id)
+
+    def semantic_research(
+        self,
+        *,
+        query: str,
+        tickers: list[str] | None,
+        source_types: list[str] | None,
+        start_date: str | None,
+        end_date: str | None,
+        access_token: str,
+        request_id: str,
+    ) -> dict[str, Any]:
+        return self._run(
+            "semantic_research",
+            {"query": query, "top_k": 5, "tickers": tickers, "source_types": source_types, "start_date": start_date, "end_date": end_date},
+            access_token,
+            request_id,
+        )
+
+    def get_company_research(self, *, ticker: str, access_token: str, request_id: str) -> dict[str, Any]:
+        return self._run(
+            "get_company_research",
+            {"ticker": ticker, "news_limit": 10, "include_fundamentals": True},
+            access_token,
+            request_id,
+        )
+
+
+# Compatibility names retained for the Phase 8.1 callers and tests.
+FastMCPWatchlistClient = FastMCPSignalDeskClient
+WatchlistClient = SignalDeskClient

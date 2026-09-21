@@ -10,7 +10,7 @@ from typing import Any
 import lakebase
 from flask import Flask, Response, g, jsonify, render_template, request
 from mcp_client import (
-    FastMCPWatchlistClient,
+    FastMCPSignalDeskClient,
     MCPConfigurationError,
     MCPToolError,
     MCPUnavailableError,
@@ -101,7 +101,8 @@ def mcp_unavailable(_error_value: MCPUnavailableError):
 
 @app.errorhandler(MCPToolError)
 def mcp_rejected(error_value: MCPToolError):
-    return _error(str(error_value), 409, "mcp_action_rejected")
+    status = 429 if error_value.error_code == "massive_http_429" else 409
+    return _error(str(error_value), status, error_value.error_code)
 
 
 @app.errorhandler(Exception)
@@ -147,7 +148,7 @@ def _watchlist_client() -> WatchlistClient:
     factory = app.config.get("MCP_CLIENT_FACTORY")
     if factory is not None:
         return factory()
-    return FastMCPWatchlistClient.from_environment()
+    return FastMCPSignalDeskClient.from_environment()
 
 
 def _request_payload() -> dict[str, Any]:
@@ -164,6 +165,99 @@ def _idempotency_key() -> str:
     if not IDEMPOTENCY_PATTERN.fullmatch(value):
         raise ValueError("Idempotency-Key must contain 8-128 safe characters.")
     return value
+
+
+def _ticker(value: Any) -> str:
+    symbol = str(value or "").strip().upper()
+    if not TICKER_PATTERN.fullmatch(symbol):
+        raise ValueError("Enter a valid U.S. ticker.")
+    return symbol
+
+
+def _lookback(value: Any) -> int:
+    try:
+        days = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Lookback must be between 2 and 365 days.") from exc
+    if not 2 <= days <= 365:
+        raise ValueError("Lookback must be between 2 and 365 days.")
+    return days
+
+
+@app.post("/api/research")
+def research():
+    try:
+        payload = _request_payload()
+        mode = str(payload.get("mode") or "").strip().lower()
+        client = _watchlist_client()
+        common = {"access_token": g.user_access_token, "request_id": g.request_id}
+        if mode == "performance":
+            result = client.get_stock_performance(
+                ticker=_ticker(payload.get("ticker")),
+                lookback_days=_lookback(payload.get("lookback_days", 30)),
+                **common,
+            )
+        elif mode == "comparison":
+            raw_tickers = payload.get("tickers")
+            if not isinstance(raw_tickers, list) or not 2 <= len(raw_tickers) <= 5:
+                raise ValueError("Choose between 2 and 5 tickers.")
+            tickers = [_ticker(value) for value in raw_tickers]
+            if len(set(tickers)) != len(tickers):
+                raise ValueError("Comparison tickers must be distinct.")
+            result = client.compare_stocks(
+                tickers=tickers,
+                lookback_days=_lookback(payload.get("lookback_days", 30)),
+                **common,
+            )
+        elif mode == "evidence":
+            query = str(payload.get("query") or "").strip()
+            if not 5 <= len(query) <= 1_000:
+                raise ValueError("Research question must contain 5-1000 characters.")
+            raw_tickers = payload.get("tickers") or []
+            if not isinstance(raw_tickers, list) or len(raw_tickers) > 5:
+                raise ValueError("Evidence filters support at most 5 tickers.")
+            tickers = [_ticker(value) for value in raw_tickers] or None
+            source_types = payload.get("source_types") or None
+            if source_types is not None and (
+                not isinstance(source_types, list) or not set(source_types) <= {"filing", "article"}
+            ):
+                raise ValueError("Source types must be filing or article.")
+            result = client.semantic_research(
+                query=query,
+                tickers=tickers,
+                source_types=source_types,
+                start_date=str(payload.get("start_date") or "") or None,
+                end_date=str(payload.get("end_date") or "") or None,
+                **common,
+            )
+            company = None
+            if tickers and len(tickers) == 1 and payload.get("include_company", True) is True:
+                company = client.get_company_research(ticker=tickers[0], **common)
+            return jsonify(
+                {
+                    "status": "success",
+                    "mode": mode,
+                    "evidence": result,
+                    "company": company,
+                    "execution_identity": "authenticated user",
+                    "disclaimer": "Retrieved evidence may be incomplete; verify sources before relying on it.",
+                    "request_id": g.request_id,
+                }
+            )
+        else:
+            raise ValueError("Research mode must be performance, comparison, or evidence.")
+    except ValueError as exc:
+        return _error(str(exc), 400, "invalid_request")
+    return jsonify(
+        {
+            "status": "success",
+            "mode": mode,
+            "result": result,
+            "execution_identity": "authenticated user",
+            "disclaimer": "This is research support, not personalized investment advice.",
+            "request_id": g.request_id,
+        }
+    )
 
 
 @app.get("/")

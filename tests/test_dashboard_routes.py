@@ -31,6 +31,10 @@ def app_module(monkeypatch: pytest.MonkeyPatch):
         "action": "add",
         "idempotent_replay": False,
     }
+    fake_mcp.get_stock_performance.return_value = {"status": "success", "ticker": "AAPL", "as_of": "2026-09-09"}
+    fake_mcp.compare_stocks.return_value = {"status": "success", "comparisons": []}
+    fake_mcp.semantic_research.return_value = {"status": "success", "results": []}
+    fake_mcp.get_company_research.return_value = {"status": "success", "ticker": "AAPL"}
     monkeypatch.setitem(sys.modules, "lakebase", fake_db)
     monkeypatch.syspath_prepend(str(DASHBOARD_ROOT))
     spec = importlib.util.spec_from_file_location("dashboard_app", DASHBOARD_ROOT / "app.py")
@@ -185,6 +189,82 @@ def test_mcp_dependency_failure_is_safe_and_correlated(app_module) -> None:
     assert payload["error_code"] == "mcp_unavailable"
     assert payload["request_id"] == response.headers["X-Request-ID"]
     assert "internal-host" not in response.get_data(as_text=True)
+
+
+def test_research_performance_uses_authenticated_mcp_contract(app_module) -> None:
+    response = app_module.app.test_client().post(
+        "/api/research",
+        json={"mode": "performance", "ticker": "aapl", "lookback_days": 30},
+        headers=AUTH_HEADERS,
+    )
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["execution_identity"] == "authenticated user"
+    app_module.test_mcp.get_stock_performance.assert_called_once_with(
+        ticker="AAPL",
+        lookback_days=30,
+        access_token="trusted-user-token",
+        request_id=response.headers["X-Request-ID"],
+    )
+
+
+def test_research_comparison_validates_bounds_before_mcp(app_module) -> None:
+    invalid = app_module.app.test_client().post(
+        "/api/research",
+        json={"mode": "comparison", "tickers": ["AAPL"], "lookback_days": 30},
+        headers=AUTH_HEADERS,
+    )
+    assert invalid.status_code == 400
+    app_module.test_mcp.compare_stocks.assert_not_called()
+
+    response = app_module.app.test_client().post(
+        "/api/research",
+        json={"mode": "comparison", "tickers": ["aapl", "msft"], "lookback_days": 60},
+        headers=AUTH_HEADERS,
+    )
+    assert response.status_code == 200
+    app_module.test_mcp.compare_stocks.assert_called_once_with(
+        tickers=["AAPL", "MSFT"],
+        lookback_days=60,
+        access_token="trusted-user-token",
+        request_id=response.headers["X-Request-ID"],
+    )
+
+
+def test_evidence_research_returns_sources_and_optional_company_context(app_module) -> None:
+    response = app_module.app.test_client().post(
+        "/api/research",
+        json={
+            "mode": "evidence",
+            "query": "What filing evidence supports services growth?",
+            "tickers": ["AAPL"],
+            "source_types": ["filing"],
+        },
+        headers=AUTH_HEADERS,
+    )
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["evidence"]["status"] == "success"
+    assert payload["company"]["ticker"] == "AAPL"
+    app_module.test_mcp.semantic_research.assert_called_once()
+    app_module.test_mcp.get_company_research.assert_called_once_with(
+        ticker="AAPL",
+        access_token="trusted-user-token",
+        request_id=response.headers["X-Request-ID"],
+    )
+
+
+def test_research_rate_limit_has_distinct_http_state(app_module) -> None:
+    app_module.test_mcp.get_stock_performance.side_effect = app_module.MCPToolError(
+        "The Massive API rate limit was reached.", "massive_http_429"
+    )
+    response = app_module.app.test_client().post(
+        "/api/research",
+        json={"mode": "performance", "ticker": "AAPL", "lookback_days": 30},
+        headers=AUTH_HEADERS,
+    )
+    assert response.status_code == 429
+    assert response.get_json()["error_code"] == "massive_http_429"
 
 
 def test_dashboard_sql_uses_student_suffixed_tables(app_module) -> None:

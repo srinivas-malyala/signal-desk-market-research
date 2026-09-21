@@ -1,9 +1,33 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Signal Desk · Stock Research</title><link rel="stylesheet" href="/static/styles.css"></head>
-<body><header><div><span class="eyebrow">MASSIVE × LAKEBASE × AGENT BRICKS</span><h1>Signal <em>Desk</em></h1><p>Research real companies. Challenge a thesis. Keep the evidence.</p></div><div class="identity"><span>ACTIVE RESEARCHER</span><b>{{ user_email }}</b></div></header>
-<main><section class="watch card"><div class="section-head"><div><span class="index">01</span><h2>Your watchlist</h2></div><form id="ticker-form"><input id="ticker" maxlength="10" placeholder="Add ticker, e.g. NVDA" required><button>Add ↗</button></form></div><div id="watchlist" class="ticker-grid"></div></section>
-<section class="grid"><article class="card"><div class="section-head"><div><span class="index">02</span><h2>Latest signals</h2></div><span class="label">NEWS</span></div><div id="news"></div></article>
-<article class="card"><div class="section-head"><div><span class="index">03</span><h2>Research memory</h2></div><span class="label">LAKEBASE</span></div><h3>Notes</h3><div id="notes"></div><h3>Reports</h3><div id="reports"></div></article></section>
-<section class="card"><div class="section-head"><div><span class="index">04</span><h2>Agent activity</h2></div><span class="pulse">● LIVE</span></div><div id="activity" class="activity"></div></section></main>
-<script src="/static/app.js"></script></body></html>
-
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Signal Desk · Evidence-grounded stock research</title><link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header><div><span class="eyebrow">MASSIVE × LAKEHOUSE × LAKEBASE</span><h1>Signal <em>Desk</em></h1><p>Research public companies, inspect the evidence, and keep your work.</p></div><div class="identity" aria-label="Signed-in identity"><span>ACTIVE RESEARCHER</span><b>{{ user_email }}</b><small>Tool access runs as this authenticated user.</small></div></header>
+<nav aria-label="Primary navigation"><a href="#research">Research</a><a href="#watchlist-section">Watchlist</a><a href="#saved">Saved research</a><a href="#analytics">Usage analytics</a></nav>
+<main id="main">
+  <div id="global-status" class="status hidden" role="status" aria-live="polite"></div>
+  <section id="research" class="card research-card">
+    <div class="section-head"><div><span class="index">01</span><h2>Research with evidence</h2></div><span class="label">AUTHENTICATED MCP</span></div>
+    <p class="section-copy">Choose a bounded workflow. Market claims include their source and as-of date; narrative matches link back to filings or articles.</p>
+    <form id="research-form" class="research-form">
+      <label>Workflow<select id="research-mode" name="mode"><option value="performance">Ticker performance</option><option value="comparison">Peer comparison</option><option value="evidence">Filing and news evidence</option></select></label>
+      <label id="ticker-field">Ticker<input id="research-ticker" maxlength="10" value="AAPL" autocomplete="off"></label>
+      <label id="comparison-field" class="hidden">Tickers, comma separated<input id="research-tickers" maxlength="64" value="AAPL, MSFT" autocomplete="off"></label>
+      <label id="question-field" class="wide hidden">Research question<textarea id="research-query" maxlength="1000" rows="3" placeholder="What evidence supports the services growth thesis?"></textarea></label>
+      <label id="source-field" class="hidden">Source type<select id="research-source"><option value="">Filings and articles</option><option value="filing">SEC filings</option><option value="article">News articles</option></select></label>
+      <label id="lookback-field">Calendar-day lookback<input id="research-lookback" type="number" min="2" max="365" value="30"></label>
+      <button type="submit">Run research <span aria-hidden="true">↗</span></button>
+    </form>
+    <div id="research-progress" class="state hidden" role="status" aria-live="polite"></div>
+    <div id="research-result" class="research-result" aria-live="polite"><div class="empty"><b>Start with a company question.</b><span>Results, provenance, freshness, and limitations will appear here.</span></div></div>
+    <p class="disclaimer">Research support only—not personalized investment advice. Verify retrieved context against the linked source.</p>
+  </section>
+  <section id="watchlist-section" class="watch card"><div class="section-head"><div><span class="index">02</span><h2>Your watchlist</h2></div><form id="ticker-form"><label class="sr-only" for="ticker">Ticker to add</label><input id="ticker" maxlength="10" placeholder="Add ticker, e.g. NVDA" required><button>Add</button></form></div><div id="watchlist" class="ticker-grid"><div class="skeleton">Loading watchlist…</div></div></section>
+  <section class="grid"><article class="card"><div class="section-head"><div><span class="index">03</span><h2>Latest signals</h2></div><span class="label">NEWS</span></div><div id="news"><div class="skeleton">Loading signals…</div></div></article><article id="saved" class="card"><div class="section-head"><div><span class="index">04</span><h2>Research memory</h2></div><span class="label">USER OWNED</span></div><h3>Notes</h3><div id="notes"><div class="skeleton">Loading notes…</div></div><h3>Reports</h3><div id="reports"><div class="skeleton">Loading reports…</div></div></article></section>
+  <section id="analytics" class="card"><div class="section-head"><div><span class="index">05</span><h2>Agent activity</h2></div><span class="label">SANITIZED</span></div><div id="activity" class="activity"><div class="skeleton">Loading activity…</div></div></section>
+</main><script src="/static/app.js"></script>
+</body></html>
