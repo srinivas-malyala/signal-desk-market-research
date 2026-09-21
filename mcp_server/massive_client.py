@@ -1,6 +1,6 @@
 """Rate-safe Massive Stocks REST client shared by ingestion and agent workloads.
 
-Every physical HTTP attempt passes through a process-safe rolling-window limiter.
+Every physical HTTP attempt passes through an explicitly selected rolling-window limiter.
 Credentials are accepted from the environment for local development or resolved
 from the configured Databricks secret at runtime; they are never added to URLs.
 """
@@ -13,15 +13,17 @@ import fcntl
 import json
 import os
 import random
+import re
 import tempfile
 import time
 import uuid
 from collections import deque
 from collections.abc import Callable, Iterator
+from contextlib import AbstractContextManager
 from dataclasses import asdict, dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 import requests
 from databricks.sdk import WorkspaceClient
@@ -39,6 +41,10 @@ class MassiveResponseError(RuntimeError):
 
 class RateLimiterStateError(RuntimeError):
     """Raised when quota state is corrupt so callers fail closed."""
+
+
+class RateLimiter(Protocol):
+    def acquire(self) -> None: ...
 
 
 def _atomic_json_write(path: Path, value: Any) -> None:
@@ -141,6 +147,89 @@ class ProcessSafeRollingLimiter:
             self.sleeper(wait_for)
 
 
+class LakebaseRollingLimiter:
+    """Coordinate the free-plan quota across hosts with one Lakebase transaction."""
+
+    def __init__(
+        self,
+        connection_factory: Callable[[], AbstractContextManager[Any]] | None = None,
+        table: str | None = None,
+        limit: int = 4,
+        window_seconds: float = 60.0,
+        sleeper: Callable[[float], None] = time.sleep,
+        requester: str | None = None,
+    ) -> None:
+        if not 1 <= limit <= 4 or window_seconds < 60:
+            raise ValueError("Lakebase limiter requires 1-4 attempts over a window of at least 60 seconds")
+        if connection_factory is None or table is None:
+            try:
+                from . import lakebase
+            except ImportError:  # pragma: no cover - deployed app executes this module as a script dependency
+                import lakebase  # type: ignore[no-redef]
+
+            connection_factory = connection_factory or lakebase.get_connection
+            table = table or lakebase.table_name("massive_api_attempts")
+        if not re.fullmatch(r"[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*", table):
+            raise ValueError("Lakebase limiter table must be a qualified lowercase identifier")
+        self.connection_factory = connection_factory
+        self.table = table
+        self.limit = limit
+        self.window_seconds = window_seconds
+        self.sleeper = sleeper
+        self.requester = (requester or os.getenv("MASSIVE_RATE_LIMIT_REQUESTER") or "signal-desk")[:100]
+
+    def acquire(self) -> None:
+        while True:
+            try:
+                with self.connection_factory() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                        ("signal-desk-massive-free-plan",),
+                    )
+                    cursor.execute(
+                        f"""SELECT COUNT(*) AS active_count,
+                        GREATEST(EXTRACT(EPOCH FROM
+                          (MIN(acquired_at) + (%s * interval '1 second') - clock_timestamp())), 0.001)
+                          AS wait_seconds
+                        FROM {self.table}
+                        WHERE acquired_at > clock_timestamp() - (%s * interval '1 second')""",
+                        (self.window_seconds, self.window_seconds),
+                    )
+                    state = cursor.fetchone()
+                    if int(state["active_count"]) < self.limit:
+                        cursor.execute(
+                            f"""INSERT INTO {self.table}
+                            (attempt_id, acquired_at, requester, contract_version)
+                            VALUES(%s, clock_timestamp(), %s, 1)""",
+                            (str(uuid.uuid4()), self.requester),
+                        )
+                        connection.commit()
+                        return
+                    wait_for = max(float(state["wait_seconds"]), 0.001)
+                    connection.commit()
+            except RateLimiterStateError:
+                raise
+            except Exception as error:
+                raise RateLimiterStateError(
+                    "Shared Massive rate-limit coordination is unavailable; refusing API calls"
+                ) from error
+            self.sleeper(wait_for)
+
+
+def build_rate_limiter(
+    backend: str | None = None,
+    *,
+    state_path: Path = DEFAULT_LIMITER_PATH,
+) -> RateLimiter:
+    """Build the explicitly selected coordination backend without unsafe fallback."""
+    selected = (backend or os.getenv("MASSIVE_RATE_LIMIT_BACKEND", "process")).strip().lower()
+    if selected == "process":
+        return ProcessSafeRollingLimiter(state_path)
+    if selected == "lakebase":
+        return LakebaseRollingLimiter()
+    raise ValueError("MASSIVE_RATE_LIMIT_BACKEND must be 'process' or 'lakebase'")
+
+
 class MassiveClient:
     """Authenticated Massive client with quota-safe retries and response metadata."""
 
@@ -149,7 +238,7 @@ class MassiveClient:
         api_key: str | None = None,
         base_url: str = BASE_URL,
         timeout: int = 30,
-        limiter: ProcessSafeRollingLimiter | None = None,
+        limiter: RateLimiter | None = None,
         max_retries: int = 3,
         backoff_factor: float = 0.6,
         jitter: float = 0.2,
@@ -162,7 +251,7 @@ class MassiveClient:
             raise ValueError("timeout must be positive; retries, backoff, and jitter cannot be negative")
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
-        self.limiter = limiter or ProcessSafeRollingLimiter()
+        self.limiter = limiter or build_rate_limiter()
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
         self.jitter = jitter

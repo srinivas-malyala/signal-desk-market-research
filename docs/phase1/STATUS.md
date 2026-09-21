@@ -1,11 +1,11 @@
 # Phase 1 Status — Massive Market Ingestion
 
-Updated: 2026-09-10
+Updated: 2026-09-21
 
 | Unit | Implementation | Evidence | Remaining gate |
 |---|---|---|---|
-| 1.1 Shared Massive client and limiter | Complete locally | Every physical attempt is limited; locked process-shared state; bounded retries, `Retry-After`, correlation IDs, response validation, and safe metrics | Cross-host coordination when interactive app calls are enabled; currently the ingestion job is single-concurrency |
-| 1.2 Trading dates and checkpoints | Workspace verified | Two-year bounds, weekday planning, six explicit states, atomic persistence, stale recovery, corrupt-state failure, 20-date interruption/resume test, and successful UC Volume resume | Cross-host coordination remains deferred until interactive callers are enabled |
+| 1.1 Shared Massive client and limiter | Cross-host implementation complete locally | Every physical attempt is limited; file-backed single-host mode retained; deployed MCP and ingestion paths select a Lakebase transaction-lock coordinator with database time, four-attempt/60-second ceiling, and fail-closed behavior | Apply migration `0005` and exercise simultaneous Job/MCP callers after app deployment |
+| 1.2 Trading dates and checkpoints | Workspace verified | Two-year bounds, weekday planning, six explicit states, atomic persistence, stale recovery, corrupt-state failure, 20-date interruption/resume test, and successful UC Volume resume | None |
 | 1.3 Immutable raw landing | Workspace verified | Atomic response/manifest pairs, SHA-256 validation, replay, holiday no-data state, row stop, structured metrics, strict bundle validation, 10-date workspace run, and zero-call rerun | None for the single-job workspace workflow |
 
 ## Controlled two-date pilot
@@ -28,7 +28,7 @@ An identical rerun produced `api_dates=0`, `http_attempts=0`, and `skipped_dates
 - Run the same code as the serverless `market_ingestion` Lakeflow Job.
 - Confirm `os.replace` and advisory lock behavior on `/Volumes/bootcamp_students/student_sri/signal_desk_raw`.
 - Complete a 10-date pilot and reconcile all manifest row counts.
-- Finalize a cross-host rate-coordination backend before enabling simultaneous agent/API traffic.
+- Apply Lakebase migration `0005`, then prove the fifth acquisition across one Job and one MCP host waits for the first rolling-window slot. Interactive Massive traffic remains disabled until that gate passes.
 
 ## Workspace deployment evidence
 
@@ -44,3 +44,16 @@ An identical rerun produced `api_dates=0`, `http_attempts=0`, and `skipped_dates
 - 2026-09-10 — Explicitly redeployed the finalized job for the zero-call workspace rerun.
 - 2026-09-10 — Run `809484306892540` proved workspace idempotency: all 10 dates were skipped, 149,051 available rows were reconciled, and no API call, retry, byte transfer, or failure occurred.
 - No Lakebase-dependent application or embedding resource was deployed.
+
+## Cross-host coordination implementation
+
+Migration `0005` defines the namespaced attempt ledger
+`bootcamp_students.massive_api_attempts_srini`. Each acquisition takes the same
+PostgreSQL transaction advisory lock, counts attempts using Lakebase's clock,
+and records its allowance before committing. This prevents host clock skew and
+races between the MCP app, market ingestion, and article ingestion. Database
+failure raises a safe limiter error before any Massive request is sent.
+
+The legacy Volume-backed limiter remains available only for explicit
+`process` mode and local/single-host testing. Bundle job parameters and MCP app
+configuration explicitly select `lakebase`; there is no automatic fallback.

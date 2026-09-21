@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, timedelta
@@ -16,7 +17,7 @@ if __package__ in {None, ""}:
         sys.path.insert(0, str(Path(runtime_file).resolve().parents[1]))
 
 from ingestion.market_backfill import _canonical_json_bytes, atomic_write  # noqa: E402
-from mcp_server.massive_client import MassiveClient, ProcessSafeRollingLimiter  # noqa: E402
+from mcp_server.massive_client import MassiveClient, build_rate_limiter  # noqa: E402
 from shared.contracts.models import Ticker  # noqa: E402
 
 
@@ -127,6 +128,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--volume", required=True)
     parser.add_argument("--raw-root", type=Path)
     parser.add_argument("--profile")
+    parser.add_argument(
+        "--rate-limit-backend",
+        choices=("process", "lakebase"),
+        default=os.getenv("MASSIVE_RATE_LIMIT_BACKEND", "process"),
+    )
     parser.add_argument("--ticker", action="append", dest="tickers")
     parser.add_argument("--limit", type=int, default=50)
     return parser.parse_args(argv)
@@ -135,7 +141,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     raw_root = args.raw_root or Path(f"/Volumes/{args.catalog}/{args.schema}/{args.volume}")
-    limiter = ProcessSafeRollingLimiter(raw_root / "_control" / "massive_rate_limit.json")
+    limiter = build_rate_limiter(
+        args.rate_limit_backend,
+        state_path=raw_root / "_control" / "massive_rate_limit.json",
+    )
     client = MassiveClient(limiter=limiter, databricks_profile=args.profile)
     metrics = run_article_landing(
         args.tickers or ["AAPL", "MSFT"],

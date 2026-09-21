@@ -19,6 +19,8 @@ Both Databricks Apps receive `DATABRICKS_WAREHOUSE_ID` from an attached `sql-war
 | `MASSIVE_API_KEY` | feasibility/local ingestion | Live Massive calls | Local environment only |
 | `MASSIVE_API_BASE_URL` | Massive clients | Optional test override | Environment; defaults to Massive API |
 | `MASSIVE_RATE_LIMIT_STATE_PATH` | Massive clients | Shared request coordination | Writable state file; defaults to local `/tmp`, Volume control path in ingestion job |
+| `MASSIVE_RATE_LIMIT_BACKEND` | Massive clients | Coordination selection | `process` for local/single-host use; deployed MCP and ingestion workloads explicitly use fail-closed `lakebase` |
+| `MASSIVE_RATE_LIMIT_REQUESTER` | Massive clients | Sanitized quota audit label | Optional non-secret host/workload label, limited to 100 characters |
 | derived `*_audit.jsonl` path | Massive certification | Every permitted physical API attempt | Credential-free append-only ledger beside the limiter state; never contains request headers or API keys |
 | `SEC_USER_AGENT` | SEC ingestion | Live SEC calls | Identifying application/contact string |
 | `sec/user-agent` | deployed SEC ingestion | When `SEC_USER_AGENT` is not set | Databricks secret containing the approved identifying contact; decoded only in memory |
@@ -54,5 +56,12 @@ Both Databricks Apps receive `DATABRICKS_WAREHOUSE_ID` from an attached `sql-war
 The complete PostgreSQL URL is stored only in Databricks secret `database/lakebase-url`. The deployed helpers fetch the secret with `WorkspaceClient`, Base64-decode it in memory, and never log or persist it. `LAKEBASE_URL` remains an explicit local-test override only.
 
 Connections must validate that both shared schemas exist, but must not create, drop, or claim ownership of either schema. Every operational table reference is fully qualified as `bootcamp_students.<base_table>_srini`; setting only a search path is insufficient because it does not enforce the required suffix. Replicated graph objects are referenced as `bootcamp_cdc.<base_table>_srini`. Dynamic schema, base-table, and suffix components must be allowlisted and identifier-validated before SQL composition.
+
+Migration `0005` adds `bootcamp_students.massive_api_attempts_srini`. Deployed
+MCP and Massive ingestion callers serialize acquisitions with a Lakebase
+transaction advisory lock and use the database clock to enforce at most four
+physical attempts in any rolling 60-second window across hosts. If Lakebase is
+unavailable, callers refuse the external API request; they never fall back to
+an uncoordinated local allowance.
 
 All operational SQL and migrations resolve through an allowlisted table registry and target only fully qualified `_srini` objects. `setup_secrets.py` must not be used for deployment because the administrator already owns secret provisioning.

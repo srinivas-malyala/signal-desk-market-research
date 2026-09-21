@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from datetime import date
 from pathlib import Path
 from unittest.mock import Mock
@@ -11,10 +12,12 @@ import requests
 
 from mcp_server import massive_client
 from mcp_server.massive_client import (
+    LakebaseRollingLimiter,
     MassiveClient,
     MassiveResponseError,
     ProcessSafeRollingLimiter,
     RateLimiterStateError,
+    build_rate_limiter,
 )
 
 
@@ -96,6 +99,90 @@ def test_limiter_fails_closed_on_corrupt_state(tmp_path: Path) -> None:
     path.write_text("not-json")
     with pytest.raises(RateLimiterStateError):
         ProcessSafeRollingLimiter(path).acquire()
+
+
+class SharedLakebaseState:
+    def __init__(self) -> None:
+        self.now = 1_000.0
+        self.attempts: list[float] = []
+        self.commits = 0
+
+    @contextmanager
+    def connection(self):
+        state = self
+
+        class Cursor:
+            result = None
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args) -> None:
+                return None
+
+            def execute(self, statement, params=None) -> None:
+                normalized = " ".join(str(statement).split())
+                if "SELECT COUNT(*) AS active_count" in normalized:
+                    window = float(params[0])
+                    active = [value for value in state.attempts if value > state.now - window]
+                    wait = min(active) + window - state.now if active else 0.001
+                    self.result = {"active_count": len(active), "wait_seconds": max(wait, 0.001)}
+                elif "INSERT INTO" in normalized:
+                    state.attempts.append(state.now)
+
+            def fetchone(self):
+                return self.result
+
+        class Connection:
+            def cursor(self):
+                return Cursor()
+
+            def commit(self) -> None:
+                state.commits += 1
+
+        yield Connection()
+
+    def sleep(self, seconds: float) -> None:
+        self.now += seconds
+
+
+def test_lakebase_limiter_coordinates_independent_hosts() -> None:
+    state = SharedLakebaseState()
+    first = LakebaseRollingLimiter(
+        state.connection,
+        "bootcamp_students.massive_api_attempts_srini",
+        sleeper=state.sleep,
+        requester="job",
+    )
+    second = LakebaseRollingLimiter(
+        state.connection,
+        "bootcamp_students.massive_api_attempts_srini",
+        sleeper=state.sleep,
+        requester="mcp",
+    )
+    released = []
+    for limiter in (first, second, first, second, first):
+        limiter.acquire()
+        released.append(state.now)
+    assert released == [1000.0, 1000.0, 1000.0, 1000.0, 1060.0]
+    assert state.commits == 6
+
+
+def test_lakebase_limiter_fails_closed_when_store_is_unavailable() -> None:
+    @contextmanager
+    def unavailable():
+        raise RuntimeError("database offline")
+        yield
+
+    limiter = LakebaseRollingLimiter(unavailable, "bootcamp_students.massive_api_attempts_srini")
+    with pytest.raises(RateLimiterStateError, match="refusing API calls"):
+        limiter.acquire()
+
+
+def test_rate_limiter_backend_selection_is_explicit(tmp_path: Path) -> None:
+    assert isinstance(build_rate_limiter("process", state_path=tmp_path / "quota.json"), ProcessSafeRollingLimiter)
+    with pytest.raises(ValueError, match="process.*lakebase"):
+        build_rate_limiter("unknown")
 
 
 def test_every_retry_is_rate_limited_and_retry_after_is_honored() -> None:

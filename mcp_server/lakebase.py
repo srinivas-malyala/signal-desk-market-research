@@ -27,6 +27,7 @@ TABLE_BASES = frozenset(
         "agent_tool_events",
         "companies",
         "idempotency_records",
+        "massive_api_attempts",
         "news_articles",
         "news_article_tickers",
         "price_snapshots",
@@ -42,6 +43,7 @@ TABLE_BASES = frozenset(
 INDEX_BASES = frozenset(
     {
         "idx_agent_events_time",
+        "idx_massive_attempts_time",
         "idx_news_ticker_time",
         "idx_news_article_tickers_ticker",
         "idx_price_ticker_time",

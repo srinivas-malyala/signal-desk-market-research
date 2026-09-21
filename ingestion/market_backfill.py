@@ -28,7 +28,7 @@ from mcp_server.massive_client import (  # noqa: E402
     MassiveClient,
     MassiveResponse,
     MassiveResponseError,
-    ProcessSafeRollingLimiter,
+    build_rate_limiter,
 )
 
 
@@ -257,6 +257,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--volume", required=True)
     parser.add_argument("--raw-root", type=Path, help="Local/test override for the Volume root")
     parser.add_argument("--profile", help="Explicit Databricks profile for local secret lookup")
+    parser.add_argument(
+        "--rate-limit-backend",
+        choices=("process", "lakebase"),
+        default=os.getenv("MASSIVE_RATE_LIMIT_BACKEND", "process"),
+    )
     parser.add_argument("--start-date", type=lambda value: date.fromisoformat(value) if value else None)
     parser.add_argument("--end-date", type=lambda value: date.fromisoformat(value) if value else None)
     parser.add_argument("--max-dates", type=int, default=10)
@@ -274,7 +279,10 @@ def main(argv: list[str] | None = None) -> int:
         (args.start_date, args.end_date) if args.start_date is not None else _default_dates(args.max_dates)
     )
     raw_root = args.raw_root or Path(f"/Volumes/{args.catalog}/{args.schema}/{args.volume}")
-    limiter = ProcessSafeRollingLimiter(raw_root / "_control" / "massive_rate_limit.json")
+    limiter = build_rate_limiter(
+        args.rate_limit_backend,
+        state_path=raw_root / "_control" / "massive_rate_limit.json",
+    )
     client = MassiveClient(limiter=limiter, databricks_profile=args.profile)
     metrics = run_backfill(
         BackfillConfig(

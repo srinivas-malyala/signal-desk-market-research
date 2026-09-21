@@ -4,6 +4,10 @@ env:
     valueFrom: sql-warehouse
   - name: MASSIVE_API_KEY
     valueFrom: massive-api-key
+  - name: MASSIVE_RATE_LIMIT_BACKEND
+    value: lakebase
+  - name: MASSIVE_RATE_LIMIT_REQUESTER
+    value: mcp-app
   - name: LAKEBASE_URL
     valueFrom: lakebase-url
   - name: SIGNAL_DESK_SCHEMA

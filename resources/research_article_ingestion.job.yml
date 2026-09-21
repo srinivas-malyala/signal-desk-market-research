@@ -25,6 +25,7 @@ resources:
               - databricks-sdk>=0.81,<1
               - pydantic>=2.10,<3
               - requests>=2.32,<3
+              - psycopg2-binary>=2.9,<3
       tasks:
         - task_key: land_research_articles
           environment_key: default
@@ -43,6 +44,8 @@ resources:
               - "{{job.parameters.ticker_two}}"
               - --limit
               - "{{job.parameters.limit}}"
+              - --rate-limit-backend
+              - lakebase
       permissions:
         - level: CAN_VIEW
           group_name: users

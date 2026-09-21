@@ -26,6 +26,7 @@ resources:
             dependencies:
               - databricks-sdk>=0.81,<1
               - requests>=2.32,<3
+              - psycopg2-binary>=2.9,<3
       tasks:
         - task_key: grouped_daily_landing
           environment_key: default
@@ -46,6 +47,8 @@ resources:
               - "{{job.parameters.max_dates}}"
               - --stop-after-row-estimate
               - "{{job.parameters.stop_after_row_estimate}}"
+              - --rate-limit-backend
+              - lakebase
           timeout_seconds: 3600
           max_retries: 2
           min_retry_interval_millis: 60000
