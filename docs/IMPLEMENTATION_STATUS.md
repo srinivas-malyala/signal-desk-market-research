@@ -1,6 +1,6 @@
 # Capstone Implementation Status
 
-Updated: 2026-09-11
+Updated: 2026-09-21
 
 This is the living tracker for implementation progress and external gates. A unit is complete only when its code and deterministic tests pass; workspace-dependent proof is listed separately.
 
@@ -14,7 +14,7 @@ This is the living tracker for implementation progress and external gates. A uni
 | 5 — MCP agent tools | Workspace acceptance in progress | Canonical corpus and Lakebase migration; ready 393-row Qwen3 Delta Sync hybrid index; passing 51-case semantic evaluation and live governed-market known-answer/freshness/entitlement acceptance; trusted identity; confirmed transactional idempotent writes; bounded pseudonymous traces/events; read-only-by-default deployed smoke harness; strict bundle validation | Admin must allow the deployer to manage the `massive` and `database` secret resources so they can be bound to the MCP app; then deploy, run the prepared health/action/idempotency/trace harness, and complete two-principal acceptance |
 | 6 — CDF analytics | Implementation in progress | Phase 6.2 locally accepted with five-source normalized streaming CDC, deduplicated pseudonymous Silver activity, five Gold usage metric families, and deterministic synthetic insert/update/delete/duplicate/late/null/error/privacy tests | Configure UI-only Lakehouse Sync for Phase 6.1, deploy the prepared pipeline, reconcile controlled live changes, and record propagation latency |
 | 7 — Agent integration | Prototype assets available | Prompt and configuration inventoried | Deployed supervisor, MCP connection, evaluation, and identity propagation |
-| 8 — Frontend | Prototype available | Existing Flask routes and core writes characterized | Authenticated research workflow, evidence UX, analytics page, and production states |
+| 8 — Frontend | Local hardening in progress | Existing Flask/Gunicorn shell retained; demo identity removed; user routes fail closed; request IDs and security headers added; watchlist writes moved behind a bounded user-token MCP client abstraction with confirmed idempotency and safe errors | Bind/deploy frontend and MCP resources; deployed auth smoke; research/evidence workflow; note/report actions; remaining direct-read migration; analytics page and complete UI states |
 | 9 — Release | Pending | Strict development bundle validation | Deployment, end-to-end acceptance, security/performance proof, documentation, and demo |
 
 ## Active sequence
@@ -26,7 +26,7 @@ This is the living tracker for implementation progress and external gates. A uni
 
 ## Current external inputs
 
-- Databricks profile: `dataexpertio_srini` — verified.
+- Databricks profile: `dataexpertio_srini` — configuration known; cached OAuth refresh became invalid on 2026-09-21 and must be renewed before the next workspace validation or deployment.
 - Unity Catalog: `bootcamp_students.student_sri` — verified.
 - SQL warehouse: `b15d3d6f837ba428` — verified serverless access.
 - Massive key: Databricks secret `massive/api-key` — verified without disclosure.
@@ -86,4 +86,6 @@ This is the living tracker for implementation progress and external gates. A uni
 - 2026-09-11 — Selective deployment of `apps.stock_research_mcp` passed strict bundle validation but was rejected before app creation because `malyalasrinivas@gmail.com` lacks the permission required to add the administrator-owned `massive-api-key` secret resource. The deployer also cannot inspect ACLs for either `massive` or `database`; an administrator must grant the deployer `MANAGE` on both secret resources (or perform an equivalent administrator-managed binding). Workspace verification confirms that no partial `signal-desk-mcp-dev` app was left behind.
 - 2026-09-11 — Corrected stale Phase 0 deployment and Phase 4 migration/table/replica-identity records. Phase 5.2 live acceptance passed: 9 AAPL rows reconciled independently through 2026-09-09, the 30-day return matched at 0.24%, freshness was 2 days, the free-plan snapshot denial degraded safely, and only 1 Massive attempt was made. Added a read-only-by-default post-deployment harness for nine-tool discovery, governed and semantic retrieval, opt-in reversible idempotency writes, and bounded trace/event reconciliation. The full local suite now passes 157 tests and lint.
 - 2026-09-11 — Phase 6.2 local acceptance completed. Added a parameterized serverless activity analytics pipeline with five Lakehouse Sync append flows, effective-change deduplication, pseudonymous Silver activity, and Gold datasets for daily active researchers, tool usage/latency, error rate, watchlist changes, and research saves. A privacy-bearing synthetic sequence proves inserts, updates, deletes, exact duplicates, late events, null duration, known aggregates, quarantine, and authored-text exclusion. Live deployment correctly remains gated on UI-only Phase 6.1 Lakehouse Sync configuration.
+- 2026-09-21 — Phase 8 frontend local hardening completed for the current shell. Removed `demo@example.com`, required forwarded email plus user access token on every non-health route, added server-generated request IDs and restrictive response headers, bounded request bodies, and safe correlated errors. Watchlist add/remove now use a typed FastMCP client with user-token authorization, explicit confirmation, idempotency, TLS/timeout/response-size validation, and no forged forwarded identity headers. Eighteen focused tests pass; deployment remains gated on the MCP application and frontend MCP resource/URL binding.
+- 2026-09-21 — The full local suite passes 178 tests and whole-repository lint after Phase 8 hardening. Strict development bundle validation was attempted with `dataexpertio_srini` but the workspace rejected its cached refresh token as `invalid_grant`; re-authentication is required before workspace validation or deployment and no pass is claimed for this attempt.
 - The Lakebase-dependent MCP application remains undeployed. Deployment-level health, action, idempotency, trace, and two-real-principal identity checks remain Phase 5 gates.

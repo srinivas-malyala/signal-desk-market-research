@@ -35,6 +35,8 @@ Both Databricks Apps receive `DATABRICKS_WAREHOUSE_ID` from an attached `sql-war
 | `SIGNAL_DESK_TABLE_SUFFIX` | MCP/frontend/migrations | Per-student Lakebase table namespace | Non-secret lowercase identifier; `srini` |
 | `SIGNAL_DESK_GRAPH_SCHEMA` | MCP/frontend/CDF reads | Lakebase schema containing replicated graph tables | Non-secret environment value; `bootcamp_cdc` |
 | `lakebase_table_suffix` | Activity analytics bundle | Resolves Lakehouse Sync history names for shared-schema source tables | Bundle variable; development value `srini` |
+| `MCP_SERVER_URL` | frontend write service | Watchlist and later research/action tool calls | HTTPS MCP Databricks App URL; deployed binding remains a Phase 8 gate |
+| `MCP_TIMEOUT_SECONDS` | frontend write service | Optional MCP timeout override | Integer 1–60; defaults to 20 seconds |
 | `RAW_VOLUME_PATH` | ingestion/pipeline | Raw file landing | Bundle-derived `/Volumes/...` path |
 
 ## Required Databricks app resource keys

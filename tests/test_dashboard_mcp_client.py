@@ -1,0 +1,107 @@
+from __future__ import annotations
+
+import importlib.util
+import sys
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
+ROOT = Path(__file__).parents[1]
+DASHBOARD_ROOT = ROOT / "dashboard"
+SPEC = importlib.util.spec_from_file_location("dashboard_mcp_client", DASHBOARD_ROOT / "mcp_client.py")
+assert SPEC and SPEC.loader
+MCP_CLIENT = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = MCP_CLIENT
+SPEC.loader.exec_module(MCP_CLIENT)
+FastMCPWatchlistClient = MCP_CLIENT.FastMCPWatchlistClient
+MCPConfigurationError = MCP_CLIENT.MCPConfigurationError
+MCPToolError = MCP_CLIENT.MCPToolError
+MCPUnavailableError = MCP_CLIENT.MCPUnavailableError
+_payload = MCP_CLIENT._payload
+
+
+def test_mcp_endpoint_configuration_fails_closed_and_requires_tls(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("MCP_SERVER_URL", raising=False)
+    with pytest.raises(MCPConfigurationError):
+        FastMCPWatchlistClient.from_environment()
+
+    monkeypatch.setenv("MCP_SERVER_URL", "http://mcp.example.test")
+    with pytest.raises(MCPConfigurationError):
+        FastMCPWatchlistClient.from_environment()
+
+    monkeypatch.setenv("MCP_SERVER_URL", "https://mcp.example.test")
+    client = FastMCPWatchlistClient.from_environment()
+    assert client.endpoint == "https://mcp.example.test/mcp"
+
+    monkeypatch.setenv("MCP_TIMEOUT_SECONDS", "not-a-number")
+    with pytest.raises(MCPConfigurationError, match="timeout"):
+        FastMCPWatchlistClient.from_environment()
+    monkeypatch.delenv("MCP_TIMEOUT_SECONDS")
+
+    monkeypatch.setenv("MCP_SERVER_URL", "http://localhost:8001/mcp")
+    assert FastMCPWatchlistClient.from_environment().endpoint == "http://localhost:8001/mcp"
+
+
+def test_mcp_payload_accepts_structured_results_and_rejects_errors_and_oversize() -> None:
+    assert _payload(SimpleNamespace(structuredContent={"status": "success", "ticker": "AAPL"})) == {
+        "status": "success",
+        "ticker": "AAPL",
+    }
+    with pytest.raises(MCPToolError, match="already present"):
+        _payload(SimpleNamespace(structuredContent={"status": "error", "message": "Ticker already present"}))
+    with pytest.raises(MCPToolError) as bounded_error:
+        _payload(SimpleNamespace(structuredContent={"status": "error", "message": "x" * 5_000}))
+    assert len(str(bounded_error.value)) == 500
+    with pytest.raises(MCPUnavailableError, match="exceeded"):
+        _payload(SimpleNamespace(structuredContent={"status": "success", "value": "x" * 256_001}))
+
+
+def test_watchlist_client_builds_confirmed_bounded_tool_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured = {}
+
+    async def fake_call(self, name, arguments, access_token, request_id):
+        captured.update(
+            {
+                "name": name,
+                "arguments": arguments,
+                "access_token": access_token,
+                "request_id": request_id,
+            }
+        )
+        return {"status": "success", "ticker": arguments["ticker"]}
+
+    monkeypatch.setattr(FastMCPWatchlistClient, "_call", fake_call)
+    client = FastMCPWatchlistClient("https://mcp.example.test/mcp")
+    result = client.update_watchlist(
+        ticker="AAPL",
+        action="add",
+        access_token="user-token",
+        request_id="request-123",
+        idempotency_key="frontend-request-123",
+    )
+
+    assert result == {"status": "success", "ticker": "AAPL"}
+    assert captured == {
+        "name": "update_watchlist",
+        "arguments": {
+            "ticker": "AAPL",
+            "action": "add",
+            "watchlist_name": "Primary",
+            "confirmed": True,
+            "idempotency_key": "frontend-request-123",
+        },
+        "access_token": "user-token",
+        "request_id": "request-123",
+    }
+
+
+def test_mcp_client_never_forges_forwarded_identity_headers() -> None:
+    source = (DASHBOARD_ROOT / "mcp_client.py").read_text(encoding="utf-8").lower()
+    assert "x-forwarded-email" not in source
+    assert "x-forwarded-user" not in source
+    assert "x-forwarded-access-token" not in source
