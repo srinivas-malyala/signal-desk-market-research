@@ -2,6 +2,12 @@ command: ["gunicorn", "--bind", "0.0.0.0:8000", "app:app"]
 env:
   - name: DATABRICKS_WAREHOUSE_ID
     valueFrom: sql-warehouse
+  - name: DATABRICKS_CATALOG
+    value: bootcamp_students
+  - name: DATABRICKS_SCHEMA
+    value: student_sri
+  - name: ANALYTICS_STALE_AFTER_SECONDS
+    value: "3600"
   - name: LAKEBASE_URL
     valueFrom: lakebase-url
   - name: SIGNAL_DESK_SCHEMA

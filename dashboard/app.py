@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import lakebase
+from analytics_client import AnalyticsClient, AnalyticsUnavailableError, DatabricksSQLAnalyticsClient
 from flask import Flask, Response, g, jsonify, render_template, request
 from mcp_client import (
     FastMCPSignalDeskClient,
@@ -105,6 +106,11 @@ def mcp_rejected(error_value: MCPToolError):
     return _error(str(error_value), status, error_value.error_code)
 
 
+@app.errorhandler(AnalyticsUnavailableError)
+def analytics_unavailable(_error_value: AnalyticsUnavailableError):
+    return _error("Usage analytics are temporarily unavailable.", 502, "analytics_unavailable")
+
+
 @app.errorhandler(Exception)
 def unexpected_error(error_value: Exception):
     if isinstance(error_value, HTTPException):
@@ -144,6 +150,11 @@ def _watchlist_client() -> WatchlistClient:
     if factory is not None:
         return factory()
     return FastMCPSignalDeskClient.from_environment()
+
+
+def _analytics_client() -> AnalyticsClient:
+    factory = app.config.get("ANALYTICS_CLIENT_FACTORY")
+    return factory() if factory is not None else DatabricksSQLAnalyticsClient.from_environment()
 
 
 def _request_payload() -> dict[str, Any]:
@@ -263,6 +274,11 @@ def index():
 @app.get("/healthz")
 def health():
     return {"status": "ok", "service": "signal-desk-frontend", "contract_version": "1.0"}
+
+
+@app.get("/api/analytics")
+def analytics():
+    return jsonify({**_analytics_client().snapshot(), "request_id": g.request_id})
 
 
 @app.get("/api/overview")

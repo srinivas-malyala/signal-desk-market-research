@@ -39,14 +39,17 @@ def app_module(monkeypatch: pytest.MonkeyPatch):
     fake_mcp.get_notable_updates.return_value = {"status": "success", "new_articles": []}
     fake_mcp.save_research_note.return_value = {"status": "success", "note_id": 1}
     fake_mcp.save_analysis_report.return_value = {"status": "success", "report_id": 1}
+    fake_analytics = Mock()
+    fake_analytics.snapshot.return_value = {"status": "success", "state": "empty", "datasets": {}, "execution_identity": "Databricks App service principal"}
     monkeypatch.setitem(sys.modules, "lakebase", fake_db)
     monkeypatch.syspath_prepend(str(DASHBOARD_ROOT))
     spec = importlib.util.spec_from_file_location("dashboard_app", DASHBOARD_ROOT / "app.py")
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    module.app.config.update(TESTING=True, MCP_CLIENT_FACTORY=lambda: fake_mcp)
+    module.app.config.update(TESTING=True, MCP_CLIENT_FACTORY=lambda: fake_mcp, ANALYTICS_CLIENT_FACTORY=lambda: fake_analytics)
     module.test_mcp = fake_mcp
+    module.test_analytics = fake_analytics
     return module
 
 
@@ -323,6 +326,21 @@ def test_report_save_requires_confirmation_and_uses_one_idempotent_mcp_write(app
         title="Cloud peers", thesis="Compare growth", tickers=["MSFT", "AMZN"], report_text="Approved report", source_context={},
         access_token="trusted-user-token", request_id=response.headers["X-Request-ID"], idempotency_key="frontend-report-123"
     )
+
+
+def test_analytics_route_returns_bounded_shared_metrics(app_module) -> None:
+    response = app_module.app.test_client().get("/api/analytics", headers=AUTH_HEADERS)
+    assert response.status_code == 200
+    assert response.get_json()["execution_identity"] == "Databricks App service principal"
+    app_module.test_analytics.snapshot.assert_called_once_with()
+
+
+def test_analytics_dependency_failure_is_safe(app_module) -> None:
+    app_module.test_analytics.snapshot.side_effect = app_module.AnalyticsUnavailableError("warehouse internals")
+    response = app_module.app.test_client().get("/api/analytics", headers=AUTH_HEADERS)
+    assert response.status_code == 502
+    assert response.get_json()["error_code"] == "analytics_unavailable"
+    assert "warehouse internals" not in response.get_data(as_text=True)
 
 
 def test_demo_identity_and_direct_watchlist_writes_are_removed() -> None:
