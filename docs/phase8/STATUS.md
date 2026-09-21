@@ -4,7 +4,7 @@ Updated: 2026-09-21
 
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
-| 8.1 Flask shell and authentication | Local hardening complete | Flask/Gunicorn retained; demo identity removed; forwarded email and user token required; health remains public; request IDs and security headers cover success/error responses; template escaping and startup configuration tested | Restore `dataexpertio_srini` OAuth, rerun strict bundle validation, bind the deployed MCP URL/resource, deploy the frontend, and run authenticated service-principal/user smoke tests |
+| 8.1 Flask shell and authentication | Local hardening complete; bundle validated | Flask/Gunicorn retained; demo identity removed; forwarded email and user token required; health remains public; request IDs and security headers cover success/error responses; template escaping and startup configuration tested; renewed OAuth identity and strict development bundle validation verified | Bind the deployed MCP URL/resource, deploy the frontend, and run authenticated service-principal/user smoke tests |
 | 8.2 Research and evidence workflow | Local implementation complete | Authenticated MCP routes support bounded performance, 2–5 ticker comparison, and hybrid filing/news evidence; UI exposes progress, empty/error/partial/rate-limit states, source links, context labels, as-of metadata, limitations, execution identity, and disclaimer | Deploy MCP/frontend and run the browser evidence-source acceptance flow |
 | 8.3 Watchlists, notes, and reports | Local core workflow complete | Confirmed add/remove, note save, and report save use one authenticated idempotent MCP call; browser confirmation/cancel behavior and user-owned reload views are implemented; watchlist/news overview reads now use MCP and read-only overview no longer creates users | Deployed write/reload/two-user acceptance; note deletion requires a future versioned MCP delete contract because MCP 1.0 intentionally exposes only nine tools |
 | 8.4 Usage analytics page | Local implementation complete | Bounded app-auth SQL Warehouse client reads five Phase 6 Gold datasets; page shows contextual DAU, error rate, watchlist and save KPIs, exact tool usage/P95 table, source/freshness, service-principal execution, and empty/partial/stale/error states | Deploy Phase 6 pipeline and frontend, then prove a controlled MCP action appears with correct count and measured freshness |
@@ -78,8 +78,8 @@ execution because these are shared pseudonymous aggregates, not user-owned
 operational rows. KPI cards include period context, source, and freshness;
 exact tool counts and P95 latency use a table instead of an ornamental chart.
 
-The complete local suite passes 207 tests and whole-repository lint. Strict
-bundle validation was attempted on 2026-09-21 with the required
-`dataexpertio_srini` profile but could not refresh its expired OAuth token; this
-is recorded as an external authentication gate, not as a validation success or
-an application defect.
+The complete local suite passes 207 tests and whole-repository lint. On
+2026-09-21, OAuth for the required `dataexpertio_srini` profile was renewed,
+the active identity was verified as `malyalasrinivas@gmail.com`, and strict
+development bundle validation passed. Deployment still depends on the
+administrator-managed MCP secret-resource binding.

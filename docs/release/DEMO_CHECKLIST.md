@@ -8,7 +8,9 @@ connection URLs, direct email values, or user-authored note/report bodies.
 
 ## A. Deployment gates
 
-- [ ] Renew OAuth for explicit profile `dataexpertio_srini`; confirm the intended workspace host.
+- [x] Renew OAuth for explicit profile `dataexpertio_srini`; confirmed
+  `malyalasrinivas@gmail.com` on the intended workspace and passed strict
+  development bundle validation on 2026-09-21.
 - [ ] Admin resolves MCP access to the `massive/api-key` and
   `database/lakebase-url` secret resources.
 - [ ] Apply checksum migration `0005`; verify

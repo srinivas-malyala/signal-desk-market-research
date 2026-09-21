@@ -26,7 +26,7 @@ This is the living tracker for implementation progress and external gates. A uni
 
 ## Current external inputs
 
-- Databricks profile: `dataexpertio_srini` — configuration known; cached OAuth refresh became invalid on 2026-09-21 and must be renewed before the next workspace validation or deployment.
+- Databricks profile: `dataexpertio_srini` — OAuth renewed on 2026-09-21, authenticated as `malyalasrinivas@gmail.com`, and strict development bundle validation passes against the intended workspace.
 - Unity Catalog: `bootcamp_students.student_sri` — verified.
 - SQL warehouse: `b15d3d6f837ba428` — verified serverless access.
 - Massive key: Databricks secret `massive/api-key` — verified without disclosure.
@@ -96,4 +96,5 @@ This is the living tracker for implementation progress and external gates. A uni
 - 2026-09-11 — Phase 6.2 local acceptance completed. Added a parameterized serverless activity analytics pipeline with five Lakehouse Sync append flows, effective-change deduplication, pseudonymous Silver activity, and Gold datasets for daily active researchers, tool usage/latency, error rate, watchlist changes, and research saves. A privacy-bearing synthetic sequence proves inserts, updates, deletes, exact duplicates, late events, null duration, known aggregates, quarantine, and authored-text exclusion. Live deployment correctly remains gated on UI-only Phase 6.1 Lakehouse Sync configuration.
 - 2026-09-21 — Phase 8 frontend local hardening completed for the current shell. Removed `demo@example.com`, required forwarded email plus user access token on every non-health route, added server-generated request IDs and restrictive response headers, bounded request bodies, and safe correlated errors. Watchlist add/remove now use a typed FastMCP client with user-token authorization, explicit confirmation, idempotency, TLS/timeout/response-size validation, and no forged forwarded identity headers. Eighteen focused tests pass; deployment remains gated on the MCP application and frontend MCP resource/URL binding.
 - 2026-09-21 — The full local suite passes 178 tests and whole-repository lint after Phase 8 hardening. Strict development bundle validation was attempted with `dataexpertio_srini` but the workspace rejected its cached refresh token as `invalid_grant`; re-authentication is required before workspace validation or deployment and no pass is claimed for this attempt.
+- 2026-09-21 — Renewed OAuth for the explicit `dataexpertio_srini` profile, verified the active workspace identity as `malyalasrinivas@gmail.com`, and reran `databricks bundle validate --strict -t dev --profile dataexpertio_srini` successfully. The OAuth gate is closed; administrator-managed MCP secret-resource binding remains the next deployment blocker.
 - The Lakebase-dependent MCP application remains undeployed. Deployment-level health, action, idempotency, trace, and two-real-principal identity checks remain Phase 5 gates.
