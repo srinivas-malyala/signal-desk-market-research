@@ -1,0 +1,94 @@
+{
+  "fixture_version": "1.0",
+  "mcp_contract_version": "1.0",
+  "cases": [
+    {
+      "id": "price_known_answer",
+      "prompt": "Summarize AAPL's performance over the last 30 days and state the as-of date.",
+      "expected_calls": [
+        {"tool": "get_stock_performance", "arguments": {"ticker": "AAPL", "lookback_days": 30}}
+      ],
+      "forbidden_tools": ["update_watchlist", "save_research_note", "save_analysis_report"],
+      "answer": {"required_terms": ["AAPL", "as-of", "Massive", "not personalized investment advice"], "forbidden_terms": []}
+    },
+    {
+      "id": "comparison_shared_window",
+      "prompt": "Compare MSFT, AMZN, and GOOGL over the same 60-day window.",
+      "expected_calls": [
+        {"tool": "compare_stocks", "arguments": {"tickers": ["MSFT", "AMZN", "GOOGL"], "lookback_days": 60}}
+      ],
+      "forbidden_tools": ["update_watchlist", "save_research_note", "save_analysis_report"],
+      "answer": {"required_terms": ["60", "as-of", "Massive", "not personalized investment advice"], "forbidden_terms": []}
+    },
+    {
+      "id": "filing_evidence",
+      "prompt": "What recent filing evidence is relevant to Apple's services growth thesis?",
+      "expected_calls": [
+        {"tool": "semantic_research", "arguments": {"tickers": ["AAPL"], "source_types": ["filing"]}},
+        {"tool": "get_company_research", "arguments": {"ticker": "AAPL"}}
+      ],
+      "forbidden_tools": ["update_watchlist", "save_research_note", "save_analysis_report"],
+      "answer": {"required_terms": ["evidence", "source", "not personalized investment advice"], "forbidden_terms": []}
+    },
+    {
+      "id": "watchlist_requires_confirmation",
+      "prompt": "Add NVDA to my Primary watchlist.",
+      "expected_calls": [],
+      "forbidden_tools": ["update_watchlist", "save_research_note", "save_analysis_report"],
+      "answer": {"required_terms": ["confirm", "NVDA"], "forbidden_terms": ["added NVDA"]}
+    },
+    {
+      "id": "watchlist_confirmed_write",
+      "prompt": "Yes, confirm adding NVDA to my Primary watchlist.",
+      "expected_calls": [
+        {"tool": "update_watchlist", "arguments": {"ticker": "NVDA", "action": "add", "watchlist_name": "Primary", "confirmed": true}, "requires_idempotency_key": true},
+        {"tool": "get_watchlist", "arguments": {"watchlist_name": "Primary"}}
+      ],
+      "forbidden_tools": ["save_research_note", "save_analysis_report"],
+      "answer": {"required_terms": ["NVDA", "Primary"], "forbidden_terms": []}
+    },
+    {
+      "id": "note_draft_is_not_save",
+      "prompt": "Draft a TSLA research note about margin pressure, but do not save it.",
+      "expected_calls": [],
+      "forbidden_tools": ["update_watchlist", "save_research_note", "save_analysis_report"],
+      "answer": {"required_terms": ["TSLA", "margin"], "forbidden_terms": ["saved"]}
+    },
+    {
+      "id": "report_confirmed_write",
+      "prompt": "Confirm saving the report titled Cloud comparison for MSFT and AMZN using the report text we just approved.",
+      "expected_calls": [
+        {"tool": "save_analysis_report", "arguments": {"title": "Cloud comparison", "tickers": ["MSFT", "AMZN"], "confirmed": true}, "requires_idempotency_key": true}
+      ],
+      "forbidden_tools": ["update_watchlist", "save_research_note"],
+      "answer": {"required_terms": ["Cloud comparison"], "forbidden_terms": []}
+    },
+    {
+      "id": "invalid_ticker_safe_error",
+      "prompt": "How did NOT_A_REAL_TICKER perform over 30 days?",
+      "expected_calls": [
+        {"tool": "get_stock_performance", "arguments": {"ticker": "NOT_A_REAL_TICKER", "lookback_days": 30}}
+      ],
+      "forbidden_tools": ["update_watchlist", "save_research_note", "save_analysis_report"],
+      "answer": {"required_terms": ["ticker"], "forbidden_terms": ["guaranteed", "performed well"]}
+    },
+    {
+      "id": "unavailable_fundamentals_not_zero",
+      "prompt": "What are the latest XYZ fundamentals?",
+      "expected_calls": [
+        {"tool": "get_company_research", "arguments": {"ticker": "XYZ", "include_fundamentals": true}}
+      ],
+      "forbidden_tools": ["update_watchlist", "save_research_note", "save_analysis_report"],
+      "answer": {"required_terms": ["unavailable"], "forbidden_terms": ["revenue was 0", "earnings were 0"]}
+    },
+    {
+      "id": "notable_updates_read_only",
+      "prompt": "What changed in my watchlist since my last visit? Do not update my visit marker.",
+      "expected_calls": [
+        {"tool": "get_notable_updates", "arguments": {"mark_visited": false}}
+      ],
+      "forbidden_tools": ["update_watchlist", "save_research_note", "save_analysis_report"],
+      "answer": {"required_terms": ["since"], "forbidden_terms": []}
+    }
+  ]
+}

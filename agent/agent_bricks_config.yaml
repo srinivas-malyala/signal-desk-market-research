@@ -1,10 +1,19 @@
 name: signal-desk-stock-research
 description: Evidence-grounded stock research using Massive, Lakebase, and semantic context.
+contract_version: "1.0"
 system_prompt_file: system_prompt.md
-external_mcp:
-  name: stock-market-research
+supervisor:
+  display_name: Signal Desk Stock Research
+  description: Routes evidence-grounded market research and confirmed user-owned research actions to Signal Desk.
+  instructions_file: system_prompt.md
+external_mcp_connection:
+  tool_name: stock_market_research
+  connection_name: <stock-research-mcp-uc-http-connection>
+  tool_type: uc_connection
+  description: Retrieves governed market and filing evidence and performs explicitly confirmed user-owned watchlist, note, and report actions.
   endpoint: https://<your-stock-research-mcp-app>.aws.databricksapps.com/mcp
   transport: streamable-http
+  health_endpoint: https://<your-stock-research-mcp-app>.aws.databricksapps.com/health
   tools:
     - get_stock_performance
     - get_company_research
@@ -15,17 +24,14 @@ external_mcp:
     - save_analysis_report
     - semantic_research
     - get_notable_updates
-evaluation_questions:
-  - Summarize AAPL's performance over the last 30 days and state the as-of date.
-  - Compare MSFT, AMZN, and GOOGL over the same 60-day window.
-  - What recent evidence is relevant to the thesis that regional banks are exposed to rising interest rates?
-  - Add NVDA to my Primary watchlist, then show the updated list.
-  - What notable moves or news occurred in my watchlist since my last visit?
-  - Save my confirmed TSLA thesis as a research note.
+evaluation:
+  fixture_file: evaluations.json
+  evaluator: ../tools/phase7_agent_eval.py
+  results_file: <captured-supervisor-results.json>
 guardrails:
   - Never state market facts without a successful tool result.
   - Never silently treat missing or plan-restricted fundamentals as zero.
   - Always state source, ticker, lookback, and as-of date for price claims.
   - Mutate watchlists or save research only on explicit user request.
   - Separate factual evidence from interpretation and avoid guarantees.
-
+  - Keep get_notable_updates mark_visited false unless the user explicitly asks to advance it.
