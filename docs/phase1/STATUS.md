@@ -4,7 +4,7 @@ Updated: 2026-09-21
 
 | Unit | Implementation | Evidence | Remaining gate |
 |---|---|---|---|
-| 1.1 Shared Massive client and limiter | Cross-host implementation complete locally | Every physical attempt is limited; file-backed single-host mode retained; deployed MCP and ingestion paths select a Lakebase transaction-lock coordinator with database time, four-attempt/60-second ceiling, and fail-closed behavior | Apply migration `0005` and exercise simultaneous Job/MCP callers after app deployment |
+| 1.1 Shared Massive client and limiter | Cross-host migration workspace verified | Every physical attempt is limited; file-backed single-host mode retained; deployed MCP and ingestion paths select a Lakebase transaction-lock coordinator with database time, four-attempt/60-second ceiling, and fail-closed behavior; migration `0005` created and verified the shared attempt ledger idempotently | Exercise simultaneous Job/MCP callers after app deployment |
 | 1.2 Trading dates and checkpoints | Workspace verified | Two-year bounds, weekday planning, six explicit states, atomic persistence, stale recovery, corrupt-state failure, 20-date interruption/resume test, and successful UC Volume resume | None |
 | 1.3 Immutable raw landing | Workspace verified | Atomic response/manifest pairs, SHA-256 validation, replay, holiday no-data state, row stop, structured metrics, strict bundle validation, 10-date workspace run, and zero-call rerun | None for the single-job workspace workflow |
 
@@ -28,7 +28,7 @@ An identical rerun produced `api_dates=0`, `http_attempts=0`, and `skipped_dates
 - Run the same code as the serverless `market_ingestion` Lakeflow Job.
 - Confirm `os.replace` and advisory lock behavior on `/Volumes/bootcamp_students/student_sri/signal_desk_raw`.
 - Complete a 10-date pilot and reconcile all manifest row counts.
-- Apply Lakebase migration `0005`, then prove the fifth acquisition across one Job and one MCP host waits for the first rolling-window slot. Interactive Massive traffic remains disabled until that gate passes.
+- Prove the fifth acquisition across one Job and one MCP host waits for the first rolling-window slot. Interactive Massive traffic remains disabled until that gate passes.
 
 ## Workspace deployment evidence
 

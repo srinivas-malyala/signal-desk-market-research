@@ -13,9 +13,9 @@ connection URLs, direct email values, or user-authored note/report bodies.
   development bundle validation on 2026-09-21.
 - [ ] Admin resolves MCP access to the `massive/api-key` and
   `database/lakebase-url` secret resources.
-- [ ] Apply checksum migration `0005`; verify
-  `bootcamp_students.massive_api_attempts_srini` exists and a second migration
-  pass applies nothing.
+- [x] Apply checksum migration `0005`; verified
+  `bootcamp_students.massive_api_attempts_srini` and its time index exist, the
+  ledger records `0005`, and a second migration pass applies nothing.
 - [ ] Validate/deploy the MCP app; record app URL and deployment ID.
 - [ ] Run the Phase 5 post-deployment harness: health, nine-tool discovery,
   governed retrieval, semantic retrieval, opt-in reversible write,
