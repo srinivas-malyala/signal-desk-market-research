@@ -35,6 +35,10 @@ def app_module(monkeypatch: pytest.MonkeyPatch):
     fake_mcp.compare_stocks.return_value = {"status": "success", "comparisons": []}
     fake_mcp.semantic_research.return_value = {"status": "success", "results": []}
     fake_mcp.get_company_research.return_value = {"status": "success", "ticker": "AAPL"}
+    fake_mcp.get_watchlist.return_value = {"status": "success", "tickers": []}
+    fake_mcp.get_notable_updates.return_value = {"status": "success", "new_articles": []}
+    fake_mcp.save_research_note.return_value = {"status": "success", "note_id": 1}
+    fake_mcp.save_analysis_report.return_value = {"status": "success", "report_id": 1}
     monkeypatch.setitem(sys.modules, "lakebase", fake_db)
     monkeypatch.syspath_prepend(str(DASHBOARD_ROOT))
     spec = importlib.util.spec_from_file_location("dashboard_app", DASHBOARD_ROOT / "app.py")
@@ -276,6 +280,49 @@ def test_dashboard_sql_uses_student_suffixed_tables(app_module) -> None:
     assert statements
     assert all("bootcamp_students." in statement for statement in statements)
     assert all("_srini" in statement for statement in statements)
+
+
+def test_overview_reads_watchlist_and_updates_through_authenticated_mcp(app_module) -> None:
+    response = app_module.app.test_client().get("/api/overview", headers=AUTH_HEADERS)
+    assert response.status_code == 200
+    request_id = response.headers["X-Request-ID"]
+    app_module.test_mcp.get_watchlist.assert_called_once_with(
+        access_token="trusted-user-token", request_id=request_id
+    )
+    app_module.test_mcp.get_notable_updates.assert_called_once_with(
+        access_token="trusted-user-token", request_id=request_id
+    )
+
+
+def test_note_save_requires_confirmation_and_uses_one_idempotent_mcp_write(app_module) -> None:
+    unconfirmed = app_module.app.test_client().post(
+        "/api/notes", json={"ticker": "AAPL", "title": "Thesis", "note_text": "Services growth"}, headers=AUTH_HEADERS
+    )
+    assert unconfirmed.status_code == 400
+    app_module.test_mcp.save_research_note.assert_not_called()
+    response = app_module.app.test_client().post(
+        "/api/notes",
+        json={"ticker": "AAPL", "title": "Thesis", "note_text": "Services growth", "thesis_tags": ["services"], "confirmed": True},
+        headers={**AUTH_HEADERS, "Idempotency-Key": "frontend-note-123"},
+    )
+    assert response.status_code == 201
+    app_module.test_mcp.save_research_note.assert_called_once_with(
+        ticker="AAPL", title="Thesis", note_text="Services growth", thesis_tags=["services"],
+        access_token="trusted-user-token", request_id=response.headers["X-Request-ID"], idempotency_key="frontend-note-123"
+    )
+
+
+def test_report_save_requires_confirmation_and_uses_one_idempotent_mcp_write(app_module) -> None:
+    response = app_module.app.test_client().post(
+        "/api/reports",
+        json={"title": "Cloud peers", "thesis": "Compare growth", "tickers": ["MSFT", "AMZN"], "report_text": "Approved report", "confirmed": True},
+        headers={**AUTH_HEADERS, "Idempotency-Key": "frontend-report-123"},
+    )
+    assert response.status_code == 201
+    app_module.test_mcp.save_analysis_report.assert_called_once_with(
+        title="Cloud peers", thesis="Compare growth", tickers=["MSFT", "AMZN"], report_text="Approved report", source_context={},
+        access_token="trusted-user-token", request_id=response.headers["X-Request-ID"], idempotency_key="frontend-report-123"
+    )
 
 
 def test_demo_identity_and_direct_watchlist_writes_are_removed() -> None:

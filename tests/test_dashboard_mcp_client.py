@@ -131,6 +131,20 @@ def test_research_methods_align_with_final_mcp_arguments(monkeypatch: pytest.Mon
     assert calls[3][1]["include_fundamentals"] is True
 
 
+def test_saved_research_methods_are_confirmed_and_idempotent(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = []
+    async def fake_call(self, name, arguments, access_token, request_id):
+        calls.append((name, arguments))
+        return {"status": "success"}
+    monkeypatch.setattr(FastMCPWatchlistClient, "_call", fake_call)
+    client = FastMCPWatchlistClient("https://mcp.example.test/mcp")
+    client.save_research_note(ticker="AAPL", title="Thesis", note_text="Text", thesis_tags=[], access_token="token", request_id="req", idempotency_key="note-key-123")
+    client.save_analysis_report(title="Report", thesis="Thesis", tickers=["AAPL"], report_text="Text", source_context={}, access_token="token", request_id="req", idempotency_key="report-key-123")
+    assert [call[0] for call in calls] == ["save_research_note", "save_analysis_report"]
+    assert all(call[1]["confirmed"] is True for call in calls)
+    assert [call[1]["idempotency_key"] for call in calls] == ["note-key-123", "report-key-123"]
+
+
 def test_mcp_client_never_forges_forwarded_identity_headers() -> None:
     source = (DASHBOARD_ROOT / "mcp_client.py").read_text(encoding="utf-8").lower()
     assert "x-forwarded-email" not in source

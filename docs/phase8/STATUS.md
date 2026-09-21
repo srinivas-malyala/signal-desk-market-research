@@ -6,7 +6,7 @@ Updated: 2026-09-21
 |---|---|---|---|
 | 8.1 Flask shell and authentication | Local hardening complete | Flask/Gunicorn retained; demo identity removed; forwarded email and user token required; health remains public; request IDs and security headers cover success/error responses; template escaping and startup configuration tested | Restore `dataexpertio_srini` OAuth, rerun strict bundle validation, bind the deployed MCP URL/resource, deploy the frontend, and run authenticated service-principal/user smoke tests |
 | 8.2 Research and evidence workflow | Local implementation complete | Authenticated MCP routes support bounded performance, 2–5 ticker comparison, and hybrid filing/news evidence; UI exposes progress, empty/error/partial/rate-limit states, source links, context labels, as-of metadata, limitations, execution identity, and disclaimer | Deploy MCP/frontend and run the browser evidence-source acceptance flow |
-| 8.3 Watchlists, notes, and reports | In progress | Existing add/remove UX retained; watchlist writes now cross a typed MCP abstraction with explicit confirmation, per-action idempotency, user-token auth, response bounds, and safe failures | Deployed write/reload acceptance; add note/report actions and migrate remaining direct overview reads behind authenticated services |
+| 8.3 Watchlists, notes, and reports | Local core workflow complete | Confirmed add/remove, note save, and report save use one authenticated idempotent MCP call; browser confirmation/cancel behavior and user-owned reload views are implemented; watchlist/news overview reads now use MCP and read-only overview no longer creates users | Deployed write/reload/two-user acceptance; note deletion requires a future versioned MCP delete contract because MCP 1.0 intentionally exposes only nine tools |
 | 8.4 Usage analytics page | Pending | Phase 6.2 Gold contracts implemented locally | Add warehouse-backed analytics UI after Phase 6 deployment |
 
 ## Local security contract
@@ -40,11 +40,11 @@ of FastMCP transport details. The production adapter:
 - always sends `confirmed=true` plus an 8–128 character idempotency key for
   watchlist writes.
 
-The browser generates one idempotency key per explicit add/remove action and
-displays correlated safe errors. The existing read-only overview still queries
-Lakebase directly so the current shell remains functional; moving those reads
-behind authenticated service APIs is explicitly pending rather than being
-misreported as complete.
+The browser generates one idempotency key per explicit add/remove/save action,
+requires a visible confirmation, and displays correlated safe errors. Watchlist
+and notable-news reads now use the authenticated MCP boundary. Saved-history
+and sanitized-trace display remain bounded Lakebase reads until MCP gains a
+versioned saved-history API; the read path no longer creates a user row.
 
 ## Research-screen design contract
 
@@ -59,7 +59,7 @@ signed-in identity and authenticated-user execution disclosure remain visible.
 
 ## Local acceptance
 
-Twenty-three focused tests cover public health, missing email/token combinations,
+Twenty-seven focused tests cover public health, missing email/token combinations,
 body-supplied identity rejection, Jinja escaping, security headers, UUID request
 IDs, invalid ticker/idempotency rejection, token/request-ID propagation into the
 client abstraction, direct-write removal, dependency failure redaction, endpoint
@@ -67,6 +67,8 @@ TLS/configuration validation, confirmed MCP arguments, response size bounds,
 oversized request rejection, and absence of forged forwarded identity headers.
 They now also cover final-contract performance/comparison/evidence arguments,
 input bounds, optional company context, and a distinct rate-limited response.
+Confirmed note/report tests prove cancel/unconfirmed requests make no tool call,
+and one accepted browser request maps to one idempotent MCP write.
 
 The complete local suite passes 178 tests and whole-repository lint. Strict
 bundle validation was attempted on 2026-09-21 with the required

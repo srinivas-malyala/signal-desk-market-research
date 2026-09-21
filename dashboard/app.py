@@ -134,14 +134,9 @@ def _user_subject() -> str:
     return hashlib.sha256(_user_email().encode("utf-8")).hexdigest()
 
 
-def _user_id() -> int:
-    row = lakebase.write(
-        f"INSERT INTO {_table('users')}(email) VALUES(%s) "
-        "ON CONFLICT(email) DO UPDATE SET updated_at=now() RETURNING id",
-        (_user_email(),),
-        True,
-    )
-    return int(row["id"])
+def _user_id() -> int | None:
+    rows = lakebase.query(f"SELECT id FROM {_table('users')} WHERE email=%s", (_user_email(),))
+    return int(rows[0]["id"]) if rows else None
 
 
 def _watchlist_client() -> WatchlistClient:
@@ -273,35 +268,20 @@ def health():
 @app.get("/api/overview")
 def overview():
     uid = _user_id()
-    watch = lakebase.query(
-        f"""SELECT wt.ticker,c.name,p.close,p.change_percent,p.captured_at FROM {_table("watchlists")} w
-          JOIN {_table("watchlist_tickers")} wt ON wt.watchlist_id=w.id
-          LEFT JOIN {_table("companies")} c ON c.ticker=wt.ticker
-          LEFT JOIN LATERAL(
-            SELECT close,change_percent,captured_at FROM {_table("price_snapshots")}
-            WHERE ticker=wt.ticker ORDER BY captured_at DESC LIMIT 1
-          ) p ON true
-          WHERE w.user_id=%s ORDER BY wt.added_at""",
-        (uid,),
-    )
-    news = lakebase.query(
-        f"""SELECT n.ticker,n.title,n.sentiment,n.published_at,n.article_url
-          FROM {_table("news_articles")} n
-          JOIN {_table("watchlist_tickers")} wt ON wt.ticker=n.ticker
-          JOIN {_table("watchlists")} w ON w.id=wt.watchlist_id
-          WHERE w.user_id=%s ORDER BY n.published_at DESC LIMIT 12""",
-        (uid,),
-    )
+    client = _watchlist_client()
+    common = {"access_token": g.user_access_token, "request_id": g.request_id}
+    watch_result = client.get_watchlist(**common)
+    updates = client.get_notable_updates(**common)
     notes = lakebase.query(
         f"SELECT id,ticker,title,note_text,created_at FROM {_table('research_notes')} "
         "WHERE user_id=%s ORDER BY created_at DESC LIMIT 8",
         (uid,),
-    )
+    ) if uid is not None else []
     reports = lakebase.query(
         f"SELECT id,title,tickers,thesis,created_at FROM {_table('analysis_reports')} "
         "WHERE user_id=%s ORDER BY created_at DESC LIMIT 8",
         (uid,),
-    )
+    ) if uid is not None else []
     activity = lakebase.query(
         f"SELECT tool_name,status,started_at,duration_ms FROM {_table('stock_research_mcp_traces')} "
         "WHERE user_email=%s ORDER BY started_at DESC LIMIT 10",
@@ -310,14 +290,70 @@ def overview():
     return jsonify(
         {
             "user": _user_email(),
-            "watchlist": watch,
-            "news": news,
+            "watchlist": watch_result.get("tickers", []),
+            "news": updates.get("new_articles", []),
             "notes": notes,
             "reports": reports,
             "activity": activity,
             "request_id": g.request_id,
         }
     )
+
+
+@app.post("/api/notes")
+def save_note():
+    try:
+        payload = _request_payload()
+        if payload.get("confirmed") is not True:
+            raise ValueError("Explicit confirmation is required before saving a note.")
+        title = str(payload.get("title") or "").strip()
+        note_text = str(payload.get("note_text") or "").strip()
+        tags = payload.get("thesis_tags") or []
+        if not title or len(title) > 200 or not note_text or len(note_text) > 20_000:
+            raise ValueError("Note title and body are required and must stay within allowed sizes.")
+        if not isinstance(tags, list) or len(tags) > 20 or any(len(str(tag)) > 64 for tag in tags):
+            raise ValueError("Use at most 20 thesis tags of 64 characters each.")
+        result = _watchlist_client().save_research_note(
+            ticker=_ticker(payload.get("ticker")),
+            title=title,
+            note_text=note_text,
+            thesis_tags=[str(tag).strip() for tag in tags if str(tag).strip()],
+            access_token=g.user_access_token,
+            request_id=g.request_id,
+            idempotency_key=_idempotency_key(),
+        )
+    except ValueError as exc:
+        return _error(str(exc), 400, "invalid_request")
+    return jsonify({**result, "request_id": g.request_id}), 201
+
+
+@app.post("/api/reports")
+def save_report():
+    try:
+        payload = _request_payload()
+        if payload.get("confirmed") is not True:
+            raise ValueError("Explicit confirmation is required before saving a report.")
+        title = str(payload.get("title") or "").strip()
+        thesis = str(payload.get("thesis") or "").strip()
+        report_text = str(payload.get("report_text") or "").strip()
+        raw_tickers = payload.get("tickers") or []
+        if not title or len(title) > 200 or not report_text or len(report_text) > 100_000:
+            raise ValueError("Report title and body are required and must stay within allowed sizes.")
+        if not isinstance(raw_tickers, list) or not 1 <= len(raw_tickers) <= 10:
+            raise ValueError("Choose between 1 and 10 report tickers.")
+        result = _watchlist_client().save_analysis_report(
+            title=title,
+            thesis=thesis,
+            tickers=[_ticker(value) for value in raw_tickers],
+            report_text=report_text,
+            source_context=payload.get("source_context") if isinstance(payload.get("source_context"), dict) else {},
+            access_token=g.user_access_token,
+            request_id=g.request_id,
+            idempotency_key=_idempotency_key(),
+        )
+    except ValueError as exc:
+        return _error(str(exc), 400, "invalid_request")
+    return jsonify({**result, "request_id": g.request_id}), 201
 
 
 @app.post("/api/watchlist")

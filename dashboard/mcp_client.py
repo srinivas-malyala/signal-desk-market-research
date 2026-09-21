@@ -39,6 +39,8 @@ class SignalDeskClient(Protocol):
     def compare_stocks(self, *, tickers: list[str], lookback_days: int, access_token: str, request_id: str) -> dict[str, Any]: ...
     def semantic_research(self, *, query: str, tickers: list[str] | None, source_types: list[str] | None, start_date: str | None, end_date: str | None, access_token: str, request_id: str) -> dict[str, Any]: ...
     def get_company_research(self, *, ticker: str, access_token: str, request_id: str) -> dict[str, Any]: ...
+    def get_watchlist(self, *, access_token: str, request_id: str) -> dict[str, Any]: ...
+    def get_notable_updates(self, *, access_token: str, request_id: str) -> dict[str, Any]: ...
     def update_watchlist(
         self,
         *,
@@ -181,6 +183,54 @@ class FastMCPSignalDeskClient:
         return self._run(
             "get_company_research",
             {"ticker": ticker, "news_limit": 10, "include_fundamentals": True},
+            access_token,
+            request_id,
+        )
+
+    def get_watchlist(self, *, access_token: str, request_id: str) -> dict[str, Any]:
+        return self._run("get_watchlist", {"watchlist_name": "Primary"}, access_token, request_id)
+
+    def get_notable_updates(self, *, access_token: str, request_id: str) -> dict[str, Any]:
+        return self._run(
+            "get_notable_updates",
+            {"move_threshold_percent": 5.0, "mark_visited": False},
+            access_token,
+            request_id,
+        )
+
+    def save_research_note(
+        self,
+        *,
+        ticker: str,
+        title: str,
+        note_text: str,
+        thesis_tags: list[str],
+        access_token: str,
+        request_id: str,
+        idempotency_key: str,
+    ) -> dict[str, Any]:
+        return self._run(
+            "save_research_note",
+            {"ticker": ticker, "title": title, "note_text": note_text, "thesis_tags": thesis_tags, "confirmed": True, "idempotency_key": idempotency_key},
+            access_token,
+            request_id,
+        )
+
+    def save_analysis_report(
+        self,
+        *,
+        title: str,
+        thesis: str,
+        tickers: list[str],
+        report_text: str,
+        source_context: dict[str, Any],
+        access_token: str,
+        request_id: str,
+        idempotency_key: str,
+    ) -> dict[str, Any]:
+        return self._run(
+            "save_analysis_report",
+            {"title": title, "thesis": thesis, "tickers": tickers, "report_text": report_text, "source_context": source_context, "confirmed": True, "idempotency_key": idempotency_key},
             access_token,
             request_id,
         )
