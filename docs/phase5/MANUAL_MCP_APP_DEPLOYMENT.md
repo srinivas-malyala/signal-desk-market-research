@@ -2,12 +2,11 @@
 
 Updated: 2026-09-24 Pacific
 
-> **Superseded deployment target:** Do not execute this same-workspace runbook.
-> Budget constraints now require FastMCP and Flask to run under
-> `Srini Free Edition`, while data resources remain under
-> `dataexpertio_srini`. This document is retained as historical evidence of the
-> earlier blocked attempt. Use
-> `docs/SPLIT_WORKSPACE_APP_DEPLOYMENT_PLAN.md` for the current sequence.
+> **Superseded deployment target:** Do not execute this Databricks Apps runbook.
+> Budget constraints now require FastMCP and Flask to run as separate Render
+> services, while data resources remain under `dataexpertio_srini`. This
+> document is retained as historical evidence of the earlier blocked attempt.
+> Use `docs/RENDER_DEPLOYMENT_PLAN.md` for the current sequence.
 
 ## Goal
 

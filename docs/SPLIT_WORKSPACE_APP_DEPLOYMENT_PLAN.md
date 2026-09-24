@@ -2,6 +2,11 @@
 
 Updated: 2026-09-24
 
+> **Superseded on 2026-09-24:** Do not implement this Free Edition app-hosting
+> plan. The selected application host is Render. Use
+> `docs/RENDER_DEPLOYMENT_PLAN.md`. This document is retained only as the impact
+> analysis that informed the hosting decision.
+
 ## Decision
 
 Keep all data engineering, analytics, Lakehouse Sync, Unity Catalog, SQL

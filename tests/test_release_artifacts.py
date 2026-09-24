@@ -7,7 +7,8 @@ from mcp_server import lakebase
 
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = ROOT / "docs" / "release"
-SPLIT_WORKSPACE_PLAN = ROOT / "docs" / "SPLIT_WORKSPACE_APP_DEPLOYMENT_PLAN.md"
+RENDER_PLAN = ROOT / "docs" / "RENDER_DEPLOYMENT_PLAN.md"
+SUPERSEDED_FREE_PLAN = ROOT / "docs" / "SPLIT_WORKSPACE_APP_DEPLOYMENT_PLAN.md"
 
 
 def test_release_artifacts_exist_and_have_no_template_placeholders() -> None:
@@ -71,9 +72,9 @@ def test_demo_checklist_includes_external_gates_and_negative_cases() -> None:
     checklist = (RELEASE / "DEMO_CHECKLIST.md").read_text(encoding="utf-8")
     for required in (
         "dataexpertio_srini",
-        "Srini Free Edition",
+        "Render",
         "OAuth M2M",
-        "24 hours",
+        "approximately $14",
         "migration `0005`",
         "simultaneous Job/MCP quota acceptance",
         "two real principals",
@@ -84,15 +85,17 @@ def test_demo_checklist_includes_external_gates_and_negative_cases() -> None:
         assert required in checklist
 
 
-def test_split_workspace_plan_preserves_data_plane_and_identity_boundaries() -> None:
-    plan = SPLIT_WORKSPACE_PLAN.read_text(encoding="utf-8")
+def test_render_plan_preserves_data_plane_and_identity_boundaries() -> None:
+    plan = RENDER_PLAN.read_text(encoding="utf-8")
     for required in (
         "dataexpertio_srini",
-        "Srini Free Edition",
-        "Free Edition `X-Forwarded-Access-Token` must never be sent",
-        "separate least-privilege OAuth M2M",
-        "outbound connectivity spike",
-        "paid-workspace UC function tools",
-        "automatically stop after 24 hours",
+        "two separate Render Python web services",
+        "short-lived asymmetric JWT",
+        "two paid-workspace OAuth M2M service principals",
+        "render.yaml",
+        "approximately $14",
+        "codex/render-app-deployment",
+        "Supervisor machine identity",
     ):
         assert required in plan
+    assert "Superseded" in SUPERSEDED_FREE_PLAN.read_text(encoding="utf-8")

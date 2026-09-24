@@ -7,15 +7,15 @@ Configuration names are stable contracts. Credentials and sensitive resource ide
 As of 2026-09-24, `dataexpertio_srini` remains the data workspace for all jobs,
 pipelines, Unity Catalog data, SQL Warehouse queries, AI Search, Lakehouse Sync,
 analytics, and Supervisor processing. Only the FastMCP and Flask runtimes will
-be deployed with `Srini Free Edition`.
+be deployed as two separate Render web services.
 
-The split is planned but not yet implemented. App resources are workspace-local,
-and a Free Edition forwarded user token cannot authorize paid-workspace SQL or
-AI Search calls. The two apps will therefore use separate least-privilege OAuth
-M2M identities created in the paid workspace for shared read-only data access.
-The Free user token is retained only for same-workspace frontend-to-MCP calls
-and trusted request identity. See
-`docs/SPLIT_WORKSPACE_APP_DEPLOYMENT_PLAN.md`.
+The Render split is planned but not yet implemented. Browser users authenticate
+to Flask through generic OIDC. Flask sends MCP a short-lived asymmetric signed
+identity assertion, not the browser's OIDC token. Each Render service uses a
+separate least-privilege OAuth M2M identity created in the paid workspace for
+shared read-only data access. The Supervisor uses a separate machine credential
+or supported OAuth M2M flow and is mapped to a fixed server-side identity. See
+`docs/RENDER_DEPLOYMENT_PLAN.md`.
 
 The development analytical namespace remains Unity Catalog `bootcamp_students.student_sri`. Lakebase uses a different classroom convention: all students share PostgreSQL schema `bootcamp_students`, and this application owns only tables whose base names end in `_srini`. Unity-Catalog-to-Lakebase synced graph tables live in PostgreSQL schema `bootcamp_cdc` and also end in `_srini`.
 
@@ -28,9 +28,8 @@ The verified development SQL compute is the serverless `Serverless Starter Wareh
 - OAuth issuer: `https://dbc-7b106152-caf3.cloud.databricks.com/oidc`
 
 Jobs and pipelines continue to use this warehouse in the data workspace. The
-Free Edition apps cannot attach it as a local app resource; their paid-workspace
-clients will use explicit host/warehouse settings plus app-specific OAuth M2M
-credentials supplied only through Free Edition secret resources.
+Render services use explicit host/warehouse settings plus service-specific
+OAuth M2M credentials supplied only through Render secret environment values.
 
 | Name | Component | Required when | Source |
 |---|---|---|---|
@@ -45,9 +44,9 @@ credentials supplied only through Free Edition secret resources.
 | `USE_MOCK_BACKEND` | apps | Local development only | Literal `true`; deployed target must use `false` |
 | `DATA_WORKSPACE_HOST` | frontend/MCP paid-data clients | Paid workspace API/SQL target | Non-secret environment value; `https://dbc-7b106152-caf3.cloud.databricks.com` |
 | `DATA_WORKSPACE_WAREHOUSE_ID` | frontend/MCP paid-data clients | Existing paid serverless SQL Warehouse | Non-secret environment value; `b15d3d6f837ba428` |
-| `DATA_WORKSPACE_CLIENT_ID` | frontend/MCP paid-data clients | App-specific OAuth M2M client in paid workspace | Separate Free Edition secret per app; never shared between apps |
-| `DATA_WORKSPACE_CLIENT_SECRET` | frontend/MCP paid-data clients | App-specific OAuth M2M secret in paid workspace | Separate Free Edition secret per app; never committed or logged |
-| `DATABRICKS_WAREHOUSE_ID` | jobs/local acceptance | Same-workspace Delta SQL access | Existing paid-workspace runtime or explicit local environment; no longer a Free app resource |
+| `DATA_WORKSPACE_CLIENT_ID` | frontend/MCP paid-data clients | Service-specific OAuth M2M client in paid workspace | Separate Render secret per service; never shared between services |
+| `DATA_WORKSPACE_CLIENT_SECRET` | frontend/MCP paid-data clients | Service-specific OAuth M2M secret in paid workspace | Separate Render secret per service; never committed or logged |
+| `DATABRICKS_WAREHOUSE_ID` | jobs/local acceptance | Same-workspace Delta SQL access | Existing paid-workspace runtime or explicit local environment; not a Render resource |
 | `DATABRICKS_CATALOG` | MCP retrieval | Governed market tables | Non-secret environment value; `bootcamp_students` |
 | `DATABRICKS_SCHEMA` | MCP retrieval | Governed market tables | Non-secret environment value; `student_sri` |
 | `SIGNAL_DESK_VECTOR_SEARCH_INDEX` | MCP retrieval/index sync | Managed research index | Non-secret full name; `bootcamp_students.student_sri.signal_desk_research_chunks_index` |
@@ -59,33 +58,43 @@ credentials supplied only through Free Edition secret resources.
 | `SIGNAL_DESK_TABLE_SUFFIX` | MCP/frontend/migrations | Per-student Lakebase table namespace | Non-secret lowercase identifier; `srini` |
 | `SIGNAL_DESK_GRAPH_SCHEMA` | MCP/frontend/CDF reads | Lakebase schema containing replicated graph tables | Non-secret environment value; `bootcamp_cdc` |
 | `lakebase_table_suffix` | Activity analytics bundle | Resolves Lakehouse Sync history names for shared-schema source tables | Bundle variable; development value `srini` |
-| `MCP_SERVER_URL` | frontend write service | Watchlist and later research/action tool calls | HTTPS URL resolved from the same Free Edition MCP app resource; deployed binding remains a Phase 8 gate |
+| `MCP_SERVER_URL` | frontend write service | Watchlist and later research/action tool calls | Render MCP HTTPS URL; deployed binding remains a Phase 8 gate |
 | `MCP_TIMEOUT_SECONDS` | frontend write service | Optional MCP timeout override | Integer 1–60; defaults to 20 seconds |
+| `SIGNAL_DESK_HOSTING` | MCP/frontend | Select deployed host behavior | Literal `render` in both Render services |
+| `SIGNAL_DESK_IDENTITY_MODE` | MCP/frontend | Select deployed identity provider | `oidc_session` for frontend; `signed_assertion` for MCP |
+| `OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URI` | frontend | Browser sign-in | Provider registration; client secret stored only as a Render secret |
+| `FLASK_SESSION_SECRET` | frontend | Encrypted/signed server session | High-entropy Render secret; rotate after acceptance if exposed |
+| `FRONTEND_ASSERTION_PRIVATE_KEY` | frontend | Sign short-lived MCP identity assertions | Render secret available only to frontend |
+| `FRONTEND_ASSERTION_PUBLIC_KEY` | MCP | Verify frontend identity assertions | Render environment value; no private material |
+| `MCP_SUPERVISOR_TOKEN` | MCP/Supervisor connection | Authenticate non-browser Supervisor calls | Separate high-entropy secret or replace with supported OAuth M2M; never exposed to the model |
+| `MCP_SUPERVISOR_SUBJECT` | MCP | Fixed audit identity for Supervisor actions | Non-secret allowlisted subject; never accepted from tool arguments |
 | `RAW_VOLUME_PATH` | ingestion/pipeline | Raw file landing | Bundle-derived `/Volumes/...` path |
 
-## Planned Free Edition app resource keys
+## Planned Render environment contract
 
-| App | Key | Resource | Permission intent |
+| Service | Secret/value | Purpose | Permission intent |
 |---|---|---|---|
-| MCP | `lakebase-url` | Free Edition secret containing the existing Lakebase URL | Read; app accesses only `_srini` tables |
-| MCP | `massive-api-key` | Free Edition secret containing the existing Massive key | Read |
-| MCP | `data-workspace-client-id` | MCP-specific paid-workspace OAuth client ID | Read/protected injection |
-| MCP | `data-workspace-client-secret` | MCP-specific paid-workspace OAuth client secret | Read |
-| Frontend | `lakebase-url` | Free Edition secret containing the existing Lakebase URL | Read; bounded `_srini` reads only |
-| Frontend | `data-workspace-client-id` | Frontend-specific paid-workspace OAuth client ID | Read/protected injection |
-| Frontend | `data-workspace-client-secret` | Frontend-specific paid-workspace OAuth client secret | Read |
-| Frontend | `mcp-app` | Same-workspace Free Edition FastMCP app | Can use; resolve URL without hardcoding |
+| MCP | `LAKEBASE_URL`, `MASSIVE_API_KEY` | Operational store and bounded external fallback | Read/write only `_srini` tables; Massive calls use the shared quota ledger |
+| MCP | `DATA_WORKSPACE_CLIENT_ID`, `DATA_WORKSPACE_CLIENT_SECRET` | Paid SQL and AI Search access | MCP-specific least-privilege read identity |
+| MCP | `FRONTEND_ASSERTION_PUBLIC_KEY`, `MCP_SUPERVISOR_TOKEN` | Verify frontend users and authenticate Supervisor | Verification/machine auth only |
+| Frontend | `LAKEBASE_URL` | Bounded user history reads | Read only permitted `_srini` objects and user-owned rows |
+| Frontend | `DATA_WORKSPACE_CLIENT_ID`, `DATA_WORKSPACE_CLIENT_SECRET` | Paid Gold analytics access | Frontend-specific least-privilege read identity |
+| Frontend | OIDC settings, `FLASK_SESSION_SECRET` | Browser authentication/session | Frontend only |
+| Frontend | `FRONTEND_ASSERTION_PRIVATE_KEY`, `MCP_SERVER_URL` | Authenticated MCP calls | Signing key available only to frontend; HTTPS URL is non-secret |
 
-The Free app manifests must not declare the paid SQL warehouse, paid Unity
-Catalog tables, or paid AI Search index as local app resources. Those resources
-remain governed in `dataexpertio_srini` and are reached only through the
-least-privilege bridge identities after the egress and M2M acceptance gates.
+The planned `render.yaml` will declare both services and non-secret defaults.
+Every secret field must use `sync: false`; no secret value may appear in the
+Blueprint, repository, build output, or logs. The Render services must not
+assume Databricks app resources or ambient `Config()` credentials. Paid SQL,
+Unity Catalog, and AI Search resources remain governed in
+`dataexpertio_srini` and are reached only through the least-privilege M2M
+identities after positive and negative permission tests.
 
-The complete PostgreSQL URL remains protected by Databricks secrets. A separate
-Free Edition secret binding must be created for each app without displaying or
-committing the value. The deployed helpers receive `LAKEBASE_URL` from
-`valueFrom` and never log or persist it; direct access is conditional on the
-Free Edition Lakebase TLS egress proof.
+The complete PostgreSQL URL remains protected. Jobs in Databricks continue to
+retrieve it from the administrator-owned `database/lakebase-url` secret;
+Render receives the same connection URL through a protected service-specific
+secret value without displaying, committing, logging, or persisting it. Direct
+access is conditional on the Render-to-Lakebase TLS connectivity spike.
 
 Connections must validate that both shared schemas exist, but must not create, drop, or claim ownership of either schema. Every operational table reference is fully qualified as `bootcamp_students.<base_table>_srini`; setting only a search path is insufficient because it does not enforce the required suffix. Replicated graph objects are referenced as `bootcamp_cdc.<base_table>_srini`. Dynamic schema, base-table, and suffix components must be allowlisted and identifier-validated before SQL composition.
 
