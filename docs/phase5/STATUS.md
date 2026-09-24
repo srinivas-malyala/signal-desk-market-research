@@ -1,11 +1,11 @@
 # Phase 5 Status — MCP agent tools and semantic research
 
-Updated: 2026-09-11
+Updated: 2026-09-24
 
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
 | 5.0 Retrieval design | Complete | ADR 0005 records section-aware parent/child chunking, Qwen3 embeddings, Delta Sync AI Search, hybrid retrieval, provenance, and evaluation targets | None |
-| 5.1 Service and observability | Deployment permission blocked | Nine tool names retained; health route, correlation IDs, contract versions, structured completion logs, fail-closed trusted identity, pseudonymous bounded traces, and agent session/events pass tests; a read-only-by-default post-deployment harness verifies tools, health, retrieval, reversible idempotent writes, and bounded traces | Administrator must permit managed-secret binding, then run deployed health, trace-failure, and cross-principal proof |
+| 5.1 Service and observability | Split-workspace deployment refactor pending | Nine tool names retained; health route, correlation IDs, contract versions, structured completion logs, fail-closed trusted identity, pseudonymous bounded traces, and agent session/events pass tests; a read-only-by-default post-deployment harness verifies tools, health, retrieval, reversible idempotent writes, and bounded traces | Renew `Srini Free Edition`, prove egress, add app-specific paid-workspace M2M reads, deploy MCP there, then run health, trace-failure, and cross-principal proof |
 | 5.2 Retrieval tools | Workspace accepted | Historical performance uses a bounded parameterized Silver/Gold SQL read; a live AAPL known-answer reconciled 9 rows, 0.24% return, two-day freshness, safe free-plan snapshot denial, and one Massive attempt; requested windows are trimmed, sector is not invented, reads do not create user state, and news uses a many-to-many bridge | None for the current workspace dataset |
 | 5.3 Action tools | Workspace acceptance in progress | Watchlist/note/report writes require confirmation and transactional idempotency; different-payload key reuse fails; trusted request identity owns writes; rollback and bounded-input tests pass; migration 0004 and disposable owner-isolation CRUD pass | Prove two principals through deployed MCP |
 | 5.4 Semantic retrieval | Workspace accepted | Canonical chunks plus CDF Delta serving-table publisher, ready standard endpoint, triggered Qwen3 Delta Sync hybrid index with 393 rows, filtered/reranked SDK search, parent deduplication, provenance, and a passing 51-case live evaluation | None for the current workspace corpus |
@@ -97,16 +97,21 @@ Updated: 2026-09-11
 
 ## Workspace acceptance
 
-The selected profile is `dataexpertio_srini`. OAuth was restored on 2026-09-11
-and the authenticated identity is `malyalasrinivas@gmail.com`. Strict bundle
-validation passes after changing the Vector Search endpoint permission to the
-supported `CAN_USE` level. No committed code contains a token, Massive key, SEC
-contact, or Lakebase URL.
+The data profile remains `dataexpertio_srini`; its authenticated identity is
+`malyalasrinivas@gmail.com`, and all SQL, Unity Catalog, AI Search, Lakebase
+analytics, and agent processing remain there. As of 2026-09-24, only the MCP
+and Flask app runtimes will target `Srini Free Edition`. That profile requires
+OAuth renewal before direct workspace checks.
 
-Remaining workspace acceptance is: resolve the managed-secret binding
-permission, deploy MCP, and exercise health, action, idempotency, and bounded
-trace checks. The final isolation test requires two real authenticated account
-principals.
+The earlier paid-workspace managed-secret binding request is superseded for app
+hosting. Remaining acceptance is: prove Free Edition egress to the paid
+workspace/Lakebase/Massive, provision an MCP-specific paid-workspace OAuth M2M
+read identity, refactor SQL and AI Search clients so the Free user token is
+never sent cross-workspace, create Free Edition secret bindings, deploy MCP,
+and exercise health, action, idempotency, bounded traces, simultaneous quota,
+and two-real-principal isolation.
 
-The administrator/student workspace-UI procedure is documented in
-`docs/phase5/MANUAL_MCP_APP_DEPLOYMENT.md`.
+The prior same-workspace UI procedure in
+`docs/phase5/MANUAL_MCP_APP_DEPLOYMENT.md` is retained as historical context
+but must not be executed. The current sequence is in
+`docs/SPLIT_WORKSPACE_APP_DEPLOYMENT_PLAN.md`.

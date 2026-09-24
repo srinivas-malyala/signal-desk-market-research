@@ -1,13 +1,13 @@
 # Phase 8 — Frontend Databricks App
 
-Updated: 2026-09-21
+Updated: 2026-09-24
 
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
-| 8.1 Flask shell and authentication | Local hardening complete; bundle validated | Flask/Gunicorn retained; demo identity removed; forwarded email and user token required; health remains public; request IDs and security headers cover success/error responses; template escaping and startup configuration tested; renewed OAuth identity and strict development bundle validation verified | Bind the deployed MCP URL/resource, deploy the frontend, and run authenticated service-principal/user smoke tests |
+| 8.1 Flask shell and authentication | Local hardening complete; split-workspace refactor pending | Flask/Gunicorn retained; demo identity removed; forwarded email and user token required; health remains public; request IDs and security headers cover success/error responses; template escaping and startup configuration tested | Renew `Srini Free Edition`, prove egress, separate app deployment from the data bundle, bind the same-workspace MCP app, deploy, and run authenticated smoke tests |
 | 8.2 Research and evidence workflow | Local implementation complete | Authenticated MCP routes support bounded performance, 2–5 ticker comparison, and hybrid filing/news evidence; UI exposes progress, empty/error/partial/rate-limit states, source links, context labels, as-of metadata, limitations, execution identity, and disclaimer | Deploy MCP/frontend and run the browser evidence-source acceptance flow |
 | 8.3 Watchlists, notes, and reports | Local core workflow complete | Confirmed add/remove, note save, and report save use one authenticated idempotent MCP call; browser confirmation/cancel behavior and user-owned reload views are implemented; watchlist/news overview reads now use MCP and read-only overview no longer creates users | Deployed write/reload/two-user acceptance; note deletion requires a future versioned MCP delete contract because MCP 1.0 intentionally exposes only nine tools |
-| 8.4 Usage analytics page | Local implementation complete | Bounded app-auth SQL Warehouse client reads five Phase 6 Gold datasets; page shows contextual DAU, error rate, watchlist and save KPIs, exact tool usage/P95 table, source/freshness, service-principal execution, and empty/partial/stale/error states | Deploy Phase 6 pipeline and frontend, then prove a controlled MCP action appears with correct count and measured freshness |
+| 8.4 Usage analytics page | Local UI complete; data auth refactor pending | Bounded SQL Warehouse client reads five Phase 6 Gold datasets; page shows contextual DAU, error rate, watchlist and save KPIs, exact tool usage/P95 table, source/freshness, service-principal execution, and empty/partial/stale/error states | Replace ambient Free app auth with a frontend-specific paid-workspace OAuth M2M reader, deploy Phase 6/frontend, then prove a controlled MCP action appears with correct count and freshness |
 
 ## Local security contract
 
@@ -70,16 +70,18 @@ input bounds, optional company context, and a distinct rate-limited response.
 Confirmed note/report tests prove cancel/unconfirmed requests make no tool call,
 and one accepted browser request maps to one idempotent MCP write.
 
-The analytics client uses SDK `Config()` for Databricks App service-principal
-authentication and the warehouse ID supplied through `valueFrom`. All five
+The current analytics client uses ambient SDK `Config()` and a warehouse ID
+supplied through `valueFrom`; that same-workspace assumption is no longer valid
+after the app moves to Free Edition. It must use a frontend-specific,
+least-privilege OAuth M2M identity targeting the paid workspace. All five
 queries target fully qualified Gold tables, have hard row limits, and share a
 256 KB response ceiling. The UI explicitly discloses service-principal query
 execution because these are shared pseudonymous aggregates, not user-owned
 operational rows. KPI cards include period context, source, and freshness;
 exact tool counts and P95 latency use a table instead of an ornamental chart.
 
-The complete local suite passes 207 tests and whole-repository lint. On
-2026-09-21, OAuth for the required `dataexpertio_srini` profile was renewed,
-the active identity was verified as `malyalasrinivas@gmail.com`, and strict
-development bundle validation passed. Deployment still depends on the
-administrator-managed MCP secret-resource binding.
+The complete local suite passes 207 tests and whole-repository lint. The paid
+data bundle validated with `dataexpertio_srini`; the separate Free Edition app
+configuration does not yet exist. `Srini Free Edition` authentication, egress,
+M2M, split validation, deployment, and the Free Edition 24-hour restart
+procedure remain gates. See `docs/SPLIT_WORKSPACE_APP_DEPLOYMENT_PLAN.md`.

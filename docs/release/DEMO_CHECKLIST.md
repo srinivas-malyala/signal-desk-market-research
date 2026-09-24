@@ -1,6 +1,6 @@
 # Signal Desk Capstone Demo Checklist
 
-Updated: 2026-09-21
+Updated: 2026-09-24
 
 Do not mark a gate complete from local tests alone. Record sanitized run IDs,
 table counts, timestamps, and screenshots; never capture secrets, tokens,
@@ -11,12 +11,24 @@ connection URLs, direct email values, or user-authored note/report bodies.
 - [x] Renew OAuth for explicit profile `dataexpertio_srini`; confirmed
   `malyalasrinivas@gmail.com` on the intended workspace and passed strict
   development bundle validation on 2026-09-21.
-- [ ] Admin resolves MCP access to the `massive/api-key` and
-  `database/lakebase-url` secret resources.
+- [x] Record the split-workspace decision: all processing/data resources remain
+  under `dataexpertio_srini`; only FastMCP and Flask target
+  `Srini Free Edition`.
+- [ ] Renew OAuth for explicit profile `Srini Free Edition`; verify the intended
+  Free workspace identity, Apps availability, secret support, and quota.
+- [ ] Prove Free Edition app egress to the paid workspace and Lakebase; prove
+  Massive HTTPS before enabling interactive fallback traffic.
+- [ ] Create two separate least-privilege paid-workspace OAuth M2M identities,
+  bind their credentials as distinct Free Edition app secrets, and pass positive
+  plus forbidden-permission tests.
+- [ ] Split data/app deployment surfaces and prove the paid plan contains no app
+  changes while the Free plan contains no jobs, pipelines, paid-local warehouse,
+  UC table, or AI Search creation.
 - [x] Apply checksum migration `0005`; verified
   `bootcamp_students.massive_api_attempts_srini` and its time index exist, the
   ledger records `0005`, and a second migration pass applies nothing.
-- [ ] Validate/deploy the MCP app; record app URL and deployment ID.
+- [ ] Strictly validate/deploy the MCP app with `Srini Free Edition`; record app
+  URL and deployment ID without recording credentials.
 - [ ] Run the Phase 5 post-deployment harness: health, nine-tool discovery,
   governed retrieval, semantic retrieval, opt-in reversible write,
   idempotent retry, and sanitized trace/event reconciliation.
@@ -25,14 +37,18 @@ connection URLs, direct email values, or user-authored note/report bodies.
 - [ ] Configure the five Lakebase Lakehouse Sync histories in the UI.
 - [ ] Deploy/run the activity analytics pipeline; reconcile a controlled write
   through Bronze, Silver, and Gold and record end-to-end latency.
-- [ ] Create the UC HTTP MCP connection without exposing a client secret; grant
-  the Supervisor service principal only `USE CONNECTION`.
+- [ ] Prove a durable paid-workspace UC HTTP/MCP authentication flow to the Free
+  MCP app without a personal token. If unsupported, implement and test the
+  documented paid-workspace UC-function tool fallback for Supervisor.
 - [ ] Deploy the Supervisor, wait for its serving endpoint to become online,
   capture all ten Phase 7 cases, and pass `tools/phase7_agent_eval.py`.
-- [ ] Bind and deploy the frontend; pass health, authenticated-route, security
-  header, MCP request-ID, and safe-error smoke checks.
+- [ ] Bind the same-workspace Free MCP app and deploy the frontend with
+  `Srini Free Edition`; pass health, authenticated-route, security header, MCP
+  request-ID, paid-analytics M2M, and safe-error smoke checks.
 - [ ] Prove two real principals see isolated watchlists, notes, reports, and
   traces through the complete frontend → agent → MCP path.
+- [ ] Restart both Free Edition apps immediately before final acceptance/demo;
+  record readiness because Free Edition automatically stops apps after 24 hours.
 
 ## B. Five-minute core workflow
 
@@ -67,7 +83,9 @@ connection URLs, direct email values, or user-authored note/report bodies.
 ## E. Submission package
 
 - [ ] Re-run the full local test suite and Ruff; record totals and commit SHA.
-- [ ] Run strict bundle validation with explicit profile `dataexpertio_srini`.
+- [ ] Run strict data-bundle validation with explicit profile
+  `dataexpertio_srini` and strict app-deployment validation with explicit profile
+  `Srini Free Edition`; inspect both plans for cross-target resources.
 - [ ] Confirm data dictionary, tool/API reference, traceability matrix, status tracker, deployment guide, and diagram agree.
 - [ ] Export final architecture diagram as PNG/JPEG and open it once for visual QA.
 - [ ] Verify the repository and demo output contain no credentials or sensitive runtime artifacts.
