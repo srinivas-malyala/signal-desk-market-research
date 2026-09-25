@@ -5,7 +5,7 @@ Updated: 2026-09-25
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
 | 5.0 Retrieval design | Complete | ADR 0005 records section-aware parent/child chunking, Qwen3 embeddings, Delta Sync AI Search, hybrid retrieval, provenance, and evaluation targets | None |
-| 5.1 Service and observability | Render deployed; transport and audit acceptance passed | `https://signal-desk-mcp.onrender.com` is live; health, unauthenticated rejection, Supervisor authentication, nine-tool discovery, correlation IDs, and 2/2 bounded Lakebase trace/event reconciliation passed | Replace or repair the paid-workspace MCP M2M credential, add the existing Massive key to Render, then rerun retrieval, reversible-write, simultaneous-quota, and cross-principal gates |
+| 5.1 Service and observability | Render deployed; transport, Massive fallback, and audit acceptance passed | `https://signal-desk-mcp.onrender.com` is live; health, unauthenticated rejection, Supervisor authentication, nine-tool discovery, Massive fallback, correlation IDs, and bounded Lakebase trace/event reconciliation passed | Replace or repair the paid-workspace MCP M2M credential, then rerun governed/semantic retrieval before reversible-write, simultaneous-quota, and cross-principal gates |
 | 5.2 Retrieval tools | Workspace accepted | Historical performance uses a bounded parameterized Silver/Gold SQL read; a live AAPL known-answer reconciled 9 rows, 0.24% return, two-day freshness, safe free-plan snapshot denial, and one Massive attempt; requested windows are trimmed, sector is not invented, reads do not create user state, and news uses a many-to-many bridge | None for the current workspace dataset |
 | 5.3 Action tools | Workspace acceptance in progress | Watchlist/note/report writes require confirmation and transactional idempotency; different-payload key reuse fails; trusted request identity owns writes; rollback and bounded-input tests pass; migration 0004 and disposable owner-isolation CRUD pass | Prove two principals through deployed MCP |
 | 5.4 Semantic retrieval | Workspace accepted | Canonical chunks plus CDF Delta serving-table publisher, ready standard endpoint, triggered Qwen3 Delta Sync hybrid index with 393 rows, filtered/reranked SDK search, parent deduplication, provenance, and a passing 51-case live evaluation | None for the current workspace corpus |
@@ -103,6 +103,13 @@ Updated: 2026-09-25
   and the governed market fallback reports missing ambient credentials because
   `MASSIVE_API_KEY` has not yet been entered on Render. The reversible write
   gate was intentionally not run while retrieval is red.
+- 2026-09-25 — Copied the existing `massive/api-key` value directly from the
+  Databricks secret scope into the Render MCP environment without displaying or
+  committing it. Deployment `dep-darfbsh42hec73agvkrg` succeeded. The repeated
+  read-only gate returned successful AAPL fallback data through 2026-09-24 and
+  again reconciled both bounded trace/event pairs. The remaining retrieval
+  failure is the paid-workspace M2M `invalid_client` response for governed SQL
+  and AI Search; writes remain intentionally gated.
 
 ## Workspace acceptance
 
@@ -113,10 +120,10 @@ and Flask app runtimes will move to Render.
 
 The earlier Databricks App secret-binding and Free Edition paths are superseded.
 The Render MCP process is deployed and its transport, machine authentication,
-tool contract, and audit path are accepted. Remaining acceptance is to repair
-the paid-workspace M2M identity, enter the Massive key, pass read-only retrieval,
-then exercise the reversible action/idempotency, simultaneous-quota, Supervisor,
-and two-real-principal isolation gates.
+tool contract, Massive fallback, and audit path are accepted. Remaining
+acceptance is to repair the paid-workspace M2M identity, pass governed and
+semantic read-only retrieval, then exercise reversible action/idempotency,
+simultaneous-quota, Supervisor, and two-real-principal isolation gates.
 
 The prior same-workspace UI procedure in
 `docs/phase5/MANUAL_MCP_APP_DEPLOYMENT.md` is retained as historical context

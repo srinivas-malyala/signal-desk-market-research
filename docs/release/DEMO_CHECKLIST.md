@@ -17,8 +17,9 @@ connection URLs, direct email values, or user-authored note/report bodies.
   health checks, Linux/Python 3.11 hash-pinned clean installs, exact-command
   local process starts, and `sync: false` secret placeholders without deploying
   data resources from Render.
-- [ ] Prove Render egress to the paid workspace and Lakebase; prove Massive
-  HTTPS before enabling interactive fallback traffic.
+- [ ] Prove Render egress to the paid workspace and Lakebase; Lakebase and
+  Massive HTTPS are verified, but paid-workspace SQL/AI Search still fail with
+  M2M `invalid_client`.
 - [ ] Create two separate least-privilege paid-workspace OAuth M2M identities,
   store their credentials as distinct Render service secrets, and pass positive
   plus forbidden-permission tests.

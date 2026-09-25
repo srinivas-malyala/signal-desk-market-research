@@ -11,7 +11,7 @@ This is the living tracker for implementation progress and external gates. A uni
 | 2 — Spark market pipeline | Workspace acceptance complete | Dedicated deployed market pipeline; 81 manifest dates and 1,255,677 Bronze rows reconcile to 1,255,489 unique Silver rows plus 188 deterministic quarantines; measured free-plan maximum is 4 attempts per rolling minute; Gold coverage and persisted certification passed | None for the volume-certification workflow |
 | 3 — SEC pipeline | Workspace acceptance complete | Dedicated deployed research pipeline; two-company landing and cached rerun completed; 2 companies, 12 filings, 57,806 facts, 86 articles, 549 article/ticker links, and 507 traceable chunks with zero integrity violations; cached rerun made no external calls | None for the bounded two-company workflow |
 | 4 — Lakebase | Workspace acceptance complete | PostgreSQL 17+ connectivity; 16 owned `_srini` tables; five idempotent checksum-protected migrations; six tables with full replica identity; vector; bounded stale-safe pools; rollback; repeatable two-user CRUD/isolation and cleanup all verified | Cross-principal identity proof continues with MCP/frontend deployment |
-| 5 — MCP agent tools | Render deployed; transport/audit accepted; retrieval blocked | Canonical 393-row Qwen3 hybrid index; live MCP health; Supervisor authentication; nine-tool discovery; signed user identity; confirmed transactional idempotent writes; 2/2 bounded trace/event reconciliation | Repair the paid-workspace MCP M2M credential, enter `MASSIVE_API_KEY`, pass read-only retrieval, then run reversible write/idempotency, simultaneous quota, and two-principal acceptance |
+| 5 — MCP agent tools | Render deployed; transport/Massive/audit accepted; governed retrieval blocked | Canonical 393-row Qwen3 hybrid index; live MCP health; Supervisor authentication; nine-tool discovery; working Massive fallback; signed user identity; confirmed transactional idempotent writes; bounded trace/event reconciliation | Repair the paid-workspace MCP M2M credential, pass governed/semantic retrieval, then run reversible write/idempotency, simultaneous quota, and two-principal acceptance |
 | 6 — CDF analytics | Workspace acceptance complete | The active schema maps `databricks_postgres.bootcamp_students` to `bootcamp_students.bootcamp_cdc`; all five `_srini` histories are enabled and queryable; a bounded, self-cleaning Lakebase transaction produced the expected 18 history rows in approximately 82–84 seconds; deployed updates reconciled 34 Bronze rows to 26 effective Silver rows and all five Gold metric families, with a measured maximum source latency of 85 seconds | None |
 | 7 — Agent integration | Render machine-auth implementation locally accepted; connection pending | Prompt/config reconciled to final MCP 1.0 contracts; exact nine-tool routing; ten evaluation fixtures; MCP maps a separate machine credential to a fixed server-side Supervisor subject and ignores model-supplied identity | Create the governed paid-workspace UC HTTP/MCP connection to Render, deploy Supervisor, then capture live evaluations and identity evidence |
 | 8 — Frontend | Render deployed; OIDC/session perimeter accepted | Live frontend health and security headers; Google authorization-code callback and authenticated session flow; fail-closed unauthenticated API/browser behavior; CSRF, signed 60-second request-bound MCP assertions, and bounded MCP client | Repair frontend paid-workspace M2M analytics access, then execute the authenticated core workflow and two-principal/CDC-refresh acceptance |
@@ -20,8 +20,8 @@ This is the living tracker for implementation progress and external gates. A uni
 ## Active sequence
 
 1. Replace or repair the MCP and frontend paid-workspace M2M identities; prove positive SQL/AI Search access and forbidden permissions.
-2. Enter the existing Massive free-plan key on the MCP service without exposing it, then rerun the read-only Phase 5 Render gate.
-3. After reads pass, run the opt-in reversible write/idempotency gate and simultaneous Job/MCP quota acceptance.
+2. Rerun the read-only Phase 5 Render gate after M2M repair; the Massive secret and fallback are already verified.
+3. After governed and semantic reads pass, run the opt-in reversible write/idempotency gate and simultaneous Job/MCP quota acceptance.
 4. Run the authenticated frontend research/write/analytics workflow and two-real-principal isolation checks.
 5. Connect the paid Supervisor to Render and complete the ten Phase 7 evaluations.
 6. Run final credential scan/evidence capture and upgrade both services for the demo month.
@@ -133,3 +133,10 @@ This is the living tracker for implementation progress and external gates. A uni
   passes 241 tests, repository-wide Ruff, and the tracked-file credential scan.
   The diagnostic checkpoint is `9b3b176` and the synchronized tracker checkpoint
   is `702a3ab`.
+- 2026-09-25 UTC — Securely synchronized `massive/api-key` from Databricks to
+  the Render MCP environment and deleted the temporary mode-0600 transfer file.
+  Deployment `dep-darfbsh42hec73agvkrg` reached Live. The repeated read-only
+  harness proved the key by returning successful AAPL Massive fallback data as
+  of 2026-09-24, while maintaining bounded 2/2 trace/event reconciliation. No
+  secret value entered tracked files. Governed SQL and semantic AI Search remain
+  blocked solely by the paid-workspace M2M `invalid_client` response.
