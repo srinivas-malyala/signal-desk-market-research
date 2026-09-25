@@ -24,3 +24,5 @@ jobs:
         run: uv run pytest -m "not integration and not e2e"
       - name: Scan tracked files for prohibited credential assignments
         run: uv run python tools/check_no_secrets.py
+      - name: Verify Render Blueprint, locked installs, and service health
+        run: uv run python tools/check_render_reproducibility.py --clean-install --process-smoke

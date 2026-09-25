@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -23,8 +25,8 @@ def test_paid_data_bundle_excludes_databricks_app_resources() -> None:
 def test_render_blueprint_defines_two_isolated_secret_safe_services() -> None:
     text = (ROOT / "render.yaml").read_text()
     assert text.count("type: web") == 2
-    assert "pip install --requirement mcp_server/requirements.txt" in text
-    assert "pip install --requirement dashboard/requirements.txt" in text
+    assert "pip install --require-hashes --requirement mcp_server/requirements.lock" in text
+    assert "pip install --require-hashes --requirement dashboard/requirements.lock" in text
     assert "python mcp_server/stock_research_mcp_server.py" in text
     assert "--chdir dashboard --pythonpath .." in text
     assert "healthCheckPath: /health" in text
@@ -49,6 +51,19 @@ def test_mcp_render_entrypoint_binds_validated_port() -> None:
     assert 'os.environ.get("PORT", "8000")' in source
     assert 'host="0.0.0.0"' in source
     assert "port=port" in source
+
+
+def test_mcp_startup_migration_switch_is_strict(monkeypatch) -> None:
+    monkeypatch.syspath_prepend(str(ROOT / "mcp_server"))
+    from mcp_server import stock_research_mcp_server as server
+
+    monkeypatch.delenv("SIGNAL_DESK_RUN_MIGRATIONS", raising=False)
+    assert server._run_startup_migrations() is True
+    monkeypatch.setenv("SIGNAL_DESK_RUN_MIGRATIONS", "false")
+    assert server._run_startup_migrations() is False
+    monkeypatch.setenv("SIGNAL_DESK_RUN_MIGRATIONS", "invalid")
+    with pytest.raises(RuntimeError, match="must be true or false"):
+        server._run_startup_migrations()
 
 
 def test_development_target_uses_selected_unity_catalog_schema() -> None:

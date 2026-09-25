@@ -374,8 +374,16 @@ def get_notable_updates(move_threshold_percent: float = 5.0, mark_visited: bool 
     return broker.get_notable_updates(_trusted_email(), move_threshold_percent, mark_visited)
 
 
+def _run_startup_migrations() -> bool:
+    value = os.environ.get("SIGNAL_DESK_RUN_MIGRATIONS", "true").strip().lower()
+    if value not in {"true", "false"}:
+        raise RuntimeError("SIGNAL_DESK_RUN_MIGRATIONS must be true or false.")
+    return value == "true"
+
+
 if __name__ == "__main__":
-    lakebase.migrate()
+    if _run_startup_migrations():
+        lakebase.migrate()
     try:
         port = int(os.environ.get("PORT", "8000"))
     except ValueError as error:
