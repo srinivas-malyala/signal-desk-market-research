@@ -1,6 +1,6 @@
 # Signal Desk Capstone Demo Checklist
 
-Updated: 2026-09-24
+Updated: 2026-09-25
 
 Do not mark a gate complete from local tests alone. Record sanitized run IDs,
 table counts, timestamps, and screenshots; never capture secrets, tokens,
@@ -34,24 +34,26 @@ connection URLs, direct email values, or user-authored note/report bodies.
 - [x] Apply checksum migration `0005`; verified
   `bootcamp_students.massive_api_attempts_srini` and its time index exist, the
   ledger records `0005`, and a second migration pass applies nothing.
-- [ ] Deploy the MCP service on Render Free; record service URL and deployment
-  ID without recording credentials.
+- [x] Deploy the MCP service on Render Free; `https://signal-desk-mcp.onrender.com`
+  is live and the accepted Supervisor-token deployment is `dep-darca5p7lnhs73cr1nig`.
 - [ ] Run the Phase 5 post-deployment harness: health, nine-tool discovery,
   governed retrieval, semantic retrieval, opt-in reversible write,
   idempotent retry, and sanitized trace/event reconciliation.
 - [ ] Run simultaneous Job/MCP quota acceptance; prove acquisition five waits
   for the rolling window and no Massive request bypasses Lakebase.
-- [ ] Configure the five Lakebase Lakehouse Sync histories in the UI.
-- [ ] Deploy/run the activity analytics pipeline; reconcile a controlled write
-  through Bronze, Silver, and Gold and record end-to-end latency.
+- [x] Configure the five Lakebase Lakehouse Sync histories in the UI.
+- [x] Deploy/run the activity analytics pipeline; the controlled sequence
+  reconciled 34 Bronze rows to 26 effective Silver rows and exact Gold metrics;
+  maximum reported source latency was 85 seconds.
 - [ ] Prove a durable paid-workspace UC HTTP/MCP authentication flow to the
   Render MCP service using a separate machine credential or supported OAuth M2M
   flow, never a personal token or model-supplied identity.
 - [ ] Deploy the Supervisor, wait for its serving endpoint to become online,
   capture all ten Phase 7 cases, and pass `tools/phase7_agent_eval.py`.
 - [ ] Deploy the frontend on Render Free with OIDC and signed MCP assertions;
-  pass health, authenticated-route, CSRF, security-header, MCP request-ID,
-  paid-analytics M2M, and safe-error smoke checks.
+  health, login/callback/session, security headers, fail-closed routes, and the
+  signed MCP boundary pass. Paid-analytics M2M and the authenticated workflow
+  still require acceptance.
 - [ ] Prove two real principals see isolated watchlists, notes, reports, and
   traces through the complete frontend → agent → MCP path.
 - [ ] Upgrade both Render services to the smallest paid tier for the final
