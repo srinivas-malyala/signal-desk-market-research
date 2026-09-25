@@ -1,11 +1,11 @@
 # Phase 6 — Lakebase CDC and usage analytics
 
-Updated: 2026-09-11
+Updated: 2026-09-24
 
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
-| 6.1 Lakebase CDC replication | Workspace configuration pending | Six Lakebase tables have full replica identity; the selected five operational analytics sources are `agent_tool_events_srini`, `agent_sessions_srini`, `watchlist_tickers_srini`, `research_notes_srini`, and `analysis_reports_srini` | A workspace administrator must configure UI-only Lakehouse Sync into `bootcamp_students.student_sri`, then ordered insert/update/delete propagation and latency must be measured |
-| 6.2 Silver activity and Gold usage metrics | Local acceptance complete | Parameterized serverless Lakeflow pipeline; normalized streaming table with five append flows; deduplicated safe Silver activity; five Gold metric families; deterministic synthetic CDC acceptance passes | Deploy and run after the five `lb_*_srini_history` sources exist; reconcile controlled live events and record end-to-end latency |
+| 6.1 Lakebase CDC replication | Workspace configuration observed; start/acceptance pending | Six Lakebase tables have full replica identity; Lakehouse Sync is configured from PostgreSQL `databricks_postgres.bootcamp_students` to Unity Catalog `bootcamp_students.bootcamp_students`; the selected five sources are `agent_tool_events_srini`, `agent_sessions_srini`, `watchlist_tickers_srini`, `research_notes_srini`, and `analysis_reports_srini` | Start/confirm the schema-level sync, verify the five `lb_*_srini_history` tables become online, then measure ordered insert/update/delete propagation and latency |
+| 6.2 Silver activity and Gold usage metrics | Local acceptance complete | Source and output namespaces are independently parameterized: CDC reads `bootcamp_students.bootcamp_students.lb_*_srini_history`, while Silver/Gold remain in `bootcamp_students.student_sri`; normalized streaming table with five append flows; deduplicated safe Silver activity; five Gold metric families; deterministic synthetic CDC acceptance passes | Deploy and run after the five history sources are online; reconcile controlled live events and record end-to-end latency |
 
 ## Phase 6.2 implementation
 
@@ -14,6 +14,12 @@ tables and retains the required `_pg_change_type`, `_pg_lsn`, `_pg_xid`,
 `_sort_by`, and `_timestamp` metadata under normalized names. A deterministic
 change ID makes exact replay safe. The target uses one append flow per source,
 which avoids a streaming union and keeps source-specific selection explicit.
+The source namespace is `bootcamp_students.bootcamp_students`; the pipeline
+publishes its own Bronze, Silver, and Gold datasets separately under
+`bootcamp_students.student_sri`. Lakehouse Sync maps a PostgreSQL table such as
+`agent_sessions_srini` to `lb_agent_sessions_srini_history` in the destination
+schema. Although the schema-level sync includes other students' eligible
+tables, this pipeline allowlists only the five `_srini` history sources.
 
 `silver_agent_activity` removes update preimages, deduplicates repeated change
 identities, preserves inserts, postimages, and deletes, and derives activity

@@ -60,7 +60,9 @@ quarantines across 81 manifest dates.
 ## Lakebase CDC analytics model
 
 Lakehouse Sync is expected to create append-only history tables named
-`lb_<base>_srini_history` for the five selected operational sources.
+`bootcamp_students.bootcamp_students.lb_<base>_srini_history` for the five
+selected operational sources. The Phase 6 pipeline outputs remain in
+`bootcamp_students.student_sri`.
 
 | Dataset | Grain | Published fields / privacy rule |
 |---|---|---|

@@ -156,8 +156,12 @@ def test_bundle_registers_parameterized_activity_analytics_pipeline() -> None:
     assert "serverless: true" in resource
     assert "${var.catalog}" in resource
     assert "${var.schema}" in resource
+    assert "signal_desk.cdc_source_catalog: ${var.cdc_source_catalog}" in resource
+    assert "signal_desk.cdc_source_schema: ${var.cdc_source_schema}" in resource
     assert "${var.lakebase_table_suffix}" in resource
     assert "lakebase_table_suffix:" in bundle
+    assert "cdc_source_catalog: bootcamp_students" in bundle
+    assert "cdc_source_schema: bootcamp_students" in bundle
     for filename in (
         "bronze_lakebase_changes.py",
         "silver_agent_activity.py",

@@ -17,7 +17,7 @@ shared read-only data access. The Supervisor uses a separate machine credential
 or supported OAuth M2M flow and is mapped to a fixed server-side identity. See
 `docs/RENDER_DEPLOYMENT_PLAN.md`.
 
-The development analytical namespace remains Unity Catalog `bootcamp_students.student_sri`. Lakebase uses a different classroom convention: all students share PostgreSQL schema `bootcamp_students`, and this application owns only tables whose base names end in `_srini`. Unity-Catalog-to-Lakebase synced graph tables live in PostgreSQL schema `bootcamp_cdc` and also end in `_srini`.
+The development analytical namespace remains Unity Catalog `bootcamp_students.student_sri`. Lakebase uses a different classroom convention: all students share PostgreSQL schema `bootcamp_students`, and this application owns only tables whose base names end in `_srini`. Lakehouse Sync publishes that shared PostgreSQL schema into Unity Catalog `bootcamp_students.bootcamp_students`, naming each history table `lb_<postgres_table>_history`; the activity pipeline reads only the five allowlisted `_srini` histories from that source namespace and publishes its outputs to `bootcamp_students.student_sri`. Unity-Catalog-to-Lakebase synced graph tables live in PostgreSQL schema `bootcamp_cdc` and also end in `_srini`.
 
 The verified development SQL compute is the serverless `Serverless Starter Warehouse`:
 
@@ -58,6 +58,7 @@ OAuth M2M credentials supplied only through Render secret environment values.
 | `SIGNAL_DESK_TABLE_SUFFIX` | MCP/frontend/migrations | Per-student Lakebase table namespace | Non-secret lowercase identifier; `srini` |
 | `SIGNAL_DESK_GRAPH_SCHEMA` | MCP/frontend/CDF reads | Lakebase schema containing replicated graph tables | Non-secret environment value; `bootcamp_cdc` |
 | `lakebase_table_suffix` | Activity analytics bundle | Resolves Lakehouse Sync history names for shared-schema source tables | Bundle variable; development value `srini` |
+| `cdc_source_catalog`, `cdc_source_schema` | Activity analytics bundle | Lakehouse Sync history-table namespace, independent of the pipeline output namespace | Development values `bootcamp_students`, `bootcamp_students` |
 | `MCP_SERVER_URL` | frontend write service | Watchlist and later research/action tool calls | Render MCP HTTPS URL; deployed binding remains a Phase 8 gate |
 | `MCP_TIMEOUT_SECONDS` | frontend write service | Optional MCP timeout override | Integer 1–60; defaults to 20 seconds |
 | `SIGNAL_DESK_HOSTING` | MCP/frontend | Select deployed host behavior | Literal `render` in both Render services |

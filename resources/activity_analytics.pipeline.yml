@@ -28,8 +28,8 @@ resources:
         - glob:
             include: ../pipelines/gold_research_saves.py
       configuration:
-        signal_desk.cdc_source_catalog: ${var.catalog}
-        signal_desk.cdc_source_schema: ${var.schema}
+        signal_desk.cdc_source_catalog: ${var.cdc_source_catalog}
+        signal_desk.cdc_source_schema: ${var.cdc_source_schema}
         signal_desk.lakebase_table_suffix: ${var.lakebase_table_suffix}
       permissions:
         - level: CAN_VIEW

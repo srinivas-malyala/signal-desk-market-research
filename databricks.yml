@@ -19,6 +19,10 @@ variables:
     description: SQL warehouse ID used by the frontend for analytics
   lakebase_table_suffix:
     description: Per-student suffix on shared Lakebase source tables
+  cdc_source_catalog:
+    description: Unity Catalog catalog populated by Lakebase Lakehouse Sync
+  cdc_source_schema:
+    description: Unity Catalog schema populated by Lakebase Lakehouse Sync
   pipeline_development:
     description: Whether the Lakeflow pipeline uses development mode
     default: true
@@ -32,6 +36,8 @@ targets:
       schema: student_sri
       warehouse_id: b15d3d6f837ba428
       lakebase_table_suffix: srini
+      cdc_source_catalog: bootcamp_students
+      cdc_source_schema: bootcamp_students
 
   prod:
     mode: production
