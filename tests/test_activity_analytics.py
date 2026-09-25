@@ -161,7 +161,7 @@ def test_bundle_registers_parameterized_activity_analytics_pipeline() -> None:
     assert "${var.lakebase_table_suffix}" in resource
     assert "lakebase_table_suffix:" in bundle
     assert "cdc_source_catalog: bootcamp_students" in bundle
-    assert "cdc_source_schema: bootcamp_students" in bundle
+    assert "cdc_source_schema: bootcamp_cdc" in bundle
     for filename in (
         "bronze_lakebase_changes.py",
         "silver_agent_activity.py",

@@ -37,7 +37,7 @@ targets:
       warehouse_id: b15d3d6f837ba428
       lakebase_table_suffix: srini
       cdc_source_catalog: bootcamp_students
-      cdc_source_schema: bootcamp_students
+      cdc_source_schema: bootcamp_cdc
 
   prod:
     mode: production

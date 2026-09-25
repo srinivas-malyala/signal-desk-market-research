@@ -4,8 +4,8 @@ Updated: 2026-09-24
 
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
-| 6.1 Lakebase CDC replication | All five source mappings selected; start/acceptance pending | Six Lakebase tables have full replica identity; UI evidence marks `agent_tool_events_srini`, `agent_sessions_srini`, `watchlist_tickers_srini`, `research_notes_srini`, and `analysis_reports_srini` as **Will include**, mapping them from PostgreSQL `databricks_postgres.bootcamp_students` into `bootcamp_students.bootcamp_students.lb_*_srini_history` | Start/confirm the schema-level sync, verify the five history tables become online, then measure ordered insert/update/delete propagation and latency |
-| 6.2 Silver activity and Gold usage metrics | Local acceptance complete | Source and output namespaces are independently parameterized: CDC reads `bootcamp_students.bootcamp_students.lb_*_srini_history`, while Silver/Gold remain in `bootcamp_students.student_sri`; normalized streaming table with five append flows; deduplicated safe Silver activity; five Gold metric families; deterministic synthetic CDC acceptance passes | Deploy and run after the five history sources are online; reconcile controlled live events and record end-to-end latency |
+| 6.1 Lakebase CDC replication | Schema and five required tables enabled; data acceptance pending | The active schema mapping is **Enabled** from PostgreSQL `databricks_postgres.bootcamp_students` to Unity Catalog `bootcamp_students.bootcamp_cdc`; table evidence shows **Enabled** for `agent_tool_events_srini`, `agent_sessions_srini`, `watchlist_tickers_srini`, `research_notes_srini`, and `analysis_reports_srini`, each with an `lb_*_srini_history` destination and replication position | Query and describe the five destination histories, then execute controlled insert/update/delete propagation and measure latency |
+| 6.2 Silver activity and Gold usage metrics | Local acceptance complete | Source and output namespaces are independently parameterized: CDC reads `bootcamp_students.bootcamp_cdc.lb_*_srini_history`, while Silver/Gold remain in `bootcamp_students.student_sri`; normalized streaming table with five append flows; deduplicated safe Silver activity; five Gold metric families; deterministic synthetic CDC acceptance passes | Deploy and run after the five history sources are confirmed queryable; reconcile controlled live events and record end-to-end latency |
 
 ## Phase 6.2 implementation
 
@@ -14,7 +14,7 @@ tables and retains the required `_pg_change_type`, `_pg_lsn`, `_pg_xid`,
 `_sort_by`, and `_timestamp` metadata under normalized names. A deterministic
 change ID makes exact replay safe. The target uses one append flow per source,
 which avoids a streaming union and keeps source-specific selection explicit.
-The source namespace is `bootcamp_students.bootcamp_students`; the pipeline
+The source namespace is `bootcamp_students.bootcamp_cdc`; the pipeline
 publishes its own Bronze, Silver, and Gold datasets separately under
 `bootcamp_students.student_sri`. Lakehouse Sync maps a PostgreSQL table such as
 `agent_sessions_srini` to `lb_agent_sessions_srini_history` in the destination
