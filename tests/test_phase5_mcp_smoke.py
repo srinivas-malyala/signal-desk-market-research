@@ -5,7 +5,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from tools.phase5_mcp_smoke import EXPECTED_TOOLS, _tool_payload, run_mcp_checks, run_render
+from tools.phase5_mcp_smoke import (
+    EXPECTED_TOOLS,
+    _safe_failure_detail,
+    _tool_payload,
+    run_mcp_checks,
+    run_render,
+)
 
 
 class FakeClient:
@@ -102,6 +108,21 @@ def test_tool_payload_accepts_structured_fastmcp_result() -> None:
     assert _tool_payload(SimpleNamespace(structuredContent={"status": "success"}, content=[])) == {
         "status": "success"
     }
+
+
+def test_failure_detail_is_bounded_and_uses_only_sanitized_payload_fields() -> None:
+    detail = _safe_failure_detail(
+        {
+            "status": "error",
+            "error_code": "dependency_unavailable",
+            "message": "Safe dependency message " * 40,
+            "secret": "must-not-appear",
+        }
+    )
+    assert "error_code=dependency_unavailable" in detail
+    assert "must-not-appear" not in detail
+    assert len(detail) <= 450
+    assert _safe_failure_detail({"status": "success", "message": "ignored"}) == ""
 
 
 def test_write_smoke_attempts_cleanup_when_replay_call_fails() -> None:

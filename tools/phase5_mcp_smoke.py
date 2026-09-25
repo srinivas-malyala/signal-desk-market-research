@@ -33,6 +33,15 @@ EXPECTED_TOOLS = {
 WRITE_TEST_TICKERS = ("SPY", "QQQ", "DIA", "IWM")
 
 
+def _safe_failure_detail(payload: dict[str, Any]) -> str:
+    """Return bounded, server-sanitized failure metadata for acceptance reports."""
+    if payload.get("status") != "error":
+        return ""
+    error_code = str(payload.get("error_code") or "unknown_error")[:100]
+    message = " ".join(str(payload.get("message") or "No safe error message returned.").split())[:300]
+    return f", error_code={error_code}, message={message}"
+
+
 def _tool_payload(result: Any) -> dict[str, Any]:
     structured = getattr(result, "structuredContent", None)
     if isinstance(structured, dict):
@@ -155,7 +164,10 @@ async def run_mcp_checks(
         {
             "name": "governed_performance_retrieval",
             "passed": performance_ok,
-            "detail": f"status={performance.get('status')}, as_of={performance.get('as_of')}",
+            "detail": (
+                f"status={performance.get('status')}, as_of={performance.get('as_of')}"
+                f"{_safe_failure_detail(performance)}"
+            ),
         }
     )
 
@@ -181,7 +193,10 @@ async def run_mcp_checks(
         {
             "name": "semantic_retrieval",
             "passed": semantic.get("status") == "success" and provenance_ok,
-            "detail": f"status={semantic.get('status')}, matches={len(matches)}, provenance_complete={provenance_ok}",
+            "detail": (
+                f"status={semantic.get('status')}, matches={len(matches)}, "
+                f"provenance_complete={provenance_ok}{_safe_failure_detail(semantic)}"
+            ),
         }
     )
 
