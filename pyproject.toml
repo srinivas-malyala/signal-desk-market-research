@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Evidence-grounded stock research agent capstone"
 requires-python = ">=3.11,<3.15"
 dependencies = [
+  "cryptography>=45,<51",
   "databricks-sdk>=0.81,<1",
   "psycopg2-binary>=2.9,<3",
   "pydantic>=2.10,<3",

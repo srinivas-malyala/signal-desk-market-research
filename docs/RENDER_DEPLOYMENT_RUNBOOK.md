@@ -95,9 +95,10 @@ named test accounts.
 Generate one RSA key pair, a Flask session secret, and a separate high-entropy
 Supervisor machine credential with `tools/generate_render_credentials.py`.
 Generated values live only in ignored `build/render-secrets/`; the generator
-prints fingerprints but no secret values and refuses overwrite. Store the
-private key only in the frontend service and the public key only in the MCP
-service. Never reuse the OIDC or Databricks M2M secrets.
+prints fingerprints but no secret values. Re-running it validates the existing
+set without overwriting it. Store the private key only in the frontend service
+and the public key only in the MCP service. Never reuse the OIDC or Databricks
+M2M secrets.
 
 Required secret ownership:
 

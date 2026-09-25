@@ -6,7 +6,7 @@ import stat
 import jwt
 import pytest
 
-from tools.generate_render_credentials import CALLBACK_URL, generate
+from tools.generate_render_credentials import CALLBACK_URL, generate, prepare, validate_existing
 
 
 def test_generated_render_credentials_are_private_and_cryptographically_matched(tmp_path) -> None:
@@ -48,3 +48,27 @@ def test_generator_refuses_to_overwrite_credentials(tmp_path) -> None:
     generate(output)
     with pytest.raises(FileExistsError, match="refusing to overwrite"):
         generate(output)
+
+
+def test_prepare_is_idempotent_and_validates_existing_set(tmp_path) -> None:
+    output = tmp_path / "render-secrets"
+    created_manifest, created = prepare(output)
+    existing_manifest, created_again = prepare(output)
+
+    assert created is True
+    assert created_again is False
+    assert existing_manifest == created_manifest
+    assert validate_existing(output) == created_manifest
+
+
+def test_validation_rejects_tampered_secret_without_overwriting(tmp_path) -> None:
+    output = tmp_path / "render-secrets"
+    generate(output)
+    token_path = output / "mcp-supervisor-token.txt"
+    original = token_path.read_bytes()
+    token_path.write_bytes(b"tampered\n")
+    token_path.chmod(0o600)
+
+    with pytest.raises(RuntimeError, match="fingerprints do not match"):
+        prepare(output)
+    assert token_path.read_bytes() != original

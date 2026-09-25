@@ -52,8 +52,11 @@ uv run python tools/generate_render_credentials.py
 ```
 
 The command creates `build/render-secrets/`, which is excluded by `.gitignore`,
-with directory mode `0700` and file mode `0600`. It refuses to overwrite an
-existing credential set and prints only SHA-256 fingerprints.
+with directory mode `0700` and file mode `0600`. The first run generates the
+credential set. Later runs validate the existing files, key pairing,
+permissions, and fingerprints without changing anything. A partial or tampered
+set fails closed; use `--output` with a new ignored directory when intentionally
+creating a separate set. Only SHA-256 fingerprints are printed.
 
 | Local file | Render service and variable |
 |---|---|
