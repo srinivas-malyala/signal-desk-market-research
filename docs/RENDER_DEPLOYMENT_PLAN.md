@@ -7,8 +7,11 @@ Updated: 2026-09-24
 Units 1–4 are implemented and locally accepted on
 `codex/render-app-deployment`: two-service packaging, `$PORT`/health behavior,
 data-bundle separation, explicit Databricks OAuth M2M clients, generic OIDC,
-secure sessions/CSRF, signed frontend identity, fixed Supervisor identity, and
-static deployment checks. The full suite passes 231 tests and Ruff.
+secure sessions/CSRF, signed frontend identity, fixed Supervisor identity,
+Linux/Python 3.11 hash-pinned service locks, clean-install checks, exact-command
+health smoke tests, and static deployment checks. The full suite passes 234
+tests and Ruff. The final Render/data-plane architecture diagram has been
+exported and visually verified.
 
 Strict post-change validation of the data-only bundle passed on 2026-09-24 with
 explicit profile `dataexpertio_srini`, authenticated as
@@ -295,7 +298,7 @@ an owner identity; confirmations and idempotency remain enforced by MCP.
 1. Upgrade both Render services to the smallest paid plan.
 2. Re-run health, end-to-end, security, quota, CDC latency, and performance
    acceptance without cold starts.
-3. Update and export the architecture diagram.
+3. Reconfirm the exported architecture diagram against the live deployment IDs and URLs.
 4. Record sanitized URLs, deploy IDs, commit SHA, timestamps, and test totals.
 5. After submission/demo, suspend, downgrade, or delete the Render services and
    revoke/rotate all deployment credentials.

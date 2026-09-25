@@ -25,7 +25,7 @@ suffix `_srini`. No application owns the shared schema itself.
 | `agent_sessions` | One agent session; `session_id` | `user_id`, status, created/last-activity times | CDC source for session activity. |
 | `agent_tool_events` | One tool event; `event_id` | session/user, tool, action, status, duration, bounded metadata | Primary CDC source for usage analytics. |
 | `idempotency_records` | One write result per user/operation/key; `(user_id,operation_name,idempotency_key)` | response `result`, `created_at` | Prevents duplicate confirmed writes and detects key reuse. |
-| `massive_api_attempts` | One permitted physical Massive attempt; `attempt_id` | database-clock `acquired_at`, bounded requester label, contract version | Cross-host free-plan quota ledger; physical name `bootcamp_students.massive_api_attempts_srini`; contains no URL, query, header, or key. Migration `0005` is pending workspace application. |
+| `massive_api_attempts` | One permitted physical Massive attempt; `attempt_id` | database-clock `acquired_at`, bounded requester label, contract version | Cross-host free-plan quota ledger; physical name `bootcamp_students.massive_api_attempts_srini`; contains no URL, query, header, or key. Migration `0005` is applied and idempotency-verified. |
 | `schema_migrations` | One applied migration version; `version` | SHA-256 checksum, `applied_at` | Detects mutation of already-applied migrations. |
 
 `watchlist_tickers`, `research_notes`, `analysis_reports`, `agent_sessions`,

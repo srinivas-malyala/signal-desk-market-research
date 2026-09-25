@@ -12,6 +12,28 @@ file. Enter secrets only through the Render dashboard or another approved secret
 manager. Record sanitized service URLs, deployment IDs, timestamps, and test
 results only.
 
+## 0. Reproduce the service builds locally
+
+The Blueprint installs hash-pinned Linux/Python 3.11 dependency locks. Regenerate
+them only after intentionally editing the corresponding input requirement file:
+
+```bash
+uv pip compile mcp_server/requirements.txt --python-version 3.11 --python-platform x86_64-unknown-linux-gnu --generate-hashes --output-file mcp_server/requirements.lock
+uv pip compile dashboard/requirements.txt --python-version 3.11 --python-platform x86_64-unknown-linux-gnu --generate-hashes --output-file dashboard/requirements.lock
+```
+
+Run the same automated checks used by CI before creating a Blueprint deployment:
+
+```bash
+uv run python tools/check_render_reproducibility.py --clean-install --process-smoke
+```
+
+This validates the two-service/secret contract, installs both locks into fresh
+Python 3.11 environments, imports their runtime modules, starts the exact
+Blueprint commands, and probes `/health` and `/healthz`. The local MCP process
+smoke sets `SIGNAL_DESK_RUN_MIGRATIONS=false` because it has no deployment
+database; the Blueprint explicitly sets it to `true`.
+
 ## 1. Renew and validate the data workspace
 
 Completed on 2026-09-24: the explicit profile authenticated as

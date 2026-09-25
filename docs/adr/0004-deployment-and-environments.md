@@ -1,6 +1,6 @@
 # ADR 0004: Deployment and environments
 
-- Status: Accepted
+- Status: Amended by ADR 0006; the bundle now owns only the Databricks data plane
 - Date: 2026-09-10
 
 ## Decision

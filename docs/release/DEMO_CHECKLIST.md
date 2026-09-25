@@ -14,8 +14,9 @@ connection URLs, direct email values, or user-authored note/report bodies.
 - [x] Record the Render decision: all processing/data resources remain under
   `dataexpertio_srini`; only FastMCP and Flask move to two Render web services.
 - [x] Add the two-service `render.yaml`; validate build/start commands, `$PORT`,
-  health checks, and `sync: false` secret placeholders without deploying data
-  resources from Render.
+  health checks, Linux/Python 3.11 hash-pinned clean installs, exact-command
+  local process starts, and `sync: false` secret placeholders without deploying
+  data resources from Render.
 - [ ] Prove Render egress to the paid workspace and Lakebase; prove Massive
   HTTPS before enabling interactive fallback traffic.
 - [ ] Create two separate least-privilege paid-workspace OAuth M2M identities,
@@ -85,10 +86,14 @@ connection URLs, direct email values, or user-authored note/report bodies.
 
 ## E. Submission package
 
-- [ ] Re-run the full local test suite and Ruff; record totals and commit SHA.
+- [x] Re-run the full local test suite and Ruff; 234 tests and Ruff passed for
+  the reproducibility checkpoint `dacee84`.
 - [x] Run strict data-bundle validation with explicit profile
   `dataexpertio_srini`; validate the Render Blueprint and inspect both deployment
   surfaces for cross-target resources. Data-only validation passed on 2026-09-24.
-- [ ] Confirm data dictionary, tool/API reference, traceability matrix, status tracker, deployment guide, and diagram agree.
-- [ ] Export final architecture diagram as PNG/JPEG and open it once for visual QA.
+- [x] Confirm the current data dictionary, tool/API reference, traceability
+  matrix, status tracker, Render deployment guide, proposal, and diagram agree
+  on the split-host deployment contract.
+- [x] Export the final architecture diagram as an 1800×1120 PNG and open it for
+  visual QA; retain the editable SVG source alongside it.
 - [ ] Verify the repository and demo output contain no credentials or sensitive runtime artifacts.

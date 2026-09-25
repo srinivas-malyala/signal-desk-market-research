@@ -1,6 +1,6 @@
 # ADR 0001: Application and service boundaries
 
-- Status: Accepted
+- Status: Superseded by ADR 0006 for application hosting; logical service boundaries retained
 - Date: 2026-09-10
 
 ## Context

@@ -6,6 +6,14 @@ The proposal describes Signal Desk as a brand-new capstone implementation. The e
 
 This plan breaks that brownfield implementation into small, dependency-ordered units. Each unit produces a reviewable artifact, includes its own tests, and has an explicit exit criterion. A unit is complete only when its tests pass and its evidence is recorded.
 
+> **Current deployment decision (2026-09-24):** Later budget and workspace
+> constraints supersede the Databricks Apps hosting references retained in the
+> original phase text below. Flask and FastMCP deploy as two Render Python web
+> services from `render.yaml`; jobs, Spark pipelines, Unity Catalog, SQL
+> Warehouse, AI Search, Lakebase Sync analytics, and Agent Bricks remain in the
+> paid Databricks workspace. See `docs/adr/0006-render-application-tier.md` and
+> `docs/RENDER_DEPLOYMENT_RUNBOOK.md` for the executable deployment contract.
+
 The recommended implementation strategy is risk-first:
 
 1. Validate free-tier Massive throughput and workspace capabilities before building around them.
