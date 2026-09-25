@@ -6,7 +6,7 @@
 
 Signal Desk will be a new, evidence-grounded stock-market research application built on Databricks. It will help a user investigate public companies, compare market performance, search company filings and financial news, maintain a personal watchlist, and save research notes or reports. The capstone will be presented, designed, implemented, tested, and deployed as a greenfield system with its own data contracts, pipelines, database schema, agent tools, user interface, and infrastructure configuration.
 
-The capstone includes the components required for a production-oriented data application: a PySpark ingestion and transformation pipeline, over one million historical market rows in Delta, SEC filing ingestion, Lakebase Change Data Feed for operational analytics, a unified research interface, and repeatable Databricks deployment.
+The capstone includes the components required for a production-oriented data application: a PySpark ingestion and transformation pipeline, over one million historical market rows in Delta, SEC filing ingestion, Lakebase change history for operational analytics, a unified research interface, and repeatable deployment across Databricks and Render.
 
 The result will answer questions such as:
 
@@ -188,7 +188,7 @@ Official documentation:
 
 ## 6. Frontend and core workflow
 
-A new Flask frontend will provide a unified Databricks App for research, agent interaction, and saved work. The primary workflow will be:
+A new Flask frontend hosted on Render will provide a unified interface for research, agent interaction, and saved work. The primary workflow will be:
 
 1. Search for or select a company.
 2. Ask the research agent a question or choose a comparison window.
@@ -205,21 +205,21 @@ The interface will contain:
 - saved notes and reports;
 - an agent activity and usage-analytics page.
 
-Every data view will explicitly handle loading, empty, error, partial, and stale-data states. Agent responses will display their evidence and execution identity. The app will be served by Gunicorn and will bind to the Databricks Apps port.
+Every data view will explicitly handle loading, empty, error, partial, and stale-data states. Agent responses will display their evidence and execution identity. The app will be served by Gunicorn, bind to Render's assigned `$PORT`, authenticate browser users through OIDC, and call FastMCP with short-lived signed user assertions.
 
 ## 7. Deployment
 
-The frontend will be deployed as a Databricks App. The FastMCP service will be deployed as a second Databricks App so that the agent-facing service and user-facing application can scale and be permissioned independently.
+The frontend and FastMCP service will be deployed as two independently permissioned Render web services. Render Free instances will support development and integration; the smallest paid instances will be used for final acceptance and the capstone demonstration to avoid cold-start risk. All Spark processing, Lakeflow jobs and pipelines, Unity Catalog data, SQL Warehouse queries, managed AI Search, Lakebase Sync analytics, and Agent Bricks processing remain in the paid Databricks workspace.
 
-A Databricks Declarative Automation Bundle will version and deploy:
+A Databricks Declarative Automation Bundle will version and deploy the data-plane resources:
 
 - the market/filing ingestion Lakeflow Job;
 - the Lakeflow Spark Declarative Pipeline;
-- the frontend Databricks App;
-- the FastMCP Databricks App;
 - Unity Catalog schemas, volumes, and resource variables where supported.
 
-Lakebase Autoscaling, the shared-schema `_srini` table contract, attached secret resources, Agent Bricks registration, and Lakebase CDF setup will be documented as environment bootstrap steps where they cannot be completely represented in the bundle. Separate development and production targets will parameterize catalog, schema, application names, and resource identifiers.
+An infrastructure-as-code Render Blueprint will define both Python services, their exact build and start commands, health checks, non-secret configuration, and explicit secret placeholders. Browser identity will use OIDC; the frontend will sign 60-second, request-bound user assertions for MCP. The frontend and MCP services will use separate least-privilege OAuth M2M identities for paid-workspace access, while the Supervisor will use a fixed server-side machine identity.
+
+Lakebase Autoscaling, the shared-schema `_srini` table contract, OIDC/M2M registration, Agent Bricks registration, and Lakebase Sync setup will be documented as environment bootstrap steps where they cannot be completely represented in the bundle or Blueprint. Separate development and production targets will parameterize catalog, schema, application names, and resource identifiers.
 
 ## 8. Big Data requirements
 
@@ -256,8 +256,8 @@ The capstone will deliver the following newly implemented modules:
 | Operational database | A Lakebase Autoscaling schema, migrations, ownership rules, connection pooling, and CDF-enabled event tables. |
 | Agent service | A FastMCP server with retrieval and confirmed write tools, authenticated identity enforcement, and sanitized traces. |
 | Semantic research | Section-aware filing/news chunks, managed Qwen3 Delta Sync AI Search, hybrid filtered retrieval, provenance fields, and retrieval evaluation. |
-| Frontend | An authenticated Flask Databricks App for research, evidence inspection, watchlists, notes, reports, and usage analytics. |
-| Deployment | A Declarative Automation Bundle plus documented Lakebase, CDF, secrets, and Agent Bricks bootstrap steps. |
+| Frontend | An authenticated Flask web service on Render for research, evidence inspection, watchlists, notes, reports, and usage analytics. |
+| Deployment | A data-plane Declarative Automation Bundle, a two-service Render Blueprint, and documented Lakebase, Sync, identity, secrets, and Agent Bricks bootstrap steps. |
 
 ## 10. Success criteria
 
@@ -269,7 +269,7 @@ The capstone will be considered complete when it demonstrates:
 4. An agent answer grounded in retrieved market/document evidence.
 5. A confirmed agent write that updates a watchlist or saves research.
 6. A Lakebase write appearing in a Delta CDF table and a gold usage metric.
-7. A usable, authenticated Databricks App completing the research-and-save workflow.
+7. A usable, authenticated application on Render completing the research-and-save workflow while using the Databricks data plane.
 8. Repeatable validation and deployment instructions, with automated unit and integration tests for critical paths.
 
 ## 11. Key risks and mitigations
@@ -277,7 +277,7 @@ The capstone will be considered complete when it demonstrates:
 - **Massive free-plan limits:** centralize all calls behind a four-per-minute limiter, use one grouped-market request per date, checkpoint completed dates, honor 429 `Retry-After`, and validate the row count before declaring the volume requirement complete.
 - **SEC access policy:** use an identifying User-Agent, bounded concurrency, retry/backoff, and bulk archives for large downloads.
 - **Sensitive or oversized traces:** store bounded event metadata rather than full tool results or user-authored report bodies.
-- **Identity isolation:** derive user identity from trusted Databricks headers and apply ownership filters to every Lakebase read and write.
+- **Identity isolation:** derive browser identity from a validated OIDC session, use a short-lived signed assertion at the frontend-to-MCP boundary, and apply ownership filters to every Lakebase read and write.
 - **Pipeline cost and duration:** backfill incrementally, use serverless compute where available, and separate historical backfill from daily refresh.
 - **Preview feature availability:** confirm Lakebase CDF support in the chosen workspace early; retain a Lakeflow pipeline from append-only agent events as a documented fallback.
 

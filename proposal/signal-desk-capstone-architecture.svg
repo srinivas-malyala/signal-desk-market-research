@@ -1,134 +1,41 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1120" viewBox="0 0 1800 1120" role="img" aria-labelledby="title desc">
-  <title id="title">Signal Desk capstone architecture</title>
-  <desc id="desc">Architecture showing Massive and SEC data flowing through a PySpark medallion pipeline, operational data in Lakebase, an MCP action agent, Lakebase change data feed analytics, and a Databricks App frontend.</desc>
+  <title id="title">Signal Desk capstone deployment architecture</title>
+  <desc id="desc">Massive and SEC data flow through paid Databricks Spark and Unity Catalog. Lakebase stores operational state and syncs change history to Delta analytics. A Flask frontend and FastMCP service run on Render with browser OIDC, short-lived signed user assertions, and separate least-privilege Databricks machine identities.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8fafc"/><stop offset="1" stop-color="#eef2ff"/></linearGradient>
     <filter id="shadow" x="-15%" y="-15%" width="130%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.12"/></filter>
     <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#475569"/></marker>
     <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#2563eb"/></marker>
     <style>
-      .title{font:700 38px Arial,sans-serif;fill:#0f172a}.subtitle{font:400 19px Arial,sans-serif;fill:#475569}.zone{font:700 18px Arial,sans-serif;letter-spacing:1px;fill:#334155}.box-title{font:700 20px Arial,sans-serif;fill:#0f172a}.box-text{font:400 15px Arial,sans-serif;fill:#334155}.small{font:400 13px Arial,sans-serif;fill:#475569}.label{font:700 13px Arial,sans-serif;fill:#334155}.line{fill:none;stroke:#475569;stroke-width:3;marker-end:url(#arrow)}.blue-line{fill:none;stroke:#2563eb;stroke-width:3;marker-end:url(#arrowBlue)}.dash{stroke-dasharray:9 7}.box{rx:18;filter:url(#shadow);stroke-width:2}.source{fill:#fff7ed;stroke:#fb923c}.spark{fill:#eff6ff;stroke:#3b82f6}.delta{fill:#ecfeff;stroke:#06b6d4}.lake{fill:#f0fdf4;stroke:#22c55e}.agent{fill:#faf5ff;stroke:#a855f7}.app{fill:#fff1f2;stroke:#f43f5e}.analytics{fill:#fefce8;stroke:#eab308}.zone-bg{fill:#ffffff;fill-opacity:.55;stroke:#cbd5e1;stroke-width:1.5;rx:24}
+      .title{font:700 38px Arial,sans-serif;fill:#0f172a}.subtitle{font:400 18px Arial,sans-serif;fill:#475569}.zone{font:700 17px Arial,sans-serif;letter-spacing:.8px;fill:#334155}.box-title{font:700 19px Arial,sans-serif;fill:#0f172a}.box-text{font:400 14px Arial,sans-serif;fill:#334155}.small{font:400 12px Arial,sans-serif;fill:#475569}.label{font:700 12px Arial,sans-serif;fill:#334155}.line{fill:none;stroke:#475569;stroke-width:3;marker-end:url(#arrow)}.blue-line{fill:none;stroke:#2563eb;stroke-width:3;marker-end:url(#arrowBlue)}.dash{stroke-dasharray:9 7}.box{rx:18;filter:url(#shadow);stroke-width:2}.source{fill:#fff7ed;stroke:#fb923c}.spark{fill:#eff6ff;stroke:#3b82f6}.delta{fill:#ecfeff;stroke:#06b6d4}.lake{fill:#f0fdf4;stroke:#22c55e}.agent{fill:#faf5ff;stroke:#a855f7}.app{fill:#fff1f2;stroke:#f43f5e}.analytics{fill:#fefce8;stroke:#eab308}.zone-bg{fill:#fff;fill-opacity:.58;stroke:#cbd5e1;stroke-width:1.5;rx:24}
     </style>
   </defs>
   <rect width="1800" height="1120" fill="url(#bg)"/>
-  <text x="70" y="64" class="title">Signal Desk — Agentic Market Research</text>
-  <text x="70" y="98" class="subtitle">Spark market pipeline + Lakebase operations + action-taking AI + CDC usage analytics</text>
+  <text x="70" y="62" class="title">Signal Desk — Agentic Market Research</text>
+  <text x="70" y="95" class="subtitle">Render application tier • paid Databricks data plane • Lakebase operational state and CDC analytics</text>
 
-  <rect x="50" y="135" width="330" height="905" class="zone-bg"/>
-  <rect x="405" y="135" width="520" height="905" class="zone-bg"/>
-  <rect x="950" y="135" width="450" height="905" class="zone-bg"/>
-  <rect x="1425" y="135" width="325" height="905" class="zone-bg"/>
-  <text x="75" y="175" class="zone">DATA SOURCES</text>
-  <text x="430" y="175" class="zone">LAKEHOUSE / SPARK</text>
-  <text x="975" y="175" class="zone">OPERATIONAL + AI</text>
-  <text x="1450" y="175" class="zone">EXPERIENCE</text>
+  <rect x="45" y="130" width="295" height="910" class="zone-bg"/><rect x="365" y="130" width="540" height="910" class="zone-bg"/><rect x="930" y="130" width="420" height="910" class="zone-bg"/><rect x="1375" y="130" width="380" height="910" class="zone-bg"/>
+  <text x="70" y="170" class="zone">EXTERNAL SOURCES</text><text x="390" y="170" class="zone">PAID DATABRICKS DATA PLANE</text><text x="955" y="170" class="zone">LAKEBASE + AGENT</text><text x="1400" y="170" class="zone">RENDER APPLICATION TIER</text>
 
-  <rect x="80" y="220" width="270" height="155" class="box source"/>
-  <text x="105" y="255" class="box-title">Massive Stocks API</text>
-  <text x="105" y="285" class="box-text">• Daily market summary</text>
-  <text x="105" y="310" class="box-text">• Bars, daily close, profiles</text>
-  <text x="105" y="335" class="box-text">• News + sentiment JSON</text>
-  <text x="105" y="360" class="small">Free: 5 calls/min • 2 years EOD</text>
+  <rect x="70" y="220" width="245" height="150" class="box source"/><text x="95" y="255" class="box-title">Massive Stocks API</text><text x="95" y="285" class="box-text">Market summary • bars</text><text x="95" y="310" class="box-text">Profiles • news JSON</text><text x="95" y="340" class="small">Free: 5 calls/min • 2 years EOD</text>
+  <rect x="70" y="420" width="245" height="140" class="box source"/><text x="95" y="455" class="box-title">SEC EDGAR APIs</text><text x="95" y="485" class="box-text">Submissions • XBRL facts</text><text x="95" y="510" class="box-text">10-K / 10-Q / 8-K text</text><text x="95" y="538" class="small">Identifying User-Agent</text>
 
-  <rect x="80" y="425" width="270" height="150" class="box source"/>
-  <text x="105" y="460" class="box-title">SEC EDGAR APIs</text>
-  <text x="105" y="490" class="box-text">• Submissions + XBRL facts</text>
-  <text x="105" y="515" class="box-text">• 10-K / 10-Q / 8-K text</text>
-  <text x="105" y="540" class="small">Authoritative filings</text>
+  <rect x="395" y="205" width="480" height="105" class="box spark"/><text x="425" y="242" class="box-title">Lakeflow Jobs — PySpark ingestion</text><text x="425" y="270" class="box-text">Scheduled pulls • retries • raw landing • date checkpoints</text><text x="425" y="294" class="small">Lakebase-coordinated Massive quota: 4 calls/min</text>
+  <rect x="395" y="350" width="480" height="115" class="box delta"/><text x="425" y="388" class="box-title">Bronze Delta + Unity Catalog Volume</text><text x="425" y="418" class="box-text">Raw market, company, news, XBRL, filing documents</text><text x="425" y="445" class="small">Payloads, source URLs, request IDs, and provenance</text>
+  <rect x="395" y="505" width="480" height="125" class="box spark"/><text x="425" y="543" class="box-title">Lakeflow Spark Declarative Pipeline</text><text x="425" y="573" class="box-text">Clean • deduplicate • validate • enrich • chunk text</text><text x="425" y="601" class="small">Silver bars, news, facts, filings, and research chunks</text>
+  <rect x="395" y="670" width="480" height="125" class="box delta"/><text x="425" y="708" class="box-title">Gold Delta + managed AI Search</text><text x="425" y="738" class="box-text">Performance • peers • research • usage analytics</text><text x="425" y="766" class="small">Qwen3 Delta Sync hybrid index • governed evidence</text>
+  <rect x="395" y="835" width="480" height="105" class="box analytics"/><text x="425" y="873" class="box-title">Serverless SQL Warehouse</text><text x="425" y="903" class="box-text">Bounded analytics queries for app and MCP</text><text x="425" y="928" class="small">Separate least-privilege OAuth M2M readers</text>
 
-  <rect x="435" y="210" width="460" height="120" class="box spark"/>
-  <text x="465" y="250" class="box-title">Lakeflow Job — PySpark ingestion</text>
-  <text x="465" y="280" class="box-text">Scheduled API pulls, pagination, retries, raw landing</text>
-  <text x="465" y="305" class="small">Shared limiter: 4 calls/min • date checkpoints</text>
+  <rect x="960" y="210" width="360" height="190" class="box lake"/><text x="990" y="247" class="box-title">Lakebase Postgres</text><text x="990" y="277" class="box-text">Users • watchlists • notes • reports</text><text x="990" y="303" class="box-text">Sessions • tool events • recent cache</text><text x="990" y="329" class="box-text">Idempotency • shared API quota ledger</text><text x="990" y="363" class="small">bootcamp_students.*_srini • SSL • bounded pools</text>
+  <rect x="960" y="455" width="360" height="140" class="box agent"/><text x="990" y="492" class="box-title">Agent Bricks Supervisor</text><text x="990" y="522" class="box-text">Grounded orchestration</text><text x="990" y="548" class="box-text">Confirmation before writes</text><text x="990" y="575" class="small">Governed MCP connection • machine identity</text>
+  <rect x="960" y="650" width="360" height="185" class="box analytics"/><text x="990" y="687" class="box-title">Lakebase Sync / change history</text><text x="990" y="717" class="box-text">Five operational history sources</text><text x="990" y="743" class="box-text">Bronze → Silver → five Gold views</text><text x="990" y="769" class="box-text">Activity • latency • errors • saves</text><text x="990" y="803" class="small">Target freshness: under one minute</text>
 
-  <rect x="435" y="380" width="460" height="125" class="box delta"/>
-  <text x="465" y="420" class="box-title">Bronze Delta + UC Volume</text>
-  <text x="465" y="450" class="box-text">Raw market, company, news, XBRL, filing documents</text>
-  <text x="465" y="478" class="small">Source payloads and provenance retained</text>
+  <rect x="1405" y="205" width="320" height="105" class="box app"/><text x="1435" y="243" class="box-title">Researcher browser</text><text x="1435" y="273" class="box-text">OIDC login • CSRF-protected actions</text><text x="1435" y="298" class="small">Ask • inspect • confirm • save</text>
+  <rect x="1405" y="360" width="320" height="230" class="box app"/><text x="1435" y="398" class="box-title">Flask frontend — Render</text><text x="1435" y="428" class="box-text">Research and evidence</text><text x="1435" y="454" class="box-text">Watchlists • notes • reports</text><text x="1435" y="480" class="box-text">Usage analytics and states</text><text x="1435" y="512" class="small">Secure OIDC session • signed 60s user assertion</text><text x="1435" y="537" class="small">Frontend M2M → SQL • direct Lakebase history reads</text><text x="1435" y="562" class="small">Gunicorn • /healthz • $PORT</text>
+  <rect x="1405" y="650" width="320" height="230" class="box agent"/><text x="1435" y="688" class="box-title">FastMCP service — Render</text><text x="1435" y="718" class="box-text">Six retrieval + three write tools</text><text x="1435" y="744" class="box-text">Ownership • idempotency • bounded traces</text><text x="1435" y="776" class="small">Signed user assertion or Supervisor credential</text><text x="1435" y="801" class="small">MCP M2M → SQL / AI Search</text><text x="1435" y="826" class="small">Lakebase CRUD • Massive fallback • /health</text><text x="1435" y="851" class="small">Python • $PORT</text>
 
-  <rect x="435" y="555" width="460" height="145" class="box spark"/>
-  <text x="465" y="595" class="box-title">Lakeflow Spark Declarative Pipeline</text>
-  <text x="465" y="625" class="box-text">Clean • deduplicate • validate • enrich • parse text</text>
-  <text x="465" y="653" class="box-text">Streaming tables + expectations + materialized views</text>
-  <text x="465" y="680" class="small">Silver: bars, news, facts, filings, research chunks</text>
-
-  <rect x="435" y="750" width="460" height="125" class="box delta"/>
-  <text x="465" y="790" class="box-title">Gold Delta + managed AI Search</text>
-  <text x="465" y="820" class="box-text">Performance • peer metrics • research catalog</text>
-  <text x="465" y="848" class="small">Qwen3 Delta Sync hybrid index • quality metrics</text>
-
-  <rect x="435" y="925" width="460" height="85" class="box analytics"/>
-  <text x="465" y="960" class="box-title">SQL Warehouse</text>
-  <text x="465" y="988" class="box-text">Analytical queries for app and agent</text>
-
-  <rect x="980" y="210" width="390" height="210" class="box lake"/>
-  <text x="1010" y="250" class="box-title">Lakebase Postgres Autoscaling</text>
-  <text x="1010" y="282" class="box-text">Users • watchlists • notes • reports</text>
-  <text x="1010" y="310" class="box-text">Sessions • tool events • recent cache</text>
-  <text x="1010" y="338" class="box-text">Idempotency • confirmed write state</text>
-  <text x="1010" y="372" class="small">Low-latency operational state</text>
-  <text x="1010" y="397" class="small">Shared schema • owned _srini tables</text>
-
-  <rect x="980" y="485" width="390" height="140" class="box agent"/>
-  <text x="1010" y="525" class="box-title">FastMCP research tools</text>
-  <text x="1010" y="555" class="box-text">Retrieve prices, companies, evidence, watchlists</text>
-  <text x="1010" y="583" class="box-text">Write watchlists, notes, and reports</text>
-  <text x="1010" y="607" class="small">Sanitized trace on every tool call</text>
-
-  <rect x="980" y="690" width="390" height="120" class="box agent"/>
-  <text x="1010" y="730" class="box-title">Agent Bricks Supervisor</text>
-  <text x="1010" y="760" class="box-text">Grounded orchestration + confirmation before writes</text>
-  <text x="1010" y="786" class="small">External MCP tool connection</text>
-
-  <rect x="980" y="865" width="390" height="145" class="box analytics"/>
-  <text x="1010" y="905" class="box-title">Lakebase CDF → Delta</text>
-  <text x="1010" y="935" class="box-text">Insert / update / delete history (~15 seconds)</text>
-  <text x="1010" y="963" class="box-text">Agent and application change history</text>
-  <text x="1010" y="990" class="small">Feeds Lakeflow gold usage metrics</text>
-
-  <rect x="1455" y="275" width="265" height="270" class="box app"/>
-  <text x="1485" y="317" class="box-title">Databricks App</text>
-  <text x="1485" y="350" class="box-text">Research / chat</text>
-  <text x="1485" y="378" class="box-text">Watchlists</text>
-  <text x="1485" y="406" class="box-text">Company + peer views</text>
-  <text x="1485" y="434" class="box-text">Evidence + sources</text>
-  <text x="1485" y="462" class="box-text">Notes + reports</text>
-  <text x="1485" y="490" class="box-text">Usage analytics</text>
-  <text x="1485" y="522" class="small">Authenticated user workflow</text>
-
-  <rect x="1455" y="660" width="265" height="100" class="box app"/>
-  <text x="1485" y="700" class="box-title">Researcher</text>
-  <text x="1485" y="730" class="box-text">Ask • inspect • act • save</text>
-
-  <path d="M350 290 C385 290 395 270 435 270" class="line"/>
-  <path d="M350 500 C390 500 395 300 435 290" class="line"/>
-  <path d="M665 330 L665 380" class="blue-line"/>
-  <path d="M665 505 L665 555" class="blue-line"/>
-  <path d="M665 700 L665 750" class="blue-line"/>
-  <path d="M665 875 L665 925" class="blue-line"/>
-  <path d="M895 980 L930 1030 L1435 1030 L1435 515 L1455 515" class="line"/>
-  <path d="M1587 660 L1587 545" class="blue-line"/>
-  <path d="M1455 410 C1410 410 1410 750 1370 750" class="line"/>
-  <path d="M1370 725 C1415 725 1415 455 1455 455" class="blue-line"/>
-  <path d="M1175 690 L1175 625" class="blue-line"/>
-  <path d="M1175 485 L1175 420" class="blue-line"/>
-  <path d="M980 555 C930 555 925 295 350 295" class="line dash"/>
-  <path d="M980 570 C930 570 925 812 895 812" class="line"/>
-  <path d="M1175 420 L1175 485" class="blue-line"/>
-  <path d="M1350 420 C1390 570 1390 760 1350 865" class="line"/>
-  <path d="M980 930 C930 930 930 630 895 630" class="line dash"/>
-
-  <text x="366" y="251" class="label">batch APIs</text>
-  <text x="711" y="363" class="label">raw</text>
-  <text x="711" y="538" class="label">validate</text>
-  <text x="711" y="734" class="label">aggregate</text>
-  <text x="1200" y="456" class="label">CRUD</text>
-  <text x="1200" y="660" class="label">tools</text>
-  <text x="1200" y="845" class="label">change events</text>
-  <text x="1385" y="710" class="label">agent answer</text>
-  <text x="1520" y="625" class="label">research request</text>
-  <text x="1305" y="1018" class="label">analytics</text>
-  <text x="870" y="545" class="label">on-demand API calls</text>
-
-  <text x="70" y="1080" class="subtitle">Two required Vs: Volume (&gt;1M market rows) + Variety (structured, JSON, and unstructured text) • Optional Velocity: Lakebase changes to analytics in &lt;1 minute</text>
+  <path d="M315 285 C350 285 360 255 395 255" class="line"/><path d="M315 490 C350 490 360 275 395 275" class="line"/><path d="M635 310 L635 350" class="blue-line"/><path d="M635 465 L635 505" class="blue-line"/><path d="M635 630 L635 670" class="blue-line"/><path d="M635 795 L635 835" class="blue-line"/>
+  <path d="M1565 310 L1565 360" class="blue-line"/><path d="M1565 590 L1565 650" class="blue-line"/><path d="M1405 735 C1360 735 1360 305 1320 305" class="line"/><path d="M1405 765 C1355 765 1355 880 875 880" class="line"/><path d="M1405 805 C1325 805 1325 730 875 730" class="line"/><path d="M1405 850 C1300 940 320 965 190 370" class="line dash"/><path d="M1405 500 C1340 500 1340 350 1320 350" class="line"/><path d="M1405 535 C1280 535 1280 900 875 900" class="line"/><path d="M1320 525 L1405 700" class="blue-line"/><path d="M1140 400 L1140 650" class="blue-line"/><path d="M960 745 L875 745" class="blue-line"/>
+  <text x="338" y="245" class="label">batch APIs</text><text x="655" y="335" class="label">raw</text><text x="655" y="490" class="label">validate</text><text x="655" y="655" class="label">aggregate</text><text x="1578" y="340" class="label">OIDC session</text><text x="1578" y="625" class="label">60s signed assertion</text><text x="1328" y="590" class="label">machine credential</text><text x="1220" y="438" class="label">change history</text><text x="1275" y="720" class="label">CRUD</text><text x="900" y="730" class="label">analytics flow</text><text x="1150" y="920" class="label">separate OAuth M2M</text><text x="255" y="948" class="label">on-demand fallback</text>
+  <text x="70" y="1080" class="subtitle">Required Vs: Volume (&gt;1M market rows) + Variety (structured, JSON, unstructured text) • Optional Velocity: operational changes to Gold in &lt;1 minute</text>
 </svg>
