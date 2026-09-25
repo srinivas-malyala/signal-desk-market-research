@@ -8,6 +8,8 @@ from typing import Any
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.sql import StatementParameterListItem
 
+from shared.databricks_auth import hosting_mode, workspace_client
+
 NUMERIC_FIELDS = frozenset(
     {
         "open",
@@ -24,12 +26,14 @@ NUMERIC_FIELDS = frozenset(
 
 
 def _workspace(access_token: str | None = None) -> WorkspaceClient:
+    if hosting_mode() == "render":
+        return workspace_client()
     if access_token:
         host = os.environ.get("DATABRICKS_HOST")
         if not host:
             raise ValueError("DATABRICKS_HOST is required for on-behalf-of-user SQL.")
         return WorkspaceClient(host=host, token=access_token)
-    return WorkspaceClient()
+    return workspace_client()
 
 
 def fetch_market_bars(
@@ -40,7 +44,7 @@ def fetch_market_bars(
     access_token: str | None = None,
     workspace: WorkspaceClient | None = None,
 ) -> list[dict[str, Any]]:
-    warehouse_id = os.environ.get("DATABRICKS_WAREHOUSE_ID")
+    warehouse_id = os.environ.get("DATA_WORKSPACE_WAREHOUSE_ID") or os.environ.get("DATABRICKS_WAREHOUSE_ID")
     if not warehouse_id:
         raise RuntimeError("DATABRICKS_WAREHOUSE_ID is not configured.")
     catalog = os.environ.get("DATABRICKS_CATALOG", "bootcamp_students")
@@ -79,4 +83,3 @@ def fetch_market_bars(
                 row[field] = float(row[field])
         rows.append(row)
     return rows
-

@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <title>Signal Desk · Evidence-grounded stock research</title><link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
-<header><div><span class="eyebrow">MASSIVE × LAKEHOUSE × LAKEBASE</span><h1>Signal <em>Desk</em></h1><p>Research public companies, inspect the evidence, and keep your work.</p></div><div class="identity" aria-label="Signed-in identity"><span>ACTIVE RESEARCHER</span><b>{{ user_email }}</b><small>Tool access runs as this authenticated user.</small></div></header>
+<header><div><span class="eyebrow">MASSIVE × LAKEHOUSE × LAKEBASE</span><h1>Signal <em>Desk</em></h1><p>Research public companies, inspect the evidence, and keep your work.</p></div><div class="identity" aria-label="Signed-in identity"><span>ACTIVE RESEARCHER</span><b>{{ user_email }}</b><small>Tool access runs as this authenticated user.</small>{% if show_logout %}<form method="post" action="/logout"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit">Sign out</button></form>{% endif %}</div></header>
 <nav aria-label="Primary navigation"><a href="#research">Research</a><a href="#watchlist-section">Watchlist</a><a href="#saved">Saved research</a><a href="#analytics">Usage analytics</a></nav>
 <main id="main">
   <div id="global-status" class="status hidden" role="status" aria-live="polite"></div>

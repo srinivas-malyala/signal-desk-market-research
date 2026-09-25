@@ -345,9 +345,11 @@ def test_analytics_dependency_failure_is_safe(app_module) -> None:
 
 def test_demo_identity_and_direct_watchlist_writes_are_removed() -> None:
     source = (DASHBOARD_ROOT / "app.py").read_text(encoding="utf-8")
+    auth_source = (DASHBOARD_ROOT / "auth.py").read_text(encoding="utf-8")
 
     assert "demo@example.com" not in source
-    assert "X-Forwarded-Email" in source
-    assert "X-Forwarded-Access-Token" in source
+    assert "X-Forwarded-Email" in auth_source
+    assert "X-Forwarded-Access-Token" in auth_source
+    assert "FRONTEND_ASSERTION_PRIVATE_KEY" in auth_source
     watchlist_routes = source[source.index('@app.post("/api/watchlist")') :]
     assert "lakebase.write(" not in watchlist_routes

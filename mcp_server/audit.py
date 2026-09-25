@@ -10,7 +10,7 @@ SENSITIVE_PARAMETERS = frozenset({"note_text", "report_text", "source_context", 
 def trusted_email(identity: dict | None) -> str:
     email = str((identity or {}).get("email") or "").strip().lower()
     if "@" not in email or len(email) > 320:
-        raise ValueError("A trusted Databricks user identity is required.")
+        raise ValueError("A trusted user identity is required.")
     return email
 
 

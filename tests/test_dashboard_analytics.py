@@ -4,7 +4,6 @@ import importlib.util
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -53,13 +52,10 @@ def test_snapshot_uses_bounded_gold_queries_and_detects_partial_state(monkeypatc
         def __enter__(self): return self
         def __exit__(self, *_args): return None
         def cursor(self): return Cursor()
-    fake_sql = SimpleNamespace(connect=lambda **_kwargs: Connection())
-    fake_config = SimpleNamespace(host="https://workspace.example", authenticate=lambda: {})
-    monkeypatch.setitem(sys.modules, "databricks.sql", fake_sql)
-    monkeypatch.setattr("databricks.sdk.core.Config", lambda: fake_config)
+    monkeypatch.setattr(MODULE, "sql_connection", lambda _warehouse_id: Connection())
     report = MODULE.DatabricksSQLAnalyticsClient("warehouse123").snapshot()
     assert report["state"] == "partial"
-    assert report["execution_identity"] == "Databricks App service principal"
+    assert report["execution_identity"] == "least-privilege Databricks service principal"
     assert len(statements) == 5
     assert all("LIMIT" in statement and "`bootcamp_students`.`student_sri`.`gold_" in statement for statement in statements)
 

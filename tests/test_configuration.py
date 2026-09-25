@@ -23,8 +23,10 @@ def test_paid_data_bundle_excludes_databricks_app_resources() -> None:
 def test_render_blueprint_defines_two_isolated_secret_safe_services() -> None:
     text = (ROOT / "render.yaml").read_text()
     assert text.count("type: web") == 2
-    assert "rootDir: mcp_server" in text
-    assert "rootDir: dashboard" in text
+    assert "pip install --requirement mcp_server/requirements.txt" in text
+    assert "pip install --requirement dashboard/requirements.txt" in text
+    assert "python mcp_server/stock_research_mcp_server.py" in text
+    assert "--chdir dashboard --pythonpath .." in text
     assert "healthCheckPath: /health" in text
     assert "healthCheckPath: /healthz" in text
     assert "0.0.0.0:$PORT" in text

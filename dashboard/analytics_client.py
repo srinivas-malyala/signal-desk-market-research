@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
+from shared.databricks_auth import DatabricksAuthConfigurationError, sql_connection
+
 IDENTIFIER = re.compile(r"^[a-z_][a-z0-9_]*$")
 MAX_RESPONSE_BYTES = 256_000
 
@@ -80,15 +82,7 @@ class DatabricksSQLAnalyticsClient:
 
     def snapshot(self) -> dict[str, Any]:
         try:
-            from databricks import sql
-            from databricks.sdk.core import Config
-
-            config = Config()
-            connection = sql.connect(
-                server_hostname=config.host.removeprefix("https://").removeprefix("http://"),
-                http_path=f"/sql/1.0/warehouses/{self.warehouse_id}",
-                credentials_provider=lambda: config.authenticate,
-            )
+            connection = sql_connection(self.warehouse_id)
             queries = {
                 "daily_active": f"SELECT * FROM {self._table('gold_daily_active_researchers')} ORDER BY activity_date DESC LIMIT 30",
                 "tool_usage": f"SELECT * FROM {self._table('gold_tool_usage_latency')} ORDER BY activity_date DESC, invocation_count DESC LIMIT 200",
@@ -108,6 +102,8 @@ class DatabricksSQLAnalyticsClient:
                         ]
         except AnalyticsUnavailableError:
             raise
+        except DatabricksAuthConfigurationError as exc:
+            raise AnalyticsUnavailableError("Usage analytics are temporarily unavailable") from exc
         except Exception as exc:
             raise AnalyticsUnavailableError("Usage analytics are temporarily unavailable") from exc
 
@@ -125,7 +121,7 @@ class DatabricksSQLAnalyticsClient:
             "datasets": datasets,
             "source_max_synced_at": freshness,
             "freshness_age_seconds": round(age_seconds, 1) if age_seconds is not None else None,
-            "execution_identity": "Databricks App service principal",
+            "execution_identity": "least-privilege Databricks service principal",
             "source": "Phase 6 Gold usage tables via Databricks SQL Warehouse",
         }
         if len(json.dumps(result, default=str).encode("utf-8")) > MAX_RESPONSE_BYTES:

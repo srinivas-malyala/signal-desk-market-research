@@ -17,6 +17,8 @@ import lakebase
 import research_broker as broker
 from audit import bounded_value, pseudonymous_subject, result_summary, safe_parameters, trusted_email
 from fastmcp import FastMCP
+from identity import IdentityError, identity_mode
+from identity import trusted_identity as request_identity
 from psycopg2.extras import Json
 from starlette.middleware import Middleware as ASGIMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -43,12 +45,17 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         correlation_id = (
             requested_correlation if CORRELATION_ID.fullmatch(requested_correlation) else str(uuid.uuid4())
         )
-        identity = _identity.set(
-            {
-                "email": request.headers.get("x-forwarded-email") or request.headers.get("x-forwarded-user"),
-                "access_token": request.headers.get("x-forwarded-access-token"),
-            }
-        )
+        try:
+            request_user = request_identity(request.headers, correlation_id)
+        except IdentityError:
+            if identity_mode() == "signed_assertion" and request.url.path != "/health":
+                return JSONResponse(
+                    {"status": "error", "error_code": "authentication_required", "message": "Trusted identity is required."},
+                    status_code=401,
+                    headers={"x-request-id": correlation_id},
+                )
+            request_user = None
+        identity = _identity.set(request_user)
         session = _session.set(str(uuid.uuid4()))
         correlation = _correlation.set(correlation_id)
         try:

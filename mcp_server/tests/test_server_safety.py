@@ -5,7 +5,7 @@ from audit import pseudonymous_subject, result_summary, safe_parameters, trusted
 
 
 def test_forwarded_identity_is_required_for_user_owned_tools() -> None:
-    with pytest.raises(ValueError, match="trusted Databricks"):
+    with pytest.raises(ValueError, match="trusted user"):
         trusted_email(None)
     assert trusted_email({"email": " Person@Example.com "}) == "person@example.com"
     assert pseudonymous_subject("Person@Example.com") == pseudonymous_subject(" person@example.com ")

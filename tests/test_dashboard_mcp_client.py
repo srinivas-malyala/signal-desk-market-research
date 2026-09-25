@@ -150,3 +150,4 @@ def test_mcp_client_never_forges_forwarded_identity_headers() -> None:
     assert "x-forwarded-email" not in source
     assert "x-forwarded-user" not in source
     assert "x-forwarded-access-token" not in source
+    assert 'headers={"x-request-id": request_id}' in source

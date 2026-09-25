@@ -3,17 +3,22 @@ services:
     name: signal-desk-mcp
     runtime: python
     plan: free
-    rootDir: mcp_server
-    buildCommand: pip install --requirement requirements.txt
-    startCommand: python stock_research_mcp_server.py
+    buildCommand: pip install --requirement mcp_server/requirements.txt
+    startCommand: python mcp_server/stock_research_mcp_server.py
     healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.11
+      - key: PYTHONPATH
+        value: .
       - key: SIGNAL_DESK_HOSTING
         value: render
       - key: SIGNAL_DESK_IDENTITY_MODE
         value: signed_assertion
+      - key: FRONTEND_ASSERTION_ISSUER
+        value: signal-desk-frontend
+      - key: FRONTEND_ASSERTION_AUDIENCE
+        value: signal-desk-mcp
       - key: DATA_WORKSPACE_HOST
         value: https://dbc-7b106152-caf3.cloud.databricks.com
       - key: DATA_WORKSPACE_WAREHOUSE_ID
@@ -53,17 +58,22 @@ services:
     name: signal-desk-frontend
     runtime: python
     plan: free
-    rootDir: dashboard
-    buildCommand: pip install --requirement requirements.txt
-    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 60 app:app
+    buildCommand: pip install --requirement dashboard/requirements.txt
+    startCommand: gunicorn --chdir dashboard --pythonpath .. --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 60 app:app
     healthCheckPath: /healthz
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.11
+      - key: PYTHONPATH
+        value: .
       - key: SIGNAL_DESK_HOSTING
         value: render
       - key: SIGNAL_DESK_IDENTITY_MODE
         value: oidc_session
+      - key: FRONTEND_ASSERTION_ISSUER
+        value: signal-desk-frontend
+      - key: FRONTEND_ASSERTION_AUDIENCE
+        value: signal-desk-mcp
       - key: DATA_WORKSPACE_HOST
         value: https://dbc-7b106152-caf3.cloud.databricks.com
       - key: DATA_WORKSPACE_WAREHOUSE_ID

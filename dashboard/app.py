@@ -9,7 +9,16 @@ from typing import Any
 
 import lakebase
 from analytics_client import AnalyticsClient, AnalyticsUnavailableError, DatabricksSQLAnalyticsClient
-from flask import Flask, Response, g, jsonify, render_template, request
+from auth import (
+    FrontendAuthConfigurationError,
+    configure_frontend_auth,
+    csrf_is_valid,
+    csrf_token,
+    hosting_mode,
+    register_auth_routes,
+    trusted_identity,
+)
+from flask import Flask, Response, g, jsonify, redirect, render_template, request, url_for
 from mcp_client import (
     FastMCPSignalDeskClient,
     MCPConfigurationError,
@@ -26,9 +35,10 @@ app = Flask(
     static_folder=str(APP_ROOT / "static"),
 )
 app.config["MAX_CONTENT_LENGTH"] = 32 * 1024
+configure_frontend_auth(app)
+register_auth_routes(app)
 logger = logging.getLogger("signal_desk.frontend")
 
-EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 TICKER_PATTERN = re.compile(r"^[A-Z][A-Z0-9.-]{0,9}$")
 IDEMPOTENCY_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$")
 SECURITY_HEADERS = {
@@ -59,25 +69,22 @@ def _error(message: str, status_code: int, error_code: str) -> tuple[Response, i
     )
 
 
-def _trusted_identity() -> tuple[str, str]:
-    email = str(request.headers.get("X-Forwarded-Email") or "").strip().lower()
-    token = str(request.headers.get("X-Forwarded-Access-Token") or "").strip()
-    if not EMAIL_PATTERN.fullmatch(email) or len(email) > 320:
-        raise ValueError("missing identity")
-    if len(token) < 8 or len(token) > 16_384 or any(character.isspace() for character in token):
-        raise ValueError("missing access token")
-    return email, token
-
-
 @app.before_request
 def establish_request_context():
     g.request_id = str(uuid.uuid4())
-    if request.endpoint == "health":
+    if request.endpoint in {"health", "login", "oidc_callback", "static"}:
         return None
     try:
-        g.user_email, g.user_access_token = _trusted_identity()
+        identity = trusted_identity(g.request_id)
+        g.user_email = identity.email
+        g.user_subject = identity.subject
+        g.mcp_access_token = identity.mcp_access_token
     except ValueError:
-        return _error("Authenticated Databricks user identity is required.", 401, "authentication_required")
+        if hosting_mode() == "render" and request.endpoint == "index":
+            return redirect(url_for("login"))
+        return _error("Authenticated user identity is required.", 401, "authentication_required")
+    if not csrf_is_valid():
+        return _error("The request could not be verified.", 403, "csrf_failed")
     return None
 
 
@@ -109,6 +116,11 @@ def mcp_rejected(error_value: MCPToolError):
 @app.errorhandler(AnalyticsUnavailableError)
 def analytics_unavailable(_error_value: AnalyticsUnavailableError):
     return _error("Usage analytics are temporarily unavailable.", 502, "analytics_unavailable")
+
+
+@app.errorhandler(FrontendAuthConfigurationError)
+def auth_not_configured(_error_value: FrontendAuthConfigurationError):
+    return _error("Authentication is temporarily unavailable.", 503, "authentication_unavailable")
 
 
 @app.errorhandler(Exception)
@@ -196,7 +208,7 @@ def research():
         payload = _request_payload()
         mode = str(payload.get("mode") or "").strip().lower()
         client = _watchlist_client()
-        common = {"access_token": g.user_access_token, "request_id": g.request_id}
+        common = {"access_token": g.mcp_access_token, "request_id": g.request_id}
         if mode == "performance":
             result = client.get_stock_performance(
                 ticker=_ticker(payload.get("ticker")),
@@ -268,7 +280,12 @@ def research():
 
 @app.get("/")
 def index():
-    return render_template("index.html", user_email=_user_email())
+    return render_template(
+        "index.html",
+        user_email=_user_email(),
+        csrf_token=csrf_token(),
+        show_logout=hosting_mode() == "render",
+    )
 
 
 @app.get("/healthz")
@@ -285,7 +302,7 @@ def analytics():
 def overview():
     uid = _user_id()
     client = _watchlist_client()
-    common = {"access_token": g.user_access_token, "request_id": g.request_id}
+    common = {"access_token": g.mcp_access_token, "request_id": g.request_id}
     watch_result = client.get_watchlist(**common)
     updates = client.get_notable_updates(**common)
     notes = lakebase.query(
@@ -334,7 +351,7 @@ def save_note():
             title=title,
             note_text=note_text,
             thesis_tags=[str(tag).strip() for tag in tags if str(tag).strip()],
-            access_token=g.user_access_token,
+            access_token=g.mcp_access_token,
             request_id=g.request_id,
             idempotency_key=_idempotency_key(),
         )
@@ -363,7 +380,7 @@ def save_report():
             tickers=[_ticker(value) for value in raw_tickers],
             report_text=report_text,
             source_context=payload.get("source_context") if isinstance(payload.get("source_context"), dict) else {},
-            access_token=g.user_access_token,
+            access_token=g.mcp_access_token,
             request_id=g.request_id,
             idempotency_key=_idempotency_key(),
         )
@@ -384,7 +401,7 @@ def add_ticker():
     result = _watchlist_client().update_watchlist(
         ticker=ticker,
         action="add",
-        access_token=g.user_access_token,
+        access_token=g.mcp_access_token,
         request_id=g.request_id,
         idempotency_key=idempotency_key,
     )
@@ -403,7 +420,7 @@ def remove_ticker(ticker: str):
     result = _watchlist_client().update_watchlist(
         ticker=symbol,
         action="remove",
-        access_token=g.user_access_token,
+        access_token=g.mcp_access_token,
         request_id=g.request_id,
         idempotency_key=idempotency_key,
     )

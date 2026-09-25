@@ -10,6 +10,7 @@ from typing import Any, Protocol
 from urllib.parse import urlparse
 
 from fastmcp import Client
+from fastmcp.client.transports import StreamableHttpTransport
 
 MAX_TOOL_RESPONSE_BYTES = 256_000
 
@@ -115,7 +116,12 @@ class FastMCPSignalDeskClient:
         request_id: str,
     ) -> dict[str, Any]:
         try:
-            async with Client(self.endpoint, auth=access_token, timeout=self.timeout_seconds) as client:
+            transport = StreamableHttpTransport(
+                self.endpoint,
+                headers={"X-Request-ID": request_id},
+                auth=access_token,
+            )
+            async with Client(transport, timeout=self.timeout_seconds) as client:
                 result = await client.call_tool_mcp(
                     name,
                     arguments,

@@ -10,6 +10,8 @@ from typing import Any
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.vectorsearch import RerankerConfig, RerankerConfigRerankerParameters
 
+from shared.databricks_auth import hosting_mode, workspace_client
+
 DEFAULT_INDEX = "bootcamp_students.student_sri.signal_desk_research_chunks_index"
 EMBEDDING_MODEL = "databricks-qwen3-embedding-0-6b"
 QUERY_INSTRUCTION = (
@@ -106,13 +108,15 @@ class ResearchSearch:
         access_token: str | None = None,
     ) -> None:
         if workspace is None:
-            if access_token:
+            if hosting_mode() == "render":
+                workspace = workspace_client()
+            elif access_token:
                 host = os.environ.get("DATABRICKS_HOST")
                 if not host:
                     raise ValueError("DATABRICKS_HOST is required for on-behalf-of-user search.")
                 workspace = WorkspaceClient(host=host, token=access_token)
             else:
-                workspace = WorkspaceClient()
+                workspace = workspace_client()
         self.workspace = workspace
         self.index_name = index_name or os.environ.get("SIGNAL_DESK_VECTOR_SEARCH_INDEX", DEFAULT_INDEX)
 
