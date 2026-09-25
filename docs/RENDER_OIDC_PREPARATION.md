@@ -21,9 +21,13 @@ Render reports that the service name is unavailable, stop and update the
 Blueprint, Google registration, this document, and the related contract tests
 together.
 
-## Google Cloud registration — user action required
+## Google Cloud registration — completed
 
-Registration is not claimed complete until these provider-side steps are done:
+The OAuth 2.0 Web application client now contains the assigned Render origin
+and exact callback below. Client credentials still belong only in the Render
+frontend environment; live browser-login acceptance remains pending deployment.
+
+The completed provider-side configuration is:
 
 1. In the intended Google Cloud project, configure the OAuth consent screen.
    Use **External** for personal Gmail accounts, keep the app in Testing for the
