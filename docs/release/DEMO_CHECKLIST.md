@@ -90,8 +90,9 @@ connection URLs, direct email values, or user-authored note/report bodies.
 
 ## E. Submission package
 
-- [x] Re-run the full local test suite and Ruff; 234 tests and Ruff passed for
-  the reproducibility checkpoint `dacee84`.
+- [x] Re-run the full local test suite and Ruff; 237 tests and Ruff passed for
+  OIDC-preparation checkpoint `ffcb49e` (the reproducibility checkpoint is
+  `dacee84`).
 - [x] Run strict data-bundle validation with explicit profile
   `dataexpertio_srini`; validate the Render Blueprint and inspect both deployment
   surfaces for cross-target resources. Data-only validation passed on 2026-09-24.
