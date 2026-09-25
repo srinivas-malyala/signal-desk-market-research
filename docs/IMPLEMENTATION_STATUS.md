@@ -129,5 +129,7 @@ This is the living tracker for implementation progress and external gates. A uni
   then fell through to missing `MASSIVE_API_KEY`, while semantic retrieval was
   rejected by the paid workspace as `invalid_client`. The reversible write gate
   was intentionally withheld until both reads pass. Acceptance diagnostics now
-  retain only bounded, server-sanitized error metadata; focused tests pass in
-  checkpoint `9b3b176`.
+  retain only bounded, server-sanitized error metadata; the final local suite
+  passes 241 tests, repository-wide Ruff, and the tracked-file credential scan.
+  The diagnostic checkpoint is `9b3b176` and the synchronized tracker checkpoint
+  is `702a3ab`.

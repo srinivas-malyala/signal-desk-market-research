@@ -92,9 +92,8 @@ connection URLs, direct email values, or user-authored note/report bodies.
 
 ## E. Submission package
 
-- [x] Re-run the full local test suite and Ruff; 239 tests and Ruff pass after
-  idempotent credential validation (the OIDC-preparation checkpoint is
-  `ffcb49e` and reproducibility checkpoint is `dacee84`).
+- [x] Re-run the full local test suite and Ruff; 241 tests and Ruff pass after
+  the live Render diagnostic checkpoint (`9b3b176`).
 - [x] Run strict data-bundle validation with explicit profile
   `dataexpertio_srini`; validate the Render Blueprint and inspect both deployment
   surfaces for cross-target resources. Data-only validation passed on 2026-09-24.
@@ -103,4 +102,6 @@ connection URLs, direct email values, or user-authored note/report bodies.
   on the split-host deployment contract.
 - [x] Export the final architecture diagram as an 1800×1120 PNG and open it for
   visual QA; retain the editable SVG source alongside it.
-- [ ] Verify the repository and demo output contain no credentials or sensitive runtime artifacts.
+- [x] Verify tracked repository files and sanitized acceptance output contain no
+  credentials or sensitive runtime artifacts; `tools/check_no_secrets.py`
+  passes and generated credentials remain under ignored `build/render-secrets`.
