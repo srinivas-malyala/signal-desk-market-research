@@ -11,6 +11,44 @@ def test_bundle_never_selects_a_databricks_profile() -> None:
     assert "profile:" not in text
 
 
+def test_paid_data_bundle_excludes_databricks_app_resources() -> None:
+    text = (ROOT / "databricks.yml").read_text()
+    assert "resources/*.yml" not in text
+    assert "resources/*.job.yml" in text
+    assert "resources/*.pipeline.yml" in text
+    assert "stock_research_mcp.app.yml" not in text
+    assert "signal_desk_frontend.app.yml" not in text
+
+
+def test_render_blueprint_defines_two_isolated_secret_safe_services() -> None:
+    text = (ROOT / "render.yaml").read_text()
+    assert text.count("type: web") == 2
+    assert "rootDir: mcp_server" in text
+    assert "rootDir: dashboard" in text
+    assert "healthCheckPath: /health" in text
+    assert "healthCheckPath: /healthz" in text
+    assert "0.0.0.0:$PORT" in text
+    for secret in (
+        "LAKEBASE_URL",
+        "MASSIVE_API_KEY",
+        "DATA_WORKSPACE_CLIENT_SECRET",
+        "FRONTEND_ASSERTION_PRIVATE_KEY",
+        "MCP_SUPERVISOR_TOKEN",
+        "OIDC_CLIENT_SECRET",
+        "FLASK_SESSION_SECRET",
+    ):
+        assert f"key: {secret}\n        sync: false" in text
+    assert "postgresql://" not in text
+    assert "dapi" not in text.lower()
+
+
+def test_mcp_render_entrypoint_binds_validated_port() -> None:
+    source = (ROOT / "mcp_server" / "stock_research_mcp_server.py").read_text()
+    assert 'os.environ.get("PORT", "8000")' in source
+    assert 'host="0.0.0.0"' in source
+    assert "port=port" in source
+
+
 def test_development_target_uses_selected_unity_catalog_schema() -> None:
     text = (ROOT / "databricks.yml").read_text()
     assert "catalog: bootcamp_students" in text

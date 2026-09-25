@@ -4,3 +4,5 @@ psycopg2-binary>=2.9,<3
 databricks-sdk>=0.60,<1
 databricks-sql-connector>=4.0,<5
 fastmcp>=2.12,<3
+Authlib>=1.6,<2
+PyJWT[crypto]>=2.10,<3

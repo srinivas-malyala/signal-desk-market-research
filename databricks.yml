@@ -2,7 +2,10 @@ bundle:
   name: signal-desk-capstone
 
 include:
-  - resources/*.yml
+  - resources/*.job.yml
+  - resources/*.pipeline.yml
+  - resources/storage.yml
+  - resources/research_search.yml
 
 variables:
   catalog:

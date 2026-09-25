@@ -14,11 +14,14 @@ dependencies = [
 [project.optional-dependencies]
 mcp = [
   "fastmcp>=2.12,<3",
+  "PyJWT[crypto]>=2.10,<3",
 ]
 dashboard = [
+  "Authlib>=1.6,<2",
   "Flask>=3.0,<4",
   "gunicorn>=22,<24",
   "databricks-sql-connector>=4.0,<5",
+  "PyJWT[crypto]>=2.10,<3",
 ]
 
 [dependency-groups]

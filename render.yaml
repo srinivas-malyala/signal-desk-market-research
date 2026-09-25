@@ -1,0 +1,104 @@
+services:
+  - type: web
+    name: signal-desk-mcp
+    runtime: python
+    plan: free
+    rootDir: mcp_server
+    buildCommand: pip install --requirement requirements.txt
+    startCommand: python stock_research_mcp_server.py
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: SIGNAL_DESK_HOSTING
+        value: render
+      - key: SIGNAL_DESK_IDENTITY_MODE
+        value: signed_assertion
+      - key: DATA_WORKSPACE_HOST
+        value: https://dbc-7b106152-caf3.cloud.databricks.com
+      - key: DATA_WORKSPACE_WAREHOUSE_ID
+        value: b15d3d6f837ba428
+      - key: DATABRICKS_CATALOG
+        value: bootcamp_students
+      - key: DATABRICKS_SCHEMA
+        value: student_sri
+      - key: SIGNAL_DESK_VECTOR_SEARCH_INDEX
+        value: bootcamp_students.student_sri.signal_desk_research_chunks_index
+      - key: SIGNAL_DESK_SCHEMA
+        value: bootcamp_students
+      - key: SIGNAL_DESK_TABLE_SUFFIX
+        value: srini
+      - key: SIGNAL_DESK_GRAPH_SCHEMA
+        value: bootcamp_cdc
+      - key: MASSIVE_RATE_LIMIT_BACKEND
+        value: lakebase
+      - key: MASSIVE_RATE_LIMIT_REQUESTER
+        value: render-mcp
+      - key: LAKEBASE_URL
+        sync: false
+      - key: MASSIVE_API_KEY
+        sync: false
+      - key: DATA_WORKSPACE_CLIENT_ID
+        sync: false
+      - key: DATA_WORKSPACE_CLIENT_SECRET
+        sync: false
+      - key: FRONTEND_ASSERTION_PUBLIC_KEY
+        sync: false
+      - key: MCP_SUPERVISOR_TOKEN
+        sync: false
+      - key: MCP_SUPERVISOR_SUBJECT
+        sync: false
+
+  - type: web
+    name: signal-desk-frontend
+    runtime: python
+    plan: free
+    rootDir: dashboard
+    buildCommand: pip install --requirement requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 60 app:app
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: SIGNAL_DESK_HOSTING
+        value: render
+      - key: SIGNAL_DESK_IDENTITY_MODE
+        value: oidc_session
+      - key: DATA_WORKSPACE_HOST
+        value: https://dbc-7b106152-caf3.cloud.databricks.com
+      - key: DATA_WORKSPACE_WAREHOUSE_ID
+        value: b15d3d6f837ba428
+      - key: DATABRICKS_CATALOG
+        value: bootcamp_students
+      - key: DATABRICKS_SCHEMA
+        value: student_sri
+      - key: ANALYTICS_STALE_AFTER_SECONDS
+        value: "3600"
+      - key: SIGNAL_DESK_SCHEMA
+        value: bootcamp_students
+      - key: SIGNAL_DESK_TABLE_SUFFIX
+        value: srini
+      - key: SIGNAL_DESK_GRAPH_SCHEMA
+        value: bootcamp_cdc
+      - key: LAKEBASE_URL
+        sync: false
+      - key: DATA_WORKSPACE_CLIENT_ID
+        sync: false
+      - key: DATA_WORKSPACE_CLIENT_SECRET
+        sync: false
+      - key: MCP_SERVER_URL
+        sync: false
+      - key: OIDC_ISSUER_URL
+        sync: false
+      - key: OIDC_CLIENT_ID
+        sync: false
+      - key: OIDC_CLIENT_SECRET
+        sync: false
+      - key: OIDC_REDIRECT_URI
+        sync: false
+      - key: FLASK_SESSION_SECRET
+        sync: false
+      - key: FRONTEND_ASSERTION_PRIVATE_KEY
+        sync: false
+      - key: ALLOWED_USER_EMAILS
+        sync: false

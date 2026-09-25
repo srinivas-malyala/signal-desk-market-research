@@ -5,6 +5,7 @@ from __future__ import annotations
 import inspect
 import json
 import logging
+import os
 import re
 import time
 import uuid
@@ -366,4 +367,15 @@ def get_notable_updates(move_threshold_percent: float = 5.0, mark_visited: bool 
 
 if __name__ == "__main__":
     lakebase.migrate()
-    mcp.run(transport="http", middleware=[ASGIMiddleware(RequestContextMiddleware)])
+    try:
+        port = int(os.environ.get("PORT", "8000"))
+    except ValueError as error:
+        raise RuntimeError("PORT must be an integer.") from error
+    if not 1 <= port <= 65_535:
+        raise RuntimeError("PORT must be between 1 and 65535.")
+    mcp.run(
+        transport="http",
+        host="0.0.0.0",
+        port=port,
+        middleware=[ASGIMiddleware(RequestContextMiddleware)],
+    )
