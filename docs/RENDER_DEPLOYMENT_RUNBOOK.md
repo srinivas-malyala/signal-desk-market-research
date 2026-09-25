@@ -14,9 +14,10 @@ results only.
 
 ## 1. Renew and validate the data workspace
 
-The cached Databricks OAuth credential was expired at the end of local
-implementation. Authenticate interactively, then validate with the explicit
-profile:
+Completed on 2026-09-24: the explicit profile authenticated as
+`malyalasrinivas@gmail.com`, and strict validation of the data-only development
+bundle passed. Re-run these commands if the credential expires or the bundle
+changes:
 
 ```bash
 databricks auth login --host https://dbc-7b106152-caf3.cloud.databricks.com --profile dataexpertio_srini

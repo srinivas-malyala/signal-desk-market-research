@@ -10,10 +10,11 @@ data-bundle separation, explicit Databricks OAuth M2M clients, generic OIDC,
 secure sessions/CSRF, signed frontend identity, fixed Supervisor identity, and
 static deployment checks. The full suite passes 231 tests and Ruff.
 
-Units 5–9 require external credentials or deployed resources. The cached OAuth
-credential for `dataexpertio_srini` expired before strict post-change bundle
-validation, so no workspace or Render deployment was attempted. Continue with
-`docs/RENDER_DEPLOYMENT_RUNBOOK.md`.
+Strict post-change validation of the data-only bundle passed on 2026-09-24 with
+explicit profile `dataexpertio_srini`, authenticated as
+`malyalasrinivas@gmail.com`. Units 5–9 still require the two application M2M
+principals, OIDC/Render secrets, or deployed resources. No workspace or Render
+deployment was performed. Continue with `docs/RENDER_DEPLOYMENT_RUNBOOK.md`.
 
 ## Decision
 

@@ -19,7 +19,7 @@ This is the living tracker for implementation progress and external gates. A uni
 
 ## Active sequence
 
-1. Renew OAuth for `dataexpertio_srini`; strictly validate the now data-only bundle and provision two least-privilege paid-workspace OAuth M2M service principals.
+1. Provision two least-privilege paid-workspace OAuth M2M service principals and pass their positive/negative permission checks.
 2. Register the browser OIDC client, generate the asymmetric assertion key pair and machine credential, and enter all `sync: false` Render secrets without displaying them.
 3. Deploy MCP on Render Free; run outbound SQL/AI Search/Lakebase/Massive connectivity plus the Phase 5 Render harness and simultaneous Job/MCP quota acceptance.
 4. Deploy the frontend on Render Free; run the Render preflight, browser/two-principal workflows, and controlled CDC-to-Gold freshness acceptance.
@@ -27,7 +27,7 @@ This is the living tracker for implementation progress and external gates. A uni
 
 ## Current external inputs
 
-- Databricks profile: `dataexpertio_srini` — the cached OAuth credential expired by 2026-09-24. Strict validation reached the intended bundle target but stopped at authentication; run `databricks auth login` before the next workspace check.
+- Databricks profile: `dataexpertio_srini` — OAuth renewed on 2026-09-24, authenticated as `malyalasrinivas@gmail.com`, and strict validation of the data-only development bundle passes against the intended workspace.
 - Application host: Render — two Python web services are planned; Free instances during development and the smallest paid instances for the final acceptance/demo month.
 - Hosting contract: all jobs, pipelines, Unity Catalog, SQL Warehouse, AI Search, Lakebase Sync/analytics, and Supervisor processing remain under `dataexpertio_srini`; Render hosts only FastMCP and Flask.
 - Unity Catalog: `bootcamp_students.student_sri` — verified.
@@ -106,4 +106,5 @@ This is the living tracker for implementation progress and external gates. A uni
 - 2026-09-24 — Implemented the two-service Render Blueprint and removed Databricks App resources from the active data bundle. Both services bind to `$PORT`, expose dependency-free health endpoints, and declare secret placeholders with `sync: false`. Packaging/configuration acceptance passed before commit `b915023`.
 - 2026-09-24 — Implemented explicit Render OAuth M2M clients, generic frontend OIDC sessions, secure cookies, CSRF, 60-second RS256 request-bound frontend assertions, MCP-session replay rejection, and fixed Supervisor machine identity. Render ignores forged forwarded identity; local/Databricks compatibility is retained. The final local suite, including Render route and deployment harnesses, passes 231 tests and repository-wide Ruff; the identity checkpoint is commit `b0d6f37`.
 - 2026-09-24 — Strict data-bundle validation was attempted with explicit profile `dataexpertio_srini` after app-resource exclusion and stopped only because the cached OAuth credential is no longer available. No deployment was attempted or changed.
+- 2026-09-24 — Renewed OAuth for explicit profile `dataexpertio_srini`, verified the active identity as `malyalasrinivas@gmail.com`, and reran `databricks bundle validate --strict -t dev --profile dataexpertio_srini`. Validation passed for the data-only bundle; no deployment was performed.
 - The Lakebase-dependent MCP application remains undeployed. Deployment-level health, action, idempotency, trace, and two-real-principal identity checks remain Phase 5 gates.

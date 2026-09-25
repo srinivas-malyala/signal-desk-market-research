@@ -86,9 +86,9 @@ connection URLs, direct email values, or user-authored note/report bodies.
 ## E. Submission package
 
 - [ ] Re-run the full local test suite and Ruff; record totals and commit SHA.
-- [ ] Run strict data-bundle validation with explicit profile
+- [x] Run strict data-bundle validation with explicit profile
   `dataexpertio_srini`; validate the Render Blueprint and inspect both deployment
-  surfaces for cross-target resources.
+  surfaces for cross-target resources. Data-only validation passed on 2026-09-24.
 - [ ] Confirm data dictionary, tool/API reference, traceability matrix, status tracker, deployment guide, and diagram agree.
 - [ ] Export final architecture diagram as PNG/JPEG and open it once for visual QA.
 - [ ] Verify the repository and demo output contain no credentials or sensitive runtime artifacts.
