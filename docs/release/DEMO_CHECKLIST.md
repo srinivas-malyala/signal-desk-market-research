@@ -24,6 +24,10 @@ connection URLs, direct email values, or user-authored note/report bodies.
   plus forbidden-permission tests.
 - [ ] Register the browser OIDC client; prove secure sessions, CSRF, logout, and
   tampered/expired/missing short-lived MCP assertion rejection.
+- [x] Select Google OIDC, fix the Render callback contract, generate a local-only
+  3072-bit assertion key pair plus session/Supervisor secrets, record only their
+  fingerprints, and prepare the per-service secret-entry checklist. Google
+  client registration remains the external action in the item above.
 - [x] Split data/app deployment surfaces and prove the paid DAB configuration contains no
   app changes while the Render Blueprint contains no jobs, pipelines, warehouse,
   UC table, or AI Search creation.

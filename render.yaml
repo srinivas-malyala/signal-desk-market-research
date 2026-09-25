@@ -101,13 +101,13 @@ services:
       - key: MCP_SERVER_URL
         sync: false
       - key: OIDC_ISSUER_URL
-        sync: false
+        value: https://accounts.google.com
       - key: OIDC_CLIENT_ID
         sync: false
       - key: OIDC_CLIENT_SECRET
         sync: false
       - key: OIDC_REDIRECT_URI
-        sync: false
+        value: https://signal-desk-frontend.onrender.com/oidc/callback
       - key: FLASK_SESSION_SECRET
         sync: false
       - key: FRONTEND_ASSERTION_PRIVATE_KEY

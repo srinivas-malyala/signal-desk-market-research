@@ -80,6 +80,13 @@ def validate_blueprint() -> None:
     missing = REQUIRED_SECRETS - seen_secrets
     if missing:
         raise AssertionError(f"missing sync:false secret declarations: {sorted(missing)}")
+    frontend_values = {
+        variable["key"]: variable.get("value") for variable in services["signal-desk-frontend"].get("envVars", [])
+    }
+    if frontend_values.get("OIDC_ISSUER_URL") != "https://accounts.google.com":
+        raise AssertionError("frontend must use the accepted Google OIDC issuer")
+    if frontend_values.get("OIDC_REDIRECT_URI") != "https://signal-desk-frontend.onrender.com/oidc/callback":
+        raise AssertionError("frontend OIDC callback must match the reserved Render service name")
     lowered = BLUEPRINT.read_text().lower()
     if "postgresql://" in lowered or "dapi" in lowered:
         raise AssertionError("render.yaml contains a prohibited credential-like literal")

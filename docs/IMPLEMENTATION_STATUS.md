@@ -14,16 +14,17 @@ This is the living tracker for implementation progress and external gates. A uni
 | 5 — MCP agent tools | Render implementation locally accepted; deployment pending | Canonical corpus and Lakebase migration; ready 393-row Qwen3 Delta Sync hybrid index; signed Render user identity and fixed Supervisor identity; explicit paid-workspace M2M SQL/AI Search reads; `$PORT`/health packaging; confirmed transactional idempotent writes; bounded traces/events; Render-aware post-deployment harness | Provision the MCP M2M principal/secrets, deploy on Render, then run connectivity, health/action/idempotency/trace, simultaneous quota, and two-principal acceptance |
 | 6 — CDF analytics | Implementation in progress | Phase 6.2 locally accepted with five-source normalized streaming CDC, deduplicated pseudonymous Silver activity, five Gold usage metric families, and deterministic synthetic insert/update/delete/duplicate/late/null/error/privacy tests | Configure UI-only Lakehouse Sync for Phase 6.1, deploy the prepared pipeline, reconcile controlled live changes, and record propagation latency |
 | 7 — Agent integration | Render machine-auth implementation locally accepted; connection pending | Prompt/config reconciled to final MCP 1.0 contracts; exact nine-tool routing; ten evaluation fixtures; MCP maps a separate machine credential to a fixed server-side Supervisor subject and ignores model-supplied identity | Create the governed paid-workspace UC HTTP/MCP connection to Render, deploy Supervisor, then capture live evaluations and identity evidence |
-| 8 — Frontend | Render implementation locally accepted; deployment pending | Research/evidence and confirmed writes remain intact; generic OIDC sessions, secure cookies, CSRF, signed 60-second request-bound MCP assertions, frontend-specific M2M analytics, `$PORT` packaging, and negative identity tests pass | Register OIDC, provision secrets, deploy on Render, then execute browser/two-principal/CDC-refresh acceptance |
+| 8 — Frontend | Render implementation and OIDC preparation locally accepted; deployment pending | Research/evidence and confirmed writes remain intact; Google OIDC issuer and exact callback are selected; generic OIDC sessions, secure cookies, CSRF, signed 60-second request-bound MCP assertions, frontend-specific M2M analytics, `$PORT` packaging, local-only credential generation, and negative identity tests pass | Complete provider-side Google client registration, enter secrets, deploy on Render, then execute browser/two-principal/CDC-refresh acceptance |
 | 9 — Release | Render deployment artifacts locally accepted; external deployment pending | Two-service Blueprint, Linux/Python 3.11 hash-pinned builds, clean-install and exact-command health checks, data-bundle separation, Render/MCP acceptance harnesses, visually verified architecture PNG/SVG, security/cost/rollback plan, and release artifacts are implemented and tested | Provision external credentials, deploy both free services, run live acceptance, and upgrade for the final demo month |
 
 ## Active sequence
 
-1. Provision two least-privilege paid-workspace OAuth M2M service principals and pass their positive/negative permission checks.
-2. Register the browser OIDC client, generate the asymmetric assertion key pair and machine credential, and enter all `sync: false` Render secrets without displaying them.
-3. Deploy MCP on Render Free; run outbound SQL/AI Search/Lakebase/Massive connectivity plus the Phase 5 Render harness and simultaneous Job/MCP quota acceptance.
-4. Deploy the frontend on Render Free; run the Render preflight, browser/two-principal workflows, and controlled CDC-to-Gold freshness acceptance.
-5. Connect the paid Supervisor to Render, complete Phase 7 evidence, upgrade both services for the final demo month, and complete Phase 9/diagram evidence.
+1. Register the prepared Google Web application client with the fixed Render callback; enter its client ID/secret without displaying them.
+2. Provision two least-privilege paid-workspace OAuth M2M service principals and pass their positive/negative permission checks.
+3. Enter the generated application-only credentials and remaining `sync: false` values using the Render secret-entry checklist.
+4. Deploy MCP on Render Free; run outbound SQL/AI Search/Lakebase/Massive connectivity plus the Phase 5 Render harness and simultaneous Job/MCP quota acceptance.
+5. Deploy the frontend on Render Free; run the Render preflight, browser/two-principal workflows, and controlled CDC-to-Gold freshness acceptance.
+6. Connect the paid Supervisor to Render, complete Phase 7 evidence, and upgrade both services for the final demo month.
 
 ## Current external inputs
 

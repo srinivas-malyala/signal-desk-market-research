@@ -76,24 +76,28 @@ identity. Retain pass/fail evidence without retaining tokens or secret values.
 
 ## 3. Register browser OIDC
 
-Register a confidential web client with the chosen OIDC provider. Google may be
-used for the capstone, but the application is provider-neutral. Add the final
-frontend callback URL:
+Google OpenID Connect is the accepted provider for the capstone. Follow the
+provider registration and secret-entry checklist in
+`docs/RENDER_OIDC_PREPARATION.md`. Register a confidential Web application
+client with this exact final callback URL:
 
 ```text
-https://<frontend-service>.onrender.com/oidc/callback
+https://signal-desk-frontend.onrender.com/oidc/callback
 ```
 
-Record the issuer URL, client ID, client secret, and exact callback URL. Use
-`ALLOWED_USER_EMAILS` during the bounded demonstration if access should be
-restricted to named accounts.
+The committed issuer is `https://accounts.google.com`. Enter the resulting
+client ID and client secret only in the frontend Render service. Use
+`ALLOWED_USER_EMAILS` during the bounded demonstration to restrict access to
+named test accounts.
 
 ## 4. Generate application-only credentials
 
-Generate one RSA key pair outside the repository. Store the private key only in
-the frontend service and the public key only in the MCP service. Generate a
-separate high-entropy Supervisor machine credential. Never reuse the OIDC or
-Databricks M2M secrets.
+Generate one RSA key pair, a Flask session secret, and a separate high-entropy
+Supervisor machine credential with `tools/generate_render_credentials.py`.
+Generated values live only in ignored `build/render-secrets/`; the generator
+prints fingerprints but no secret values and refuses overwrite. Store the
+private key only in the frontend service and the public key only in the MCP
+service. Never reuse the OIDC or Databricks M2M secrets.
 
 Required secret ownership:
 
