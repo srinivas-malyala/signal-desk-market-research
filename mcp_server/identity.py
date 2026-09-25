@@ -5,12 +5,15 @@ from __future__ import annotations
 import hmac
 import os
 import re
+import threading
 import time
 from collections.abc import Mapping
 
 import jwt
 
 SUBJECT = re.compile(r"^[A-Za-z0-9._:@/-]{1,255}$")
+_replay_lock = threading.Lock()
+_assertion_sessions: dict[str, tuple[int, str | None]] = {}
 
 
 class IdentityError(ValueError):
@@ -76,7 +79,14 @@ def _frontend_identity(token: str, request_id: str) -> dict:
         raise IdentityError("The frontend identity claims are invalid.")
     if not request_id or not hmac.compare_digest(token_request_id, request_id):
         raise IdentityError("The frontend identity request binding is invalid.")
-    return {"email": email, "subject": subject, "access_token": None, "kind": "frontend"}
+    return {
+        "email": email,
+        "subject": subject,
+        "access_token": None,
+        "kind": "frontend",
+        "token_id": str(claims["jti"]),
+        "expires_at": expires,
+    }
 
 
 def trusted_identity(headers: Mapping[str, str], request_id: str) -> dict:
@@ -88,3 +98,41 @@ def trusted_identity(headers: Mapping[str, str], request_id: str) -> dict:
         }
     token = _bearer(headers)
     return _supervisor_identity(token) or _frontend_identity(token, request_id)
+
+
+def reserve_assertion_session(identity: dict, session_id: str | None, *, now: int | None = None) -> None:
+    """Reject reuse of one frontend assertion outside its original MCP session."""
+
+    if identity.get("kind") != "frontend":
+        return
+    token_id = str(identity.get("token_id") or "")
+    expires_at = int(identity.get("expires_at") or 0)
+    if not token_id or not expires_at:
+        raise IdentityError("The frontend identity replay claims are invalid.")
+    current = int(time.time()) if now is None else now
+    normalized_session = str(session_id or "").strip() or None
+    with _replay_lock:
+        for seen_id, (seen_expiry, _seen_session) in list(_assertion_sessions.items()):
+            if seen_expiry < current:
+                del _assertion_sessions[seen_id]
+        existing = _assertion_sessions.get(token_id)
+        if existing is None:
+            _assertion_sessions[token_id] = (expires_at, normalized_session)
+            return
+        _expiry, bound_session = existing
+        if bound_session is None and normalized_session is not None:
+            _assertion_sessions[token_id] = (expires_at, normalized_session)
+            return
+        if bound_session is None or normalized_session is None or not hmac.compare_digest(bound_session, normalized_session):
+            raise IdentityError("The frontend identity assertion was replayed.")
+
+
+def bind_assertion_session(identity: dict, session_id: str | None) -> None:
+    if identity.get("kind") != "frontend" or not session_id:
+        return
+    token_id = str(identity.get("token_id") or "")
+    expires_at = int(identity.get("expires_at") or 0)
+    with _replay_lock:
+        existing = _assertion_sessions.get(token_id)
+        if existing is not None and existing[1] is None:
+            _assertion_sessions[token_id] = (expires_at, str(session_id))

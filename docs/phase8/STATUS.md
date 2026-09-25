@@ -4,7 +4,7 @@ Updated: 2026-09-24
 
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
-| 8.1 Flask shell and authentication | Render implementation locally accepted; deployment pending | Flask/Gunicorn retained; generic OIDC login/callback/logout; verified-email allowlist; secure bounded sessions; CSRF on writes; 60-second RS256 MCP assertions; `$PORT`; public health; request IDs/security headers; Render ignores forwarded identity | Register OIDC redirect/client secrets, deploy to Render, and run authenticated/two-principal browser smoke tests |
+| 8.1 Flask shell and authentication | Render implementation locally accepted; deployment pending | Flask/Gunicorn retained; generic OIDC login/callback/logout; verified-email allowlist; secure bounded sessions; CSRF on writes; 60-second request-bound RS256 MCP assertions with MCP-session replay rejection; `$PORT`; public health; request IDs/security headers; Render ignores forwarded identity | Register OIDC redirect/client secrets, deploy to Render, and run authenticated/two-principal browser smoke tests |
 | 8.2 Research and evidence workflow | Local implementation complete | Authenticated MCP routes support bounded performance, 2–5 ticker comparison, and hybrid filing/news evidence; UI exposes progress, empty/error/partial/rate-limit states, source links, context labels, as-of metadata, limitations, execution identity, and disclaimer | Deploy MCP/frontend and run the browser evidence-source acceptance flow |
 | 8.3 Watchlists, notes, and reports | Local core workflow complete | Confirmed add/remove, note save, and report save use one authenticated idempotent MCP call; browser confirmation/cancel behavior and user-owned reload views are implemented; watchlist/news overview reads now use MCP and read-only overview no longer creates users | Deployed write/reload/two-user acceptance; note deletion requires a future versioned MCP delete contract because MCP 1.0 intentionally exposes only nine tools |
 | 8.4 Usage analytics page | Render M2M implementation locally accepted; deployment pending | Bounded SQL Warehouse client reads five Phase 6 Gold datasets using the explicit frontend-specific M2M boundary; page shows contextual DAU, error rate, watchlist/save KPIs, exact usage/P95, source/freshness, service-principal execution, and empty/partial/stale/error states | Provision/grant the frontend M2M principal, deploy Phase 6/frontend, then prove a controlled MCP action appears with correct count and freshness |
@@ -87,7 +87,7 @@ execution because these are shared pseudonymous aggregates, not user-owned
 operational rows. KPI cards include period context, source, and freshness;
 exact tool counts and P95 latency use a table instead of an ornamental chart.
 
-The complete local suite passes 230 tests and whole-repository lint. Render
+The complete local suite passes 231 tests and whole-repository lint. Render
 packaging and identity/data-client refactors are implemented. OIDC registration,
 paid-workspace M2M credentials/grants, Render-to-Lakebase/Databricks/Massive
 connectivity, deployment, browser acceptance, and the final paid-service

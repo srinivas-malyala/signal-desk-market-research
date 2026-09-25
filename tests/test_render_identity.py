@@ -58,6 +58,8 @@ def test_frontend_assertion_round_trip_is_request_bound(
         "subject": "oidc-subject-123",
         "access_token": None,
         "kind": "frontend",
+        "token_id": resolved["token_id"],
+        "expires_at": resolved["expires_at"],
     }
     with pytest.raises(mcp_identity.IdentityError, match="request binding"):
         mcp_identity.trusted_identity(
@@ -138,3 +140,19 @@ def test_forwarded_headers_are_ignored_in_render_mode(monkeypatch: pytest.Monkey
     ):
         with pytest.raises(ValueError, match="missing identity"):
             frontend_auth.trusted_identity("request-123")
+
+
+def test_frontend_assertion_cannot_initialize_a_second_mcp_session() -> None:
+    identity = {
+        "kind": "frontend",
+        "token_id": "one-time-jti",
+        "expires_at": 2_000,
+    }
+    mcp_identity._assertion_sessions.clear()
+    mcp_identity.reserve_assertion_session(identity, None, now=1_000)
+    mcp_identity.bind_assertion_session(identity, "session-one")
+    mcp_identity.reserve_assertion_session(identity, "session-one", now=1_001)
+    with pytest.raises(mcp_identity.IdentityError, match="replayed"):
+        mcp_identity.reserve_assertion_session(identity, None, now=1_001)
+    with pytest.raises(mcp_identity.IdentityError, match="replayed"):
+        mcp_identity.reserve_assertion_session(identity, "session-two", now=1_001)

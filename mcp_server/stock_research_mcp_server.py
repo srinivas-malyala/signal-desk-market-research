@@ -17,7 +17,7 @@ import lakebase
 import research_broker as broker
 from audit import bounded_value, pseudonymous_subject, result_summary, safe_parameters, trusted_email
 from fastmcp import FastMCP
-from identity import IdentityError, identity_mode
+from identity import IdentityError, bind_assertion_session, identity_mode, reserve_assertion_session
 from identity import trusted_identity as request_identity
 from psycopg2.extras import Json
 from starlette.middleware import Middleware as ASGIMiddleware
@@ -47,6 +47,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         )
         try:
             request_user = request_identity(request.headers, correlation_id)
+            reserve_assertion_session(request_user, request.headers.get("mcp-session-id"))
         except IdentityError:
             if identity_mode() == "signed_assertion" and request.url.path != "/health":
                 return JSONResponse(
@@ -60,6 +61,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         correlation = _correlation.set(correlation_id)
         try:
             response = await call_next(request)
+            bind_assertion_session(request_user or {}, response.headers.get("mcp-session-id"))
             response.headers["x-request-id"] = correlation_id
             return response
         finally:
