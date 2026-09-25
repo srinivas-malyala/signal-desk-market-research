@@ -107,7 +107,7 @@ services:
       - key: OIDC_CLIENT_SECRET
         sync: false
       - key: OIDC_REDIRECT_URI
-        value: https://signal-desk-frontend.onrender.com/oidc/callback
+        value: https://signal-desk-frontend-s88i.onrender.com/oidc/callback
       - key: FLASK_SESSION_SECRET
         sync: false
       - key: FRONTEND_ASSERTION_PRIVATE_KEY

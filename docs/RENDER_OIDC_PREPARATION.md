@@ -8,9 +8,9 @@ Updated: 2026-09-24
 - Issuer: `https://accounts.google.com`.
 - Client type: OAuth 2.0 **Web application** using Authorization Code flow.
 - Scopes: `openid email profile`.
-- Final frontend origin: `https://signal-desk-frontend.onrender.com`.
+- Final frontend origin: `https://signal-desk-frontend-s88i.onrender.com`.
 - Final authorized redirect URI:
-  `https://signal-desk-frontend.onrender.com/oidc/callback`.
+  `https://signal-desk-frontend-s88i.onrender.com/oidc/callback`.
 - Bounded demo allowlist: enter permitted accounts in the frontend-only
   `ALLOWED_USER_EMAILS` Render secret.
 
@@ -30,9 +30,9 @@ Registration is not claimed complete until these provider-side steps are done:
    bounded capstone, and add each demo account as a test user.
 2. Create an OAuth client ID with application type **Web application**.
 3. Set the authorized JavaScript origin to
-   `https://signal-desk-frontend.onrender.com`.
+   `https://signal-desk-frontend-s88i.onrender.com`.
 4. Set the authorized redirect URI to
-   `https://signal-desk-frontend.onrender.com/oidc/callback`.
+   `https://signal-desk-frontend-s88i.onrender.com/oidc/callback`.
 5. Copy the resulting client ID and client secret directly into the Render
    frontend secret fields. Do not save them in this repository or screenshots.
 6. After deployment, execute one login and verify the ID token contains a

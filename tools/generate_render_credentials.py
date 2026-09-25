@@ -16,7 +16,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "build" / "render-secrets"
-CALLBACK_URL = "https://signal-desk-frontend.onrender.com/oidc/callback"
+CALLBACK_URL = "https://signal-desk-frontend-s88i.onrender.com/oidc/callback"
 SECRET_FILES = (
     "frontend-assertion-private.pem",
     "mcp-assertion-public.pem",

@@ -33,7 +33,7 @@ def test_render_blueprint_defines_two_isolated_secret_safe_services() -> None:
     assert "healthCheckPath: /healthz" in text
     assert "0.0.0.0:$PORT" in text
     assert "value: https://accounts.google.com" in text
-    assert "value: https://signal-desk-frontend.onrender.com/oidc/callback" in text
+    assert "value: https://signal-desk-frontend-s88i.onrender.com/oidc/callback" in text
     for secret in (
         "LAKEBASE_URL",
         "MASSIVE_API_KEY",

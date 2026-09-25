@@ -38,7 +38,7 @@ def test_render_preflight_checks_health_auth_redirect_and_security_headers() -> 
 
     report = run_checks(
         "https://signal-desk-mcp.onrender.com",
-        "https://signal-desk-frontend.onrender.com",
+        "https://signal-desk-frontend-s88i.onrender.com",
         get=get,
         post=lambda *_args, **_kwargs: Response(401),
     )

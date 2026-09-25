@@ -82,7 +82,7 @@ provider registration and secret-entry checklist in
 client with this exact final callback URL:
 
 ```text
-https://signal-desk-frontend.onrender.com/oidc/callback
+https://signal-desk-frontend-s88i.onrender.com/oidc/callback
 ```
 
 The committed issuer is `https://accounts.google.com`. Enter the resulting
