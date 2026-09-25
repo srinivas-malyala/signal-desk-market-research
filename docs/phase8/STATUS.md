@@ -87,7 +87,7 @@ execution because these are shared pseudonymous aggregates, not user-owned
 operational rows. KPI cards include period context, source, and freshness;
 exact tool counts and P95 latency use a table instead of an ornamental chart.
 
-The complete local suite passes 228 tests and whole-repository lint. Render
+The complete local suite passes 230 tests and whole-repository lint. Render
 packaging and identity/data-client refactors are implemented. OIDC registration,
 paid-workspace M2M credentials/grants, Render-to-Lakebase/Databricks/Massive
 connectivity, deployment, browser acceptance, and the final paid-service

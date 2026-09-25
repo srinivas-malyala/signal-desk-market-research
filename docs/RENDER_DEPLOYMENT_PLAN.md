@@ -8,7 +8,7 @@ Units 1–4 are implemented and locally accepted on
 `codex/render-app-deployment`: two-service packaging, `$PORT`/health behavior,
 data-bundle separation, explicit Databricks OAuth M2M clients, generic OIDC,
 secure sessions/CSRF, signed frontend identity, fixed Supervisor identity, and
-static deployment checks. The full suite passes 228 tests and Ruff.
+static deployment checks. The full suite passes 230 tests and Ruff.
 
 Units 5–9 require external credentials or deployed resources. The cached OAuth
 credential for `dataexpertio_srini` expired before strict post-change bundle
