@@ -9,7 +9,7 @@ pipelines, Unity Catalog data, SQL Warehouse queries, AI Search, Lakehouse Sync,
 analytics, and Supervisor processing. Only the FastMCP and Flask runtimes will
 be deployed as two separate Render web services.
 
-The Render split is planned but not yet implemented. Browser users authenticate
+The Render split is implemented locally but not yet deployed. Browser users authenticate
 to Flask through generic OIDC. Flask sends MCP a short-lived asymmetric signed
 identity assertion, not the browser's OIDC token. Each Render service uses a
 separate least-privilege OAuth M2M identity created in the paid workspace for

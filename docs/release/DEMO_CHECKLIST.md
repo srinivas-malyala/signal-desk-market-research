@@ -13,7 +13,7 @@ connection URLs, direct email values, or user-authored note/report bodies.
   development bundle validation on 2026-09-21.
 - [x] Record the Render decision: all processing/data resources remain under
   `dataexpertio_srini`; only FastMCP and Flask move to two Render web services.
-- [ ] Add the two-service `render.yaml`; validate build/start commands, `$PORT`,
+- [x] Add the two-service `render.yaml`; validate build/start commands, `$PORT`,
   health checks, and `sync: false` secret placeholders without deploying data
   resources from Render.
 - [ ] Prove Render egress to the paid workspace and Lakebase; prove Massive
@@ -23,7 +23,7 @@ connection URLs, direct email values, or user-authored note/report bodies.
   plus forbidden-permission tests.
 - [ ] Register the browser OIDC client; prove secure sessions, CSRF, logout, and
   tampered/expired/missing short-lived MCP assertion rejection.
-- [ ] Split data/app deployment surfaces and prove the paid DAB plan contains no
+- [x] Split data/app deployment surfaces and prove the paid DAB configuration contains no
   app changes while the Render Blueprint contains no jobs, pipelines, warehouse,
   UC table, or AI Search creation.
 - [x] Apply checksum migration `0005`; verified

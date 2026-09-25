@@ -2,6 +2,19 @@
 
 Updated: 2026-09-24
 
+## Implementation status
+
+Units 1–4 are implemented and locally accepted on
+`codex/render-app-deployment`: two-service packaging, `$PORT`/health behavior,
+data-bundle separation, explicit Databricks OAuth M2M clients, generic OIDC,
+secure sessions/CSRF, signed frontend identity, fixed Supervisor identity, and
+static deployment checks. The full suite passes 228 tests and Ruff.
+
+Units 5–9 require external credentials or deployed resources. The cached OAuth
+credential for `dataexpertio_srini` expired before strict post-change bundle
+validation, so no workspace or Render deployment was attempted. Continue with
+`docs/RENDER_DEPLOYMENT_RUNBOOK.md`.
+
 ## Decision
 
 Deploy the existing Flask frontend and FastMCP server as two separate Render Python web services.

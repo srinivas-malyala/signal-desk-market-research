@@ -12,6 +12,7 @@ import uuid
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import requests
 from databricks.sdk import WorkspaceClient
@@ -362,10 +363,57 @@ async def run_deployed(
     return report
 
 
+async def run_render(
+    *,
+    service_url: str,
+    bearer_token: str,
+    exercise_writes: bool,
+    timeout_seconds: int,
+) -> dict[str, Any]:
+    parsed = urlparse(service_url)
+    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+        raise ValueError("Render MCP URL must be HTTPS without embedded credentials")
+    if len(bearer_token) < 32 or any(character.isspace() for character in bearer_token):
+        raise ValueError("Render MCP machine credential is missing or invalid")
+    base_url = service_url.rstrip("/")
+    health = requests.get(f"{base_url}/health", timeout=timeout_seconds)
+    health.raise_for_status()
+    health_payload = health.json()
+    health_ok = health_payload == {
+        "status": "ok",
+        "service": "stock-market-research",
+        "contract_version": "1.0",
+    }
+
+    from fastmcp import Client
+    from fastmcp.client.transports import StreamableHttpTransport
+
+    request_id = f"phase5-{uuid.uuid4()}"
+    transport = StreamableHttpTransport(
+        f"{base_url}/mcp",
+        headers={"X-Request-ID": request_id},
+        auth=bearer_token,
+    )
+    async with Client(transport, timeout=timeout_seconds) as client:
+        report = await run_mcp_checks(client, exercise_writes=exercise_writes)
+    report["deployment"] = "render"
+    report["service_url"] = base_url
+    report["health"] = {"passed": health_ok, "status_code": health.status_code}
+    if not health_ok:
+        report["status"] = "failed"
+    return report
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--profile", required=True)
+    parser.add_argument("--profile")
     parser.add_argument("--app-name", default="signal-desk-mcp-dev")
+    parser.add_argument("--url", help="Render MCP service base URL; switches the harness to Render mode.")
+    parser.add_argument(
+        "--bearer-env",
+        default="MCP_SUPERVISOR_TOKEN",
+        help="Environment variable containing the Render MCP machine credential.",
+    )
     parser.add_argument(
         "--exercise-writes",
         action="store_true",
@@ -378,14 +426,26 @@ def _parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = _parser().parse_args()
-    report = asyncio.run(
-        run_deployed(
-            profile=args.profile,
-            app_name=args.app_name,
-            exercise_writes=args.exercise_writes,
-            timeout_seconds=args.timeout_seconds,
+    if args.url:
+        report = asyncio.run(
+            run_render(
+                service_url=args.url,
+                bearer_token=os.getenv(args.bearer_env, ""),
+                exercise_writes=args.exercise_writes,
+                timeout_seconds=args.timeout_seconds,
+            )
         )
-    )
+    else:
+        if not args.profile:
+            raise SystemExit("--profile is required unless --url is supplied")
+        report = asyncio.run(
+            run_deployed(
+                profile=args.profile,
+                app_name=args.app_name,
+                exercise_writes=args.exercise_writes,
+                timeout_seconds=args.timeout_seconds,
+            )
+        )
     rendered = json.dumps(report, indent=2, sort_keys=True)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

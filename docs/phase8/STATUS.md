@@ -4,18 +4,21 @@ Updated: 2026-09-24
 
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
-| 8.1 Flask shell and authentication | Local hardening complete; Render identity refactor pending | Flask/Gunicorn retained; demo identity removed; health remains public; request IDs and security headers cover success/error responses; template escaping and startup configuration tested | Replace Databricks forwarded-header identity with OIDC sessions, CSRF protection, and short-lived signed frontend-to-MCP assertions; package for `$PORT`, deploy to Render, and run authenticated smoke tests |
+| 8.1 Flask shell and authentication | Render implementation locally accepted; deployment pending | Flask/Gunicorn retained; generic OIDC login/callback/logout; verified-email allowlist; secure bounded sessions; CSRF on writes; 60-second RS256 MCP assertions; `$PORT`; public health; request IDs/security headers; Render ignores forwarded identity | Register OIDC redirect/client secrets, deploy to Render, and run authenticated/two-principal browser smoke tests |
 | 8.2 Research and evidence workflow | Local implementation complete | Authenticated MCP routes support bounded performance, 2–5 ticker comparison, and hybrid filing/news evidence; UI exposes progress, empty/error/partial/rate-limit states, source links, context labels, as-of metadata, limitations, execution identity, and disclaimer | Deploy MCP/frontend and run the browser evidence-source acceptance flow |
 | 8.3 Watchlists, notes, and reports | Local core workflow complete | Confirmed add/remove, note save, and report save use one authenticated idempotent MCP call; browser confirmation/cancel behavior and user-owned reload views are implemented; watchlist/news overview reads now use MCP and read-only overview no longer creates users | Deployed write/reload/two-user acceptance; note deletion requires a future versioned MCP delete contract because MCP 1.0 intentionally exposes only nine tools |
-| 8.4 Usage analytics page | Local UI complete; Render data-auth refactor pending | Bounded SQL Warehouse client reads five Phase 6 Gold datasets; page shows contextual DAU, error rate, watchlist and save KPIs, exact tool usage/P95 table, source/freshness, service-principal execution, and empty/partial/stale/error states | Replace ambient Databricks auth with a frontend-specific paid-workspace OAuth M2M reader, deploy Phase 6/frontend, then prove a controlled MCP action appears with correct count and freshness |
+| 8.4 Usage analytics page | Render M2M implementation locally accepted; deployment pending | Bounded SQL Warehouse client reads five Phase 6 Gold datasets using the explicit frontend-specific M2M boundary; page shows contextual DAU, error rate, watchlist/save KPIs, exact usage/P95, source/freshness, service-principal execution, and empty/partial/stale/error states | Provision/grant the frontend M2M principal, deploy Phase 6/frontend, then prove a controlled MCP action appears with correct count and freshness |
 
 ## Local security contract
 
-Every route except `/healthz` requires both `X-Forwarded-Email` and
-`X-Forwarded-Access-Token`, which Databricks Apps supplies at the trusted proxy
-boundary when user authorization is enabled. Missing, malformed, or partial
-identity receives a correlated `401` response before Lakebase or MCP access.
-Identity in JSON, query strings, or form values is never authoritative.
+In Render mode, `/login` and `/oidc/callback` establish a bounded secure session
+from a provider-verified email and subject; `/healthz` remains public. Every
+application route requires that session, and every consequential request also
+requires the session CSRF token. In retained Databricks compatibility mode, the
+existing trusted proxy headers remain available. Render mode ignores those
+headers. Missing, malformed, or partial identity receives a correlated `401`
+before Lakebase or MCP access. Identity in JSON, query strings, form values, or
+model arguments is never authoritative.
 
 Every response, including authentication and dependency errors, receives a new
 server-generated `X-Request-ID`, `Cache-Control: no-store`, a restrictive
@@ -31,18 +34,18 @@ support correlation.
 of FastMCP transport details. The current production adapter:
 
 - requires an HTTPS `MCP_SERVER_URL`, allowing HTTP only for loopback testing;
-- authenticates with the forwarded user bearer token and never constructs
-  forwarded identity headers;
-- forwards the frontend request ID as MCP metadata;
+- authenticates with either the retained Databricks bearer token or, in Render
+  mode, a 60-second asymmetric signed identity assertion;
+- forwards the frontend request ID as both HTTP correlation metadata and MCP metadata;
 - enforces a 1–60 second timeout and a 256 KB response limit;
 - maps invalid transport, response, configuration, and tool failures into safe
   typed exceptions; and
 - always sends `confirmed=true` plus an 8–128 character idempotency key for
   watchlist writes.
 
-For Render, the transport will replace the forwarded Databricks user bearer
-token with a short-lived asymmetric JWT signed only by the frontend and
-verified by MCP. The assertion will bind issuer, audience, subject, email,
+For Render, the transport replaces the forwarded Databricks user bearer token
+with a short-lived asymmetric JWT signed only by the frontend and verified by
+MCP. The assertion binds issuer, audience, subject, email,
 request ID, unique token ID, and an expiration of at most 60 seconds. Browser
 tokens and OIDC client secrets will never cross the frontend-to-MCP boundary.
 
@@ -76,19 +79,16 @@ input bounds, optional company context, and a distinct rate-limited response.
 Confirmed note/report tests prove cancel/unconfirmed requests make no tool call,
 and one accepted browser request maps to one idempotent MCP write.
 
-The current analytics client uses ambient SDK `Config()` and a warehouse ID
-supplied through `valueFrom`; that same-workspace assumption is no longer valid
-after the app moves to Render. It must use a frontend-specific,
-least-privilege OAuth M2M identity targeting the paid workspace. All five
+The analytics client now uses a frontend-specific, least-privilege OAuth M2M
+identity targeting the paid workspace in Render mode. All five
 queries target fully qualified Gold tables, have hard row limits, and share a
 256 KB response ceiling. The UI explicitly discloses service-principal query
 execution because these are shared pseudonymous aggregates, not user-owned
 operational rows. KPI cards include period context, source, and freshness;
 exact tool counts and P95 latency use a table instead of an ornamental chart.
 
-The complete local suite passes 207 tests and whole-repository lint. The paid
-data bundle validated with `dataexpertio_srini`; the Render packaging and
-identity/data-client refactors are not yet implemented. OIDC registration,
-paid-workspace M2M credentials, Render-to-Lakebase/Databricks/Massive
+The complete local suite passes 228 tests and whole-repository lint. Render
+packaging and identity/data-client refactors are implemented. OIDC registration,
+paid-workspace M2M credentials/grants, Render-to-Lakebase/Databricks/Massive
 connectivity, deployment, browser acceptance, and the final paid-service
-readiness check remain gates. See `docs/RENDER_DEPLOYMENT_PLAN.md`.
+readiness check remain gates. See `docs/RENDER_DEPLOYMENT_RUNBOOK.md`.

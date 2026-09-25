@@ -30,14 +30,15 @@ See `docs/phase0/RESOURCE_BOOTSTRAP.md` and
 
 ```mermaid
 flowchart LR
-  U[User] --> A[Agent Bricks agent]
-  A -->|Streamable HTTP /mcp| M[FastMCP Databricks App]
+  U[Browser user] -->|OIDC| F[Flask on Render]
+  F -->|60-second signed assertion| M[FastMCP on Render]
+  A[Agent Bricks Supervisor] -->|Machine-authenticated HTTP /mcp| M
   M --> B[Research adapter]
   B --> X[Massive Stocks REST API]
   B <--> L[(Lakebase Postgres)]
-  J[Embedding batch job] -->|pg8000 vector writes| L
-  L -->|cosine retrieval| B
-  D[Dashboard Databricks App] --> L
+  M -->|OAuth M2M| D[(Paid Databricks SQL and AI Search)]
+  F -->|Separate OAuth M2M| D
+  F --> L
 ```
 
 The source API is [Massive Stocks](https://massive.com/docs/rest/stocks). The
@@ -62,8 +63,9 @@ committed. Fundamentals availability depends on the Massive subscription.
 
 Tool functions are intentionally thin. `research_broker.py` owns HTTP calls,
 normalization, persistence, calculations, and safe error envelopes.
-User-scoped tools derive ownership from Databricks forwarded identity and do not
-accept a `user_email` argument. Every consequential write requires
+User-scoped tools derive ownership from either the retained trusted Databricks
+proxy identity or, on Render, a short-lived frontend-signed OIDC identity. They
+do not accept a `user_email` argument. Every consequential write requires
 `confirmed=true` and a stable idempotency key; retries of the same request return
 the original result without repeating the write.
 
@@ -129,18 +131,14 @@ calls `lakebase.migrate()` idempotently. Versioned migrations create only
 allowlisted `_srini` tables in the shared schema. The legacy pgvector table is
 retained for migration compatibility but is not used by Phase 5 search.
 
-### 3. Deploy the MCP server as its own Databricks App
+### 3. Deploy the two application services on Render
 
-Create an App whose source directory is `mcp_server/`. The included `app.yaml`
-runs `stock_research_mcp_server.py`. Add the Massive and Lakebase secrets as
-App resources/permissions, deploy, and verify:
-
-```text
-https://<stock-mcp-app>.aws.databricksapps.com/mcp
-```
-
-Use Databricks OAuth when registering the endpoint; do not expose it as a
-public unauthenticated service.
+The root `render.yaml` defines separate Flask and FastMCP Python web services.
+All data and processing remain in `dataexpertio_srini`; Render uses two distinct
+least-privilege Databricks OAuth M2M identities. The browser uses OIDC, and MCP
+accepts only short-lived signed frontend assertions or the separate Supervisor
+machine credential. Follow `docs/RENDER_DEPLOYMENT_RUNBOOK.md`; the historical
+Databricks `app.yaml` files are retained only for compatibility/reference.
 
 ### 4. Sync research data
 

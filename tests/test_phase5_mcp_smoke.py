@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from tools.phase5_mcp_smoke import EXPECTED_TOOLS, _tool_payload, run_mcp_checks
+from tools.phase5_mcp_smoke import EXPECTED_TOOLS, _tool_payload, run_mcp_checks, run_render
 
 
 class FakeClient:
@@ -135,3 +135,24 @@ def test_harness_never_forges_forwarded_identity_headers() -> None:
     assert "x-forwarded-email" not in source.lower()
     assert "x-forwarded-user" not in source.lower()
     assert "x-forwarded-access-token" not in source.lower()
+
+
+def test_render_harness_rejects_unsafe_url_and_short_machine_token() -> None:
+    with pytest.raises(ValueError, match="must be HTTPS"):
+        asyncio.run(
+            run_render(
+                service_url="http://mcp.example.test",
+                bearer_token="x" * 40,
+                exercise_writes=False,
+                timeout_seconds=10,
+            )
+        )
+    with pytest.raises(ValueError, match="missing or invalid"):
+        asyncio.run(
+            run_render(
+                service_url="https://mcp.example.test",
+                bearer_token="short",
+                exercise_writes=False,
+                timeout_seconds=10,
+            )
+        )
