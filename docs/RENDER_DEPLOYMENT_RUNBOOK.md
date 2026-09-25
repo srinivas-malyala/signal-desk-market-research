@@ -115,9 +115,11 @@ Required secret ownership:
 
 ## 5. Create the Render Blueprint
 
-Connect the repository and select branch `codex/render-app-deployment`. Create a
-Blueprint from the root `render.yaml`. Confirm that Render proposes exactly two
-Python web services and no database:
+Connect
+[`srinivas-malyala/signal-desk-market-research`](https://github.com/srinivas-malyala/signal-desk-market-research)
+and select branch `codex/render-app-deployment`, which is currently the GitHub
+default branch. Create a Blueprint from the root `render.yaml`. Confirm that
+Render proposes exactly two Python web services and no database:
 
 - `signal-desk-mcp`
 - `signal-desk-frontend`
