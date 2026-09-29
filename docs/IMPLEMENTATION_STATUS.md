@@ -1,6 +1,6 @@
 # Capstone Implementation Status
 
-Updated: 2026-09-28 UTC
+Updated: 2026-09-29 UTC
 
 This is the living tracker for implementation progress and external gates. A unit is complete only when its code and deterministic tests pass; workspace-dependent proof is listed separately.
 
@@ -11,24 +11,25 @@ This is the living tracker for implementation progress and external gates. A uni
 | 2 — Spark market pipeline | Workspace acceptance complete | Dedicated deployed market pipeline; 81 manifest dates and 1,255,677 Bronze rows reconcile to 1,255,489 unique Silver rows plus 188 deterministic quarantines; measured free-plan maximum is 4 attempts per rolling minute; Gold coverage and persisted certification passed | None for the volume-certification workflow |
 | 3 — SEC pipeline | Workspace acceptance complete | Dedicated deployed research pipeline; two-company landing and cached rerun completed; 2 companies, 12 filings, 57,806 facts, 86 articles, 549 article/ticker links, and 507 traceable chunks with zero integrity violations; cached rerun made no external calls | None for the bounded two-company workflow |
 | 4 — Lakebase | Workspace acceptance complete | PostgreSQL 17+ connectivity; 16 owned `_srini` tables; five idempotent checksum-protected migrations; six tables with full replica identity; vector; bounded stale-safe pools; rollback; repeatable two-user CRUD/isolation and cleanup all verified | Cross-principal identity proof continues with MCP/frontend deployment |
-| 5 — MCP agent tools | Render deployed; transport/Massive/audit accepted; governed retrieval blocked | Canonical 393-row Qwen3 hybrid index; live MCP health; Supervisor authentication; nine-tool discovery; working Massive fallback; signed user identity; confirmed transactional idempotent writes; bounded trace/event reconciliation | Repair the paid-workspace MCP M2M credential, pass governed/semantic retrieval, then run reversible write/idempotency, simultaneous quota, and two-principal acceptance |
+| 5 — MCP agent tools | Lakebase market serving populated and locally parity-verified; research FTS not promoted | Canonical 393-row Qwen3 hybrid index; live MCP perimeter; ADR 0007; feature-flagged bounded Lakebase adapters; atomic publish of 1,255,489 market and 393 research rows with zero duplicate keys; exact three-row AAPL parity | Keep research on Databricks because Lakebase FTS Recall@5 was 0.7843 (<0.85); decide whether to improve retrieval or retain the workspace dependency, then run deployed market and remaining gates |
 | 6 — CDF analytics | Workspace acceptance complete | The active schema maps `databricks_postgres.bootcamp_students` to `bootcamp_students.bootcamp_cdc`; all five `_srini` histories are enabled and queryable; a bounded, self-cleaning Lakebase transaction produced the expected 18 history rows in approximately 82–84 seconds; deployed updates reconciled 34 Bronze rows to 26 effective Silver rows and all five Gold metric families, with a measured maximum source latency of 85 seconds | None |
 | 7 — Agent integration | Render machine-auth implementation locally accepted; connection pending | Prompt/config reconciled to final MCP 1.0 contracts; exact nine-tool routing; ten evaluation fixtures; MCP maps a separate machine credential to a fixed server-side Supervisor subject and ignores model-supplied identity | Create the governed paid-workspace UC HTTP/MCP connection to Render, deploy Supervisor, then capture live evaluations and identity evidence |
 | 8 — Frontend | Render deployed; OIDC/session perimeter accepted | Live frontend health and security headers; Google authorization-code callback and authenticated session flow; fail-closed unauthenticated API/browser behavior; CSRF, signed 60-second request-bound MCP assertions, and bounded MCP client | Repair frontend paid-workspace M2M analytics access, then execute the authenticated core workflow and two-principal/CDC-refresh acceptance |
-| 9 — Release | Both Render services live; acceptance in progress | Reproducible two-service deployment, live public preflight 5/5, Google OIDC flow, MCP transport/tool/audit checks, complete Phase 6 CDC acceptance, architecture and release artifacts | Repair data-plane credentials, finish MCP writes/frontend/Supervisor/two-principal/quota gates, then upgrade for the final demo month |
+| 9 — Release | Both Render services live; acceptance in progress | Reproducible two-service deployment, live public preflight 5/5, Google OIDC flow, MCP transport/tool/audit checks, complete Phase 6 CDC acceptance, architecture and release artifacts | Complete the Lakebase-only MCP cutover, frontend analytics, writes/Supervisor/two-principal/quota gates, then upgrade for the final demo month |
 
 ## Active sequence
 
-1. Replace or repair the MCP and frontend paid-workspace M2M identities; prove positive SQL/AI Search access and forbidden permissions.
-2. Rerun the read-only Phase 5 Render gate after M2M repair; the Massive secret and fallback are already verified.
-3. After governed and semantic reads pass, run the opt-in reversible write/idempotency gate and simultaneous Job/MCP quota acceptance.
-4. Run the authenticated frontend research/write/analytics workflow and two-real-principal isolation checks.
-5. Connect the paid Supervisor to Render and complete the ten Phase 7 evaluations.
-6. Run final credential scan/evidence capture and upgrade both services for the demo month.
+1. Canary the Lakebase market backend in Render and prove no workspace call plus the full known-answer contract.
+2. Keep research on AI Search while deciding whether to tune FTS, evaluate pgvector, or retain the workspace dependency; the current FTS result is below threshold.
+3. Remove MCP workspace credentials only if every active MCP read backend no longer needs them.
+4. Run the opt-in reversible write/idempotency gate and simultaneous Job/MCP quota acceptance.
+5. Complete the separately tracked frontend analytics path and two-real-principal workflow.
+6. Connect the paid Supervisor, complete Phase 7 evaluations, then run final evidence capture and paid-demo readiness.
 
 ## Current external inputs
 
-- Databricks profile: `dataexpertio_srini` — OAuth renewed on 2026-09-24, authenticated as `malyalasrinivas@gmail.com`, and strict validation of the data-only development bundle passes against the intended workspace.
+- Databricks profile: `dataexpertio_srini` — selected explicitly and reauthenticated as `malyalasrinivas@gmail.com` on 2026-09-29; strict bundle validation passes.
+- Lakebase serving discovery: existing secret maps to shared `summer-bootcamp-2026-v2/production/primary`; no Lakebase UC catalog is registered. The direct publisher avoids the missing managed-sync permission; the current `student` password role remains too broad for final runtime use.
 - Application host: Render — two Python web services are planned; Free instances during development and the smallest paid instances for the final acceptance/demo month.
 - Hosting contract: all jobs, pipelines, Unity Catalog, SQL Warehouse, AI Search, Lakebase Sync/analytics, and Supervisor processing remain under `dataexpertio_srini`; Render hosts only FastMCP and Flask.
 - Unity Catalog: `bootcamp_students.student_sri` — verified.
@@ -36,6 +37,8 @@ This is the living tracker for implementation progress and external gates. A uni
 - Massive key: Databricks secret `massive/api-key` — verified without disclosure.
 - SEC identifying contact — verified live and retained only at runtime.
 - Lakebase: database/lakebase-url secret is provisioned and key-only verified; shared schema bootcamp_students, table suffix _srini, and graph schema bootcamp_cdc are confirmed.
+- 2026-09-29 — Created only `bootcamp_students.market_history_serving_srini` and `bootcamp_students.research_documents_serving_srini` plus bounded indexes. Both were empty after idempotent setup. Strict bundle validation and focused tests passed for the atomic direct publisher and adapters.
+- 2026-09-29 — Manual publisher run `193161163752168` committed 1,255,489 market rows and 393 research rows with zero duplicate keys. The latest three AAPL rows matched UC exactly. Lakebase FTS returned zero provenance/filter violations but failed promotion at Recall@5 0.7843 versus the 0.85 minimum; research remains on AI Search.
 
 ## Workspace deployment evidence
 

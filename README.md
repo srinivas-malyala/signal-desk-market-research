@@ -36,7 +36,8 @@ flowchart LR
   M --> B[Research adapter]
   B --> X[Massive Stocks REST API]
   B <--> L[(Lakebase Postgres)]
-  M -->|OAuth M2M| D[(Paid Databricks SQL and AI Search)]
+  M --> L
+  D[(Databricks pipelines and governed Delta)] -->|Triggered serving sync| L
   F -->|Separate OAuth M2M| D
   F --> L
 ```
@@ -58,7 +59,7 @@ committed. Fundamentals availability depends on the Massive subscription.
 | `update_watchlist` | Confirmed, idempotent add/remove mutation |
 | `save_research_note` | Confirmed, idempotent ticker-note write |
 | `save_analysis_report` | Confirmed, idempotent multi-ticker report write |
-| `semantic_research` | Hybrid managed AI Search over attributable SEC/news passages |
+| `semantic_research` | Attributable SEC/news retrieval; managed AI Search remains accepted while a feature-flagged Lakebase backend is evaluated against the same 51-case thresholds |
 | `get_notable_updates` | Price moves and articles since the user's last visit |
 
 Tool functions are intentionally thin. `research_broker.py` owns HTTP calls,
@@ -75,8 +76,9 @@ The requested operational tables are `users`, `watchlists`,
 `watchlist_tickers`, `companies`, `price_snapshots`, `news_articles`,
 `research_notes`, and `analysis_reports`. `stock_research_mcp_traces` and the
 agent session/event tables support auditability and analytics. The governed
-research corpus and its managed search index stay in Unity Catalog rather than
-using Lakebase as the vector store.
+research corpus and its managed search index remain in Unity Catalog as the
+governed source and rollback path. ADR 0007 adds synchronized, read-only
+Lakebase serving copies for MCP request-time market and research reads.
 
 Company profiles keep normalized research columns plus raw JSON provenance.
 News has a stable Massive article ID, ticker, narrative fields, publisher,
@@ -91,7 +93,8 @@ row-tracking-enabled `research_search_documents` Delta table supported by AI
 Search. A triggered Delta Sync index uses `databricks-qwen3-embedding-0-6b`,
 hybrid retrieval, metadata filters, and reranking. The compatibility-named
 embedding job requests an incremental managed-index sync; it does not load a
-local model or write pgvector rows.
+local model or write pgvector rows. PostgreSQL full-text retrieval is not called
+semantic or promoted until the existing live evaluation thresholds pass.
 
 ## Repository layout
 
@@ -134,11 +137,14 @@ retained for migration compatibility but is not used by Phase 5 search.
 ### 3. Deploy the two application services on Render
 
 The root `render.yaml` defines separate Flask and FastMCP Python web services.
-All data and processing remain in `dataexpertio_srini`; Render uses two distinct
-least-privilege Databricks OAuth M2M identities. The browser uses OIDC, and MCP
-accepts only short-lived signed frontend assertions or the separate Supervisor
-machine credential. Follow `docs/RENDER_DEPLOYMENT_RUNBOOK.md`; the historical
-Databricks `app.yaml` files are retained only for compatibility/reference.
+All governed data and processing remain in `dataexpertio_srini`. MCP moves in
+stages to a dedicated native Lakebase runtime role and no workspace credential;
+frontend Gold analytics remains separately authenticated. The browser uses
+OIDC, and MCP accepts only short-lived signed frontend assertions or the
+separate Supervisor machine credential. Follow
+`docs/LAKEBASE_ONLY_MCP_SERVING_PLAN.md` and
+`docs/RENDER_DEPLOYMENT_RUNBOOK.md`; historical Databricks `app.yaml` files are
+retained only for compatibility/reference.
 
 ### 4. Sync research data
 
@@ -148,7 +154,7 @@ daily price snapshots into Lakebase. Optional filing excerpts and earnings-call
 summaries can be loaded into their columns by your approved filing/transcript
 pipeline; the embedding job automatically includes them.
 
-### 5. Synchronize semantic search
+### 5. Synchronize governed research and Lakebase serving
 
 Deploy and run the serving-table publisher after the research pipeline has
 created `silver_research_chunks`; then deploy the Vector Search endpoint/index
@@ -164,6 +170,15 @@ databricks bundle run research_embeddings -t dev -p dataexpertio_srini
 
 The `research_refresh` orchestration publishes the Delta serving table and then
 requests the triggered index sync after a successful pipeline update.
+
+For the planned MCP runtime cutover, keep that accepted AI Search path intact
+and follow the independently gated Lakebase sequence in
+`docs/LAKEBASE_ONLY_MCP_SERVING_PLAN.md`. It publishes a narrow market serving
+table, atomically publishes to the shared `bootcamp_students` PostgreSQL schema
+using only `_srini` serving tables, proves market known-answer
+parity, and promotes a research backend only after the committed 51-case quality
+suite passes. The first live step requires reauthenticating the explicitly
+selected `dataexpertio_srini` profile.
 
 ### 6. Register and test the Agent Bricks agent
 

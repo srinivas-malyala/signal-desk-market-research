@@ -202,7 +202,14 @@ def get_stock_performance(ticker: str, lookback_days: int = 30, access_token: st
         end = date.today()
         requested_start = end - timedelta(days=days)
         fetch_start = requested_start - timedelta(days=8)
-        history_source = "Unity Catalog silver_market_bars joined to gold_stock_performance"
+        from lakebase_serving import market_backend
+
+        selected_market_backend = market_backend()
+        history_source = (
+            "Lakebase published market history serving table"
+            if selected_market_backend == "lakebase"
+            else "Unity Catalog silver_market_bars joined to gold_stock_performance"
+        )
         history_fallback: str | None = None
         try:
             bars = fetch_market_bars(
@@ -212,6 +219,8 @@ def get_stock_performance(ticker: str, lookback_days: int = 30, access_token: st
                 access_token=access_token,
             )
         except Exception as history_error:
+            if selected_market_backend == "lakebase":
+                raise RuntimeError("Lakebase market serving is unavailable.") from history_error
             history_fallback = "Governed warehouse history was unavailable; Massive daily aggregates were used."
             raw = sorted(
                 client().get_daily_bars(symbol, fetch_start.isoformat(), end.isoformat()),
@@ -491,10 +500,13 @@ def semantic_research(
     access_token: str | None = None,
 ) -> dict:
     try:
+        from lakebase_serving import LakebaseResearchSearch, research_backend
         from research_search import ResearchSearch
 
         symbols = [_symbol(ticker) for ticker in tickers] if tickers else None
-        return ResearchSearch(access_token=access_token).search(
+        backend = research_backend()
+        search = LakebaseResearchSearch() if backend == "lakebase_fts" else ResearchSearch(access_token=access_token)
+        return search.search(
             query,
             top_k=top_k,
             tickers=symbols,

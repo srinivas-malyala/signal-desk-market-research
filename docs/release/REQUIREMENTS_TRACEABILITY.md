@@ -1,6 +1,6 @@
 # Capstone Requirements Traceability
 
-Updated: 2026-09-25
+Updated: 2026-09-29
 
 Status vocabulary: **workspace verified** means evidence exists in the target
 workspace; **local accepted** means deterministic implementation tests pass but
@@ -15,7 +15,7 @@ admin/UI prerequisite rather than claiming completion.
 | Action-taking AI agent | MCP 1.0 exposes six retrieval and three confirmed write tools; Agent prompt/config has ten executable evaluation fixtures. | Local action tests cover confirmation, idempotency, rollback, ownership, bounded audit and forbidden writes; deterministic Phase 7 trace evaluator passes fixture validation. | Local accepted; MCP moves to Render while Supervisor remains paid. A durable governed UC HTTP/MCP connection using a separate machine credential or supported OAuth M2M must be proved before live captured-trace evaluation. |
 | Analytics pipeline | Lakehouse Sync histories feed normalized Bronze CDC, privacy-safe deduplicated Silver activity, and five Gold metric families. | Five histories are enabled/queryable; a self-cleaning 18-event sequence reconciled 34 Bronze and 26 effective Silver rows to exact Gold metrics with maximum reported source latency of 85 seconds. | Workspace verified. |
 | Frontend | Existing Flask/Gunicorn app is retained; trusted identity, fail-closed routes, request IDs, security headers, and a bounded MCP client are implemented. | Render health/security preflight and Google OIDC callback/session flow pass; unauthenticated API/browser access fails closed. | Deployed perimeter accepted; paid-workspace analytics M2M, authenticated core workflow, and two-principal acceptance remain. |
-| Deployed application | FastMCP and Flask are deployed as two Render web services; all processing/data resources remain in the paid Databricks workspace. | Both health endpoints are live; public preflight passed 5/5; MCP Supervisor authentication, nine-tool discovery, and bounded 2/2 trace/event reconciliation pass. | Partial live acceptance: repair `invalid_client` M2M access, add the Massive key, then complete reads, reversible writes, Supervisor, two-principal, and paid-demo readiness proof. |
+| Deployed application | FastMCP and Flask are deployed as two Render web services; governed processing remains in Databricks and ADR 0007 stages MCP request-time reads through atomically published Lakebase `_srini` serving tables. | Both health endpoints are live; public preflight passed 5/5; MCP Supervisor authentication, nine-tool discovery, Massive fallback, bounded trace/event reconciliation, 1,255,489/393-row Lakebase publication, and local AAPL parity pass. | Partial live acceptance: Lakebase FTS failed promotion at Recall@5 0.7843 (<0.85), so retain AI Search/workspace identity while deciding the research path; complete deployed market, writes, Supervisor, two-principal, and paid-demo readiness proof. |
 | Two Big Data Vs | **Volume:** market dataset exceeds 1M unique rows. **Variety:** structured OHLCV/XBRL, semi-structured JSON, and unstructured filing/news text. | 1,255,489 unique Silver market keys; filing/article document pipeline and 393-row searchable canonical corpus verified. | Workspace verified for Volume and Variety. High velocity is not required; CDC latency will be measured but not used as a completion claim yet. |
 
 ## Proposal deliverables

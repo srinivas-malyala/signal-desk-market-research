@@ -1,11 +1,16 @@
 # Render deployment runbook
 
-Updated: 2026-09-24
+Updated: 2026-09-29
 
 This runbook deploys only the Flask frontend and FastMCP service to Render. All
 jobs, pipelines, Unity Catalog data, SQL Warehouse, AI Search, Lakehouse Sync,
 analytics, and Supervisor processing remain in the Databricks workspace selected
 by `dataexpertio_srini`.
+
+The MCP follows `docs/LAKEBASE_ONLY_MCP_SERVING_PLAN.md`: Databricks continues
+to build governed data, but request-time MCP reads move to atomically published
+Lakebase serving tables. SQL Warehouse and AI Search remain rollback paths until
+the independent market and research gates pass.
 
 Never paste a secret into a command, commit, screenshot, build log, or evidence
 file. Enter secrets only through the Render dashboard or another approved secret
@@ -46,33 +51,59 @@ databricks auth login --host https://dbc-7b106152-caf3.cloud.databricks.com --pr
 databricks bundle validate --strict -t dev --profile dataexpertio_srini
 ```
 
+On 2026-09-29, `dataexpertio_srini` was reauthenticated and strict validation
+passed. Continue to use `--profile dataexpertio_srini` on every Databricks
+command.
+
 Inspect the resolved plan and confirm it contains no `apps` resources. The
 active bundle includes only job, pipeline, storage, and AI Search definitions;
 the historical `resources/*.app.yml` files are no longer included.
 
-## 2. Provision the two paid-workspace M2M identities
+## 2. Discover and prepare Lakebase serving
 
-Ask the workspace administrator to create two distinct OAuth M2M service
-principals. Do not reuse credentials between services.
+Do not start with a workspace-admin request. First discover the exact Lakebase
+project, branch, endpoint, database, registered catalog, and
+current permissions using the reauthenticated profile. Discover CLI syntax
+before issuing commands:
 
-MCP bridge minimum access:
+```bash
+databricks postgres -h
+databricks postgres list-projects -h
+databricks postgres get-synced-table -h
+```
 
-- `CAN USE` on SQL Warehouse `b15d3d6f837ba428`;
-- `USE CATALOG` on `bootcamp_students`;
-- `USE SCHEMA` on `bootcamp_students.student_sri`;
-- `SELECT` on the governed Silver/Gold market tables used by the MCP tools; and
-- query access to
-  `bootcamp_students.student_sri.signal_desk_research_chunks_index` and its
-  existing Vector Search endpoint.
+CLI v1.12.1 has no synced-table list command. Inventory known synced-table
+resource names from repository/bundle state and Catalog Explorer, then verify
+each with `get-synced-table`.
 
-Frontend bridge minimum access:
+Follow Gates 0–3 in `docs/LAKEBASE_ONLY_MCP_SERVING_PLAN.md` to publish one
+narrow market serving Delta table, atomically copy it and
+`research_search_documents` into shared PostgreSQL schema `bootcamp_students`
+as `market_history_serving_srini` and `research_documents_serving_srini`, add
+bounded query indexes, and reconcile keys/counts/freshness.
 
-- `CAN USE` on SQL Warehouse `b15d3d6f837ba428`;
-- `USE CATALOG` and `USE SCHEMA` for the selected namespace; and
-- `SELECT` only on the five Phase 6 Gold usage tables.
+Create or select a native PostgreSQL runtime role with only:
 
-Run one permitted read and one deliberately forbidden operation with each
-identity. Retain pass/fail evidence without retaining tokens or secret values.
+- database `CONNECT`;
+- existing operational-table DML required by MCP;
+- shared-schema `USAGE`; and
+- serving-table `SELECT`.
+
+Do not grant `databricks_superuser`, `CREATEDB`, `CREATEROLE`, or broad schema
+ownership. Run one permitted read and deliberately forbidden DDL/write checks.
+If discovery exposes a missing permission, request only that exact one-time
+project or Unity Catalog grant.
+
+Gate 0 found that the existing secret maps to shared project
+`summer-bootcamp-2026-v2`; the selected user cannot read its ACL and no Lakebase
+UC catalog is registered. The classroom decision is to use that project without
+requesting an admin grant: setup creates only persistent `_srini` tables in the
+existing shared PostgreSQL schema, and the manual publisher uses session-local
+staging plus an atomic transaction. Do not add these serving tables to the five
+history tables allowlisted by the activity pipeline, and do not confuse that
+Lakebase-to-UC `bootcamp_cdc` namespace with the separate PostgreSQL
+`bootcamp_cdc` graph destination. The frontend Gold analytics credential
+remains separate and must never be reused by MCP.
 
 ## 3. Register browser OIDC
 
@@ -97,8 +128,8 @@ Supervisor machine credential with `tools/generate_render_credentials.py`.
 Generated values live only in ignored `build/render-secrets/`; the generator
 prints fingerprints but no secret values. Re-running it validates the existing
 set without overwriting it. Store the private key only in the frontend service
-and the public key only in the MCP service. Never reuse the OIDC or Databricks
-M2M secrets.
+and the public key only in the MCP service. Never reuse OIDC, Lakebase, or
+frontend analytics credentials.
 
 Required secret ownership:
 
@@ -106,7 +137,7 @@ Required secret ownership:
 |---|---:|---:|
 | `LAKEBASE_URL` | Yes | Yes |
 | `MASSIVE_API_KEY` | Yes | No |
-| MCP Databricks `DATA_WORKSPACE_CLIENT_ID/SECRET` | Yes | No |
+| MCP Databricks `DATA_WORKSPACE_CLIENT_ID/SECRET` | Rollback window only; remove after Gate 4 | No |
 | Frontend Databricks `DATA_WORKSPACE_CLIENT_ID/SECRET` | No | Yes |
 | `FRONTEND_ASSERTION_PUBLIC_KEY` | Yes | No |
 | `FRONTEND_ASSERTION_PRIVATE_KEY` | No | Yes |
@@ -134,6 +165,11 @@ to the exact callback registered with the provider.
 
 Deploy `signal-desk-mcp`. A successful build is not sufficient; verify the
 public dependency-free health route and the authenticated tool path.
+
+Deploy the market backend first. Canary it against the accepted AAPL known
+answer, then cut over only after exact parity. Deploy the research backend only
+after the complete 51-case evaluation passes all existing quality, provenance,
+and filter thresholds. Keep backend identity in sanitized result metadata.
 
 Run the read-only acceptance harness with the machine credential supplied only
 through the shell environment:
@@ -189,6 +225,8 @@ checks. The expected temporary hosting cost is approximately $14 at the planned
 pricing. Record the exact commit SHA used for both deployments.
 
 After the demonstration, suspend, downgrade, or delete both Render services and
-rotate/revoke the two Databricks M2M secrets, OIDC secret, assertion key pair,
-and Supervisor credential. Do not delete Lakebase schemas, `_srini` tables,
-Unity Catalog resources, jobs, pipelines, or AI Search resources.
+rotate/revoke the Lakebase runtime password, any remaining frontend Databricks
+credential, OIDC secret, assertion key pair, and Supervisor credential. Do not
+delete Lakebase serving/operational `_srini` tables,
+Unity Catalog resources, jobs, pipelines, SQL Warehouse, or AI Search resources
+until a separately approved cleanup after the rollback observation period.

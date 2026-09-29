@@ -1,11 +1,11 @@
 # Phase 5 Status — MCP agent tools and semantic research
 
-Updated: 2026-09-28
+Updated: 2026-09-29
 
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
 | 5.0 Retrieval design | Complete | ADR 0005 records section-aware parent/child chunking, Qwen3 embeddings, Delta Sync AI Search, hybrid retrieval, provenance, and evaluation targets | None |
-| 5.1 Service and observability | Render deployed; transport, Massive fallback, audit, and sanitized dependency-log acceptance passed | `https://signal-desk-mcp.onrender.com` is live; health, unauthenticated rejection, Supervisor authentication, nine-tool discovery, Massive fallback, correlation IDs, bounded Lakebase trace/event reconciliation, and searchable redacted `invalid_client` diagnostics passed | Replace or repair the paid-workspace MCP M2M credential, then rerun governed/semantic retrieval before reversible-write, simultaneous-quota, and cross-principal gates |
+| 5.1 Service and observability | Render deployed; transport, Massive fallback, audit, and sanitized dependency-log acceptance passed | `https://signal-desk-mcp.onrender.com` is live; health, unauthenticated rejection, Supervisor authentication, nine-tool discovery, Massive fallback, correlation IDs, bounded Lakebase trace/event reconciliation, and searchable redacted `invalid_client` diagnostics passed | Implement ADR 0007's feature-flagged Lakebase serving path, then rerun governed/semantic retrieval before reversible-write, simultaneous-quota, and cross-principal gates |
 | 5.2 Retrieval tools | Workspace accepted | Historical performance uses a bounded parameterized Silver/Gold SQL read; a live AAPL known-answer reconciled 9 rows, 0.24% return, two-day freshness, safe free-plan snapshot denial, and one Massive attempt; requested windows are trimmed, sector is not invented, reads do not create user state, and news uses a many-to-many bridge | None for the current workspace dataset |
 | 5.3 Action tools | Workspace acceptance in progress | Watchlist/note/report writes require confirmation and transactional idempotency; different-payload key reuse fails; trusted request identity owns writes; rollback and bounded-input tests pass; migration 0004 and disposable owner-isolation CRUD pass | Prove two principals through deployed MCP |
 | 5.4 Semantic retrieval | Workspace accepted | Canonical chunks plus CDF Delta serving-table publisher, ready standard endpoint, triggered Qwen3 Delta Sync hybrid index with 393 rows, filtered/reranked SDK search, parent deduplication, provenance, and a passing 51-case live evaluation | None for the current workspace corpus |
@@ -133,11 +133,28 @@ and Flask app runtimes will move to Render.
 The earlier Databricks App secret-binding and Free Edition paths are superseded.
 The Render MCP process is deployed and its transport, machine authentication,
 tool contract, Massive fallback, and audit path are accepted. Remaining
-acceptance is to repair the paid-workspace M2M identity, pass governed and
-semantic read-only retrieval, then exercise reversible action/idempotency,
-simultaneous-quota, Supervisor, and two-real-principal isolation gates.
+acceptance follows ADR 0007: sync narrow market and research serving tables into
+Lakebase, prove market parity, promote a Lakebase research backend only after
+the existing 51-case thresholds pass, then remove MCP workspace credentials and
+exercise reversible action/idempotency, simultaneous-quota, Supervisor, and
+two-real-principal isolation gates. SQL Warehouse and AI Search remain rollback
+paths during acceptance.
 
 The prior same-workspace UI procedure in
 `docs/phase5/MANUAL_MCP_APP_DEPLOYMENT.md` is retained as historical context
 but must not be executed. The current sequence is in
 `docs/RENDER_DEPLOYMENT_PLAN.md`.
+
+On 2026-09-29, `dataexpertio_srini` was reauthenticated and Gate 0 completed.
+The existing secret maps to shared project `summer-bootcamp-2026-v2`; the user
+cannot read its ACL and no Lakebase UC catalog is registered. A feature-flagged
+Lakebase adapter now passes local tests, and the new CDF-enabled
+`market_history_serving` Delta table reconciles 1,255,489 source and target rows
+with zero duplicate keys. The classroom convention selected the shared project
+and PostgreSQL schema `bootcamp_students`, isolated by `_srini` table names.
+The manually triggered atomic publisher populated 1,255,489 market rows and 393
+research rows with zero duplicate keys. The latest three AAPL rows match UC
+exactly. The 51-case Lakebase FTS evaluation achieved Recall@5/MRR/nDCG 0.7843
+with zero provenance or filter failures, but failed the 0.85 Recall@5 minimum;
+research therefore remains on the accepted AI Search backend. Neither existing
+`bootcamp_cdc` sync direction was changed.

@@ -1,6 +1,6 @@
 # Phase 8 — Frontend Databricks App
 
-Updated: 2026-09-24
+Updated: 2026-09-29
 
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
@@ -89,6 +89,8 @@ exact tool counts and P95 latency use a table instead of an ornamental chart.
 
 The complete local suite passes 231 tests and whole-repository lint. Render
 packaging and identity/data-client refactors are implemented. OIDC registration,
-paid-workspace M2M credentials/grants, Render-to-Lakebase/Databricks/Massive
-connectivity, deployment, browser acceptance, and the final paid-service
-readiness check remain gates. See `docs/RENDER_DEPLOYMENT_RUNBOOK.md`.
+the frontend-specific analytics credential/grants, browser acceptance, and the
+final paid-service readiness check remain frontend gates. MCP no longer waits
+for a workspace M2M repair; its separate Lakebase-only sequence is defined by
+ADR 0007 and `docs/LAKEBASE_ONLY_MCP_SERVING_PLAN.md`. See
+`docs/RENDER_DEPLOYMENT_RUNBOOK.md`.

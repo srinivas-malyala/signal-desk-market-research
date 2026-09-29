@@ -1,6 +1,6 @@
 # Signal Desk Data Dictionary
 
-Updated: 2026-09-21
+Updated: 2026-09-29
 
 This dictionary describes the implemented development model. Unity Catalog
 analytics live in `bootcamp_students.student_sri`. Lakebase operational tables
@@ -27,10 +27,15 @@ suffix `_srini`. No application owns the shared schema itself.
 | `idempotency_records` | One write result per user/operation/key; `(user_id,operation_name,idempotency_key)` | response `result`, `created_at` | Prevents duplicate confirmed writes and detects key reuse. |
 | `massive_api_attempts` | One permitted physical Massive attempt; `attempt_id` | database-clock `acquired_at`, bounded requester label, contract version | Cross-host free-plan quota ledger; physical name `bootcamp_students.massive_api_attempts_srini`; contains no URL, query, header, or key. Migration `0005` is applied and idempotency-verified. |
 | `schema_migrations` | One applied migration version; `version` | SHA-256 checksum, `applied_at` | Detects mutation of already-applied migrations. |
+| `market_history_serving` | One market day; `(ticker,trading_date)` | OHLCV, return, volatility, source freshness/hash | Read-only MCP serving copy; physical name `bootcamp_students.market_history_serving_srini`; atomically published from UC. |
+| `research_documents_serving` | One research chunk; `chunk_id` | source/ticker/date provenance, passage, parent context, content hash | Read-only MCP lexical-search copy; physical name `bootcamp_students.research_documents_serving_srini`; expression GIN indexed. |
 
 `watchlist_tickers`, `research_notes`, `analysis_reports`, `agent_sessions`,
 `agent_tool_events`, and `news_article_tickers` use `REPLICA IDENTITY FULL`.
 The first five are the selected Lakebase-to-Unity-Catalog change sources.
+The two serving tables are intentionally not added to the Phase 6 activity
+pipeline allowlist. They are also distinct from UC-to-Lakebase graph tables in
+PostgreSQL schema `bootcamp_cdc`.
 
 ## Lakehouse market and research model
 
@@ -50,6 +55,7 @@ The first five are the selected Lakebase-to-Unity-Catalog change sources.
 | `silver_article_tickers` | One article/ticker relation | Per-ticker relationship and source insight metadata. |
 | `silver_research_chunks` | One section-aware child chunk | Stable chunk/parent/source IDs, retrieval and embedding text, ticker/date/URL/hash. |
 | `research_search_documents` | One publishable chunk | Regular CDF-enabled Delta source for the managed hybrid AI Search index. |
+| `market_history_serving` | One `(ticker,trading_date)` | Narrow CDF/row-tracking-enabled Delta serving source joining required OHLCV fields to daily return and 20-session volatility; 1,255,489 unique keys reconciled on first publish. |
 | `gold_research_catalog` | One article or filing source | Tickers, date, URL, content hash, chunk count and indexed characters. |
 | `gold_industry_peer_comparison` | One ticker/industry/date | Industry-relative return, percentile, and peer count. |
 

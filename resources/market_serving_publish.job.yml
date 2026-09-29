@@ -1,0 +1,30 @@
+resources:
+  jobs:
+    market_serving_publish:
+      name: signal-desk-market-serving-publish-${bundle.target}
+      description: Merge bounded Silver/Gold market fields into a CDF-enabled Lakebase serving source
+      max_concurrent_runs: 1
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+      environments:
+        - environment_key: default
+          spec:
+            client: "4"
+      tasks:
+        - task_key: publish_market_history_serving
+          environment_key: default
+          spark_python_task:
+            python_file: ../jobs/publish_market_serving.py
+            parameters:
+              - --catalog
+              - "{{job.parameters.catalog}}"
+              - --schema
+              - "{{job.parameters.schema}}"
+          timeout_seconds: 3600
+          max_retries: 1
+      permissions:
+        - level: CAN_VIEW
+          group_name: users

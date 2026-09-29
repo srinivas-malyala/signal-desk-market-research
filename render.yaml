@@ -37,6 +37,16 @@ services:
         value: srini
       - key: SIGNAL_DESK_GRAPH_SCHEMA
         value: bootcamp_cdc
+      - key: SIGNAL_DESK_MARKET_BACKEND
+        value: lakebase
+      - key: SIGNAL_DESK_RESEARCH_BACKEND
+        value: databricks
+      - key: SIGNAL_DESK_SERVING_SCHEMA
+        value: bootcamp_students
+      - key: SIGNAL_DESK_MARKET_SERVING_TABLE
+        value: market_history_serving_srini
+      - key: SIGNAL_DESK_RESEARCH_SERVING_TABLE
+        value: research_documents_serving_srini
       - key: MASSIVE_RATE_LIMIT_BACKEND
         value: lakebase
       - key: MASSIVE_RATE_LIMIT_REQUESTER

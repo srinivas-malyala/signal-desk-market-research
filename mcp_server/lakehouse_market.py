@@ -44,6 +44,11 @@ def fetch_market_bars(
     access_token: str | None = None,
     workspace: WorkspaceClient | None = None,
 ) -> list[dict[str, Any]]:
+    from lakebase_serving import fetch_market_bars as fetch_lakebase_market_bars
+    from lakebase_serving import market_backend
+
+    if market_backend() == "lakebase":
+        return fetch_lakebase_market_bars(ticker, start_date, end_date)
     warehouse_id = os.environ.get("DATA_WORKSPACE_WAREHOUSE_ID") or os.environ.get("DATABRICKS_WAREHOUSE_ID")
     if not warehouse_id:
         raise RuntimeError("DATABRICKS_WAREHOUSE_ID is not configured.")

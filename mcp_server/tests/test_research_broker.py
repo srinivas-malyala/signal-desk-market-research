@@ -55,3 +55,20 @@ def test_performance_prefers_governed_lakehouse_history(monkeypatch):
     assert result["status"] == "success"
     assert result["source"].startswith("Unity Catalog")
     fake.get_daily_bars.assert_not_called()
+
+
+def test_lakebase_market_backend_fails_closed_without_massive_fallback(monkeypatch):
+    fake = Mock()
+    monkeypatch.setenv("SIGNAL_DESK_MARKET_BACKEND", "lakebase")
+    monkeypatch.setattr(broker, "client", lambda: fake)
+    monkeypatch.setattr(
+        broker,
+        "fetch_market_bars",
+        Mock(side_effect=RuntimeError("serving unavailable")),
+    )
+
+    result = broker.get_stock_performance("AAPL", 30)
+
+    assert result["status"] == "error"
+    assert result["error_code"] == "research_error"
+    fake.get_daily_bars.assert_not_called()

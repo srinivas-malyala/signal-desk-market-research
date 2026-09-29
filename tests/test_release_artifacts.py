@@ -8,6 +8,7 @@ from mcp_server import lakebase
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = ROOT / "docs" / "release"
 RENDER_PLAN = ROOT / "docs" / "RENDER_DEPLOYMENT_PLAN.md"
+LAKEBASE_MCP_PLAN = ROOT / "docs" / "LAKEBASE_ONLY_MCP_SERVING_PLAN.md"
 SUPERSEDED_FREE_PLAN = ROOT / "docs" / "SPLIT_WORKSPACE_APP_DEPLOYMENT_PLAN.md"
 
 
@@ -91,7 +92,8 @@ def test_render_plan_preserves_data_plane_and_identity_boundaries() -> None:
         "dataexpertio_srini",
         "two separate Render Python web services",
         "short-lived asymmetric JWT",
-        "two paid-workspace OAuth M2M service principals",
+        "No workspace principal after cutover",
+        "51-case quality evaluation",
         "render.yaml",
         "approximately $14",
         "codex/render-app-deployment",
@@ -99,3 +101,17 @@ def test_render_plan_preserves_data_plane_and_identity_boundaries() -> None:
     ):
         assert required in plan
     assert "Superseded" in SUPERSEDED_FREE_PLAN.read_text(encoding="utf-8")
+
+
+def test_lakebase_only_mcp_plan_is_gated_and_reversible() -> None:
+    plan = LAKEBASE_MCP_PLAN.read_text(encoding="utf-8")
+    for required in (
+        "dataexpertio_srini",
+        "SIGNAL_DESK_MARKET_BACKEND",
+        "SIGNAL_DESK_RESEARCH_BACKEND",
+        "51-case",
+        "Rollback",
+        "Do not delete",
+        "no workspace OAuth call",
+    ):
+        assert required in plan

@@ -1,6 +1,6 @@
 # Signal Desk Capstone Demo Checklist
 
-Updated: 2026-09-25
+Updated: 2026-09-29
 
 Do not mark a gate complete from local tests alone. Record sanitized run IDs,
 table counts, timestamps, and screenshots; never capture secrets, tokens,
@@ -11,18 +11,32 @@ connection URLs, direct email values, or user-authored note/report bodies.
 - [x] Renew OAuth for explicit profile `dataexpertio_srini`; confirmed
   `malyalasrinivas@gmail.com` on the intended workspace and passed strict
   development bundle validation on 2026-09-21.
+- [x] Reauthenticate `dataexpertio_srini` and complete ADR 0007 Gate 0 discovery
+  without recording credentials. The existing secret maps to shared project
+  `summer-bootcamp-2026-v2`; no Lakebase UC catalog is registered.
 - [x] Record the Render decision: all processing/data resources remain under
   `dataexpertio_srini`; only FastMCP and Flask move to two Render web services.
 - [x] Add the two-service `render.yaml`; validate build/start commands, `$PORT`,
   health checks, Linux/Python 3.11 hash-pinned clean installs, exact-command
   local process starts, and `sync: false` secret placeholders without deploying
   data resources from Render.
-- [ ] Prove Render egress to the paid workspace and Lakebase; Lakebase and
-  Massive HTTPS are verified, but paid-workspace SQL/AI Search still fail with
-  M2M `invalid_client`.
-- [ ] Create two separate least-privilege paid-workspace OAuth M2M identities,
-  store their credentials as distinct Render service secrets, and pass positive
-  plus forbidden-permission tests.
+- [x] Create suffix-isolated Lakebase market and research serving targets in
+  shared PostgreSQL schema `bootcamp_students`; only
+  `market_history_serving_srini` and `research_documents_serving_srini` were
+  created, both empty after setup.
+- [x] Populate the Lakebase serving copies: 1,255,489 market rows and 393
+  research rows, zero duplicate keys, expected primary/query indexes.
+- [ ] Complete permitted/forbidden least-privilege runtime-role checks.
+- [x] Publish and reconcile
+  `bootcamp_students.student_sri.market_history_serving`: 1,255,489 source and
+  target rows, zero duplicate `(ticker,trading_date)` keys, CDF and row tracking
+  enabled.
+- [x] Prove local market known-answer parity: the latest three AAPL rows matched
+  UC on dates, OHLC, return, volatility, request ID, and freshness.
+- [ ] Do not promote Lakebase FTS: its 51-case Recall@5 was 0.7843 versus the
+  0.85 minimum (MRR/nDCG 0.7843; zero provenance/filter failures). Keep AI
+  Search active and retain the MCP workspace credential until an accepted
+  research path replaces it. Track frontend Gold analytics separately.
 - [ ] Register the browser OIDC client; prove secure sessions, CSRF, logout, and
   tampered/expired/missing short-lived MCP assertion rejection.
 - [x] Select Google OIDC, fix the Render callback contract, generate a local-only

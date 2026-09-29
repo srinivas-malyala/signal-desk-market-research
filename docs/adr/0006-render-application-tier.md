@@ -3,6 +3,10 @@
 - Status: Accepted
 - Date: 2026-09-24
 
+Amended by ADR 0007 on 2026-09-29: the MCP's Databricks OAuth M2M runtime
+identity is replaced through a staged Lakebase-only serving cutover. The
+frontend analytics identity remains a separate concern.
+
 ## Context
 
 The selected paid Databricks workspace can run the capstone's jobs, pipelines,
@@ -20,9 +24,10 @@ month. Keep all data and processing in the workspace selected explicitly by
 
 Browser users authenticate to Flask through OIDC. Flask sends 60-second,
 request-bound signed assertions to FastMCP. The Supervisor uses a separate
-fixed machine credential. Flask and FastMCP receive distinct least-privilege
-Databricks OAuth M2M identities. Both services share only the existing Lakebase
-operational store according to the `_srini` ownership contract.
+fixed machine credential. Flask retains a separate least-privilege Databricks
+identity for Gold analytics until a follow-on decision. FastMCP moves to a
+dedicated native Lakebase role and atomically published `_srini` serving tables
+under ADR 0007.
 
 The Databricks bundle manages only data-plane resources. `render.yaml` manages
 the application tier and uses hash-pinned Linux/Python 3.11 dependency locks,
@@ -32,8 +37,9 @@ explicit secret placeholders, `$PORT` start commands, and health checks.
 
 - Application deployment no longer depends on paid-workspace Databricks Apps
   entitlement or administrator-owned app secret bindings.
-- Two M2M identities, one OIDC client, an assertion key pair, and a Supervisor
-  credential must be provisioned before live deployment.
+- A Lakebase runtime role, one frontend analytics identity, one OIDC client, an
+  assertion key pair, and a Supervisor credential must be provisioned before
+  final live acceptance.
 - Render Free cold starts are acceptable for development but not final demo
   acceptance; both services are temporarily upgraded for that window.
 - Clean-install and exact-command process checks can run locally and in CI

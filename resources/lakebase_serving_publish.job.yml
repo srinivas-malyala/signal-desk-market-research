@@ -1,0 +1,41 @@
+resources:
+  jobs:
+    lakebase_serving_publish:
+      name: signal-desk-lakebase-serving-publish-${bundle.target}
+      description: Atomically publish UC serving copies to shared Lakebase `_srini` tables
+      max_concurrent_runs: 1
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: pg_schema
+          default: bootcamp_students
+        - name: suffix
+          default: ${var.lakebase_table_suffix}
+      environments:
+        - environment_key: default
+          spec:
+            client: "4"
+            dependencies:
+              - databricks-sdk>=0.81,<1
+              - psycopg2-binary>=2.9,<3
+      tasks:
+        - task_key: publish_lakebase_serving
+          environment_key: default
+          spark_python_task:
+            python_file: ../jobs/publish_lakebase_serving.py
+            parameters:
+              - --catalog
+              - "{{job.parameters.catalog}}"
+              - --schema
+              - "{{job.parameters.schema}}"
+              - --pg-schema
+              - "{{job.parameters.pg_schema}}"
+              - --suffix
+              - "{{job.parameters.suffix}}"
+          timeout_seconds: 7200
+          max_retries: 0
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
