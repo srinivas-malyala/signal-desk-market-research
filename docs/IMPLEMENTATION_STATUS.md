@@ -1,6 +1,6 @@
 # Capstone Implementation Status
 
-Updated: 2026-09-25 UTC
+Updated: 2026-09-28 UTC
 
 This is the living tracker for implementation progress and external gates. A unit is complete only when its code and deterministic tests pass; workspace-dependent proof is listed separately.
 
@@ -140,3 +140,10 @@ This is the living tracker for implementation progress and external gates. A uni
   of 2026-09-24, while maintaining bounded 2/2 trace/event reconciliation. No
   secret value entered tracked files. Governed SQL and semantic AI Search remain
   blocked solely by the paid-workspace M2M `invalid_client` response.
+- 2026-09-28 UTC — Added sanitized, Render-searchable MCP failure diagnostics.
+  Error tool completions are warning-level structured JSON containing only the
+  UTC timestamp, tool, correlation ID, duration, bounded application code, error
+  type, and an allowlisted dependency OAuth code. The `invalid_client` condition
+  is now observable without logging raw exception messages, credentials, access
+  tokens, or unknown dependency text. Focused tests and lint pass; the checkpoint
+  still requires deployment before live-log acceptance can be claimed.

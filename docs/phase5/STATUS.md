@@ -1,6 +1,6 @@
 # Phase 5 Status — MCP agent tools and semantic research
 
-Updated: 2026-09-25
+Updated: 2026-09-28
 
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
@@ -110,6 +110,14 @@ Updated: 2026-09-25
   again reconciled both bounded trace/event pairs. The remaining retrieval
   failure is the paid-workspace M2M `invalid_client` response for governed SQL
   and AI Search; writes remain intentionally gated.
+- 2026-09-28 — Hardened MCP production diagnostics after Render exposed only
+  HTTP access records for the M2M failure. Error completions now emit a
+  searchable warning-level JSON event with UTC timestamp, tool, correlation ID,
+  duration, bounded application error code, error type, and an allowlisted OAuth
+  dependency code such as `invalid_client`. Raw exception messages, credentials,
+  tokens, and unknown error strings are never logged. Focused safety, broker,
+  and acceptance-harness tests pass; deployment and live Render-log proof remain
+  the next checkpoint.
 
 ## Workspace acceptance
 

@@ -30,13 +30,59 @@ _identity: ContextVar[dict | None] = ContextVar("identity", default=None)
 _session: ContextVar[str] = ContextVar("session", default="")
 _correlation: ContextVar[str] = ContextVar("correlation", default="")
 logger = logging.getLogger("signal_desk.mcp")
+logger.setLevel(logging.INFO)
 CORRELATION_ID = re.compile(r"^[A-Za-z0-9._:-]{1,100}$")
+LOG_CODE = re.compile(r"^[a-z][a-z0-9_]{0,79}$")
+OAUTH_DEPENDENCY_CODES = (
+    "invalid_client",
+    "invalid_grant",
+    "unauthorized_client",
+    "invalid_scope",
+    "insufficient_scope",
+)
 ACTION_TYPES = {
     "update_watchlist": "update",
     "save_research_note": "create",
     "save_analysis_report": "create",
     "get_notable_updates": "retrieve",
 }
+
+
+def _safe_log_code(value: object, default: str) -> str:
+    candidate = str(value or "").strip().casefold()
+    return candidate if LOG_CODE.fullmatch(candidate) else default
+
+
+def _dependency_error_code(result: dict) -> str | None:
+    """Return an allowlisted dependency code without logging raw error text."""
+
+    message = str(result.get("message") or "").casefold()
+    for code in OAUTH_DEPENDENCY_CODES:
+        if re.search(rf"(?<![a-z0-9_]){re.escape(code)}(?![a-z0-9_])", message):
+            return code
+    return None
+
+
+def _completion_log(tool_name: str, result: dict, duration_ms: int, started: datetime) -> dict:
+    status = "error" if result.get("status") == "error" else "success"
+    correlation_id = str(result.get("correlation_id") or "")
+    if not CORRELATION_ID.fullmatch(correlation_id):
+        correlation_id = "invalid-correlation-id"
+    event = {
+        "event": "mcp_tool_completed",
+        "tool": tool_name,
+        "status": status,
+        "error_code": _safe_log_code(result.get("error_code"), "unknown_error") if status == "error" else None,
+        "duration_ms": duration_ms,
+        "correlation_id": correlation_id,
+        "timestamp": started.isoformat(),
+    }
+    if status == "error":
+        dependency_code = _dependency_error_code(result)
+        event["error_type"] = "dependency_authentication" if dependency_code else "tool_error"
+        if dependency_code:
+            event["dependency_error_code"] = dependency_code
+    return event
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
@@ -156,18 +202,10 @@ def traced(function):
             )
         except Exception:
             pass
-        logger.info(
-            json.dumps(
-                {
-                    "event": "mcp_tool_completed",
-                    "tool": function.__name__,
-                    "status": result.get("status", "success"),
-                    "error_code": result.get("error_code"),
-                    "duration_ms": duration_ms,
-                    "correlation_id": result["correlation_id"],
-                },
-                sort_keys=True,
-            )
+        log_event = _completion_log(function.__name__, result, duration_ms, started)
+        logger.log(
+            logging.WARNING if log_event["status"] == "error" else logging.INFO,
+            json.dumps(log_event, sort_keys=True),
         )
         return result
 
