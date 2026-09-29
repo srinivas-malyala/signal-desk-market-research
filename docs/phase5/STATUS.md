@@ -5,7 +5,7 @@ Updated: 2026-09-28
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
 | 5.0 Retrieval design | Complete | ADR 0005 records section-aware parent/child chunking, Qwen3 embeddings, Delta Sync AI Search, hybrid retrieval, provenance, and evaluation targets | None |
-| 5.1 Service and observability | Render deployed; transport, Massive fallback, and audit acceptance passed | `https://signal-desk-mcp.onrender.com` is live; health, unauthenticated rejection, Supervisor authentication, nine-tool discovery, Massive fallback, correlation IDs, and bounded Lakebase trace/event reconciliation passed | Replace or repair the paid-workspace MCP M2M credential, then rerun governed/semantic retrieval before reversible-write, simultaneous-quota, and cross-principal gates |
+| 5.1 Service and observability | Render deployed; transport, Massive fallback, audit, and sanitized dependency-log acceptance passed | `https://signal-desk-mcp.onrender.com` is live; health, unauthenticated rejection, Supervisor authentication, nine-tool discovery, Massive fallback, correlation IDs, bounded Lakebase trace/event reconciliation, and searchable redacted `invalid_client` diagnostics passed | Replace or repair the paid-workspace MCP M2M credential, then rerun governed/semantic retrieval before reversible-write, simultaneous-quota, and cross-principal gates |
 | 5.2 Retrieval tools | Workspace accepted | Historical performance uses a bounded parameterized Silver/Gold SQL read; a live AAPL known-answer reconciled 9 rows, 0.24% return, two-day freshness, safe free-plan snapshot denial, and one Massive attempt; requested windows are trimmed, sector is not invented, reads do not create user state, and news uses a many-to-many bridge | None for the current workspace dataset |
 | 5.3 Action tools | Workspace acceptance in progress | Watchlist/note/report writes require confirmation and transactional idempotency; different-payload key reuse fails; trusted request identity owns writes; rollback and bounded-input tests pass; migration 0004 and disposable owner-isolation CRUD pass | Prove two principals through deployed MCP |
 | 5.4 Semantic retrieval | Workspace accepted | Canonical chunks plus CDF Delta serving-table publisher, ready standard endpoint, triggered Qwen3 Delta Sync hybrid index with 393 rows, filtered/reranked SDK search, parent deduplication, provenance, and a passing 51-case live evaluation | None for the current workspace corpus |
@@ -115,9 +115,13 @@ Updated: 2026-09-28
   searchable warning-level JSON event with UTC timestamp, tool, correlation ID,
   duration, bounded application error code, error type, and an allowlisted OAuth
   dependency code such as `invalid_client`. Raw exception messages, credentials,
-  tokens, and unknown error strings are never logged. Focused safety, broker,
-  and acceptance-harness tests pass; deployment and live Render-log proof remain
-  the next checkpoint.
+  tokens, and unknown error strings are never logged. Commit `030c14a` was
+  deployed as Render deployment `dep-dati35mgekts73atrl8g`; the authenticated
+  read-only smoke test produced a searchable `semantic_research` event with
+  `dependency_error_code=invalid_client`, dependency-authentication type,
+  correlation ID, duration, and timestamp, with no raw OAuth message or secret.
+  The full local suite passes 243 tests, repository-wide Ruff, and the tracked-file
+  credential scan.
 
 ## Workspace acceptance
 

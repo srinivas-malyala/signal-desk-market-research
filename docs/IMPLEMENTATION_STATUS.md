@@ -145,5 +145,11 @@ This is the living tracker for implementation progress and external gates. A uni
   UTC timestamp, tool, correlation ID, duration, bounded application code, error
   type, and an allowlisted dependency OAuth code. The `invalid_client` condition
   is now observable without logging raw exception messages, credentials, access
-  tokens, or unknown dependency text. Focused tests and lint pass; the checkpoint
-  still requires deployment before live-log acceptance can be claimed.
+  tokens, or unknown dependency text. Commit `030c14a` reached Live as Render
+  deployment `dep-dati35mgekts73atrl8g`. An authenticated read-only smoke request
+  then generated the expected searchable `semantic_research` log with
+  `dependency_error_code=invalid_client`, dependency-authentication type,
+  correlation ID, duration, and timestamp; inspection confirmed no raw OAuth
+  message or credential. The checkpoint passes 243 local tests, repository-wide
+  Ruff, and the tracked-file credential scan. Repairing the paid-workspace M2M
+  identity remains the external data-plane gate.
