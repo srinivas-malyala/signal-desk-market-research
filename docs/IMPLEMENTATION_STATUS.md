@@ -14,14 +14,14 @@ This is the living tracker for implementation progress and external gates. A uni
 | 5 — MCP agent tools | Deployed read-only serving acceptance complete; research FTS not promoted | Lakebase market path; replacement 393-row Qwen3 hybrid AI Search index; live MCP perimeter; nine-tool contract; 51-case research quality gate; deployed semantic retrieval; bounded trace/event reconciliation | None for read-only market and research serving; retain MCP workspace credentials while research stays on AI Search |
 | 6 — CDF analytics | Workspace acceptance complete | The active schema maps `databricks_postgres.bootcamp_students` to `bootcamp_students.bootcamp_cdc`; all five `_srini` histories are enabled and queryable; a bounded, self-cleaning Lakebase transaction produced the expected 18 history rows in approximately 82–84 seconds; deployed updates reconciled 34 Bronze rows to 26 effective Silver rows and all five Gold metric families, with a measured maximum source latency of 85 seconds | None |
 | 7 — Agent integration | Render machine-auth implementation locally accepted; connection pending | Prompt/config reconciled to final MCP 1.0 contracts; exact nine-tool routing; ten evaluation fixtures; MCP maps a separate machine credential to a fixed server-side Supervisor subject and ignores model-supplied identity | Create the governed paid-workspace UC HTTP/MCP connection to Render, deploy Supervisor, then capture live evaluations and identity evidence |
-| 8 — Frontend | Render deployed; OIDC/session perimeter accepted | Live frontend health and security headers; Google authorization-code callback and authenticated session flow; fail-closed unauthenticated API/browser behavior; CSRF, signed 60-second request-bound MCP assertions, and bounded MCP client | Repair frontend paid-workspace M2M analytics access, then execute the authenticated core workflow and two-principal/CDC-refresh acceptance |
+| 8 — Frontend | Render deployed; OIDC/session and analytics accepted | Live frontend health and security headers; authenticated Google session; all five bounded Gold reads through the SQL Warehouse; controlled CDC refreshed to the authenticated UI in 32.34 seconds; CSRF, signed assertions, and bounded MCP client | Replace the temporary shared M2M principal before production; complete the two-principal action/isolation workflow |
 | 9 — Release | Both Render services live; acceptance in progress | Reproducible two-service deployment, live public preflight 5/5, Google OIDC flow, deployed Lakebase market and AI Search research acceptance, MCP transport/tool/audit checks, complete Phase 6 CDC acceptance, architecture and release artifacts | Complete frontend analytics, writes/Supervisor/two-principal/quota gates, then upgrade for the final demo month |
 
 ## Active sequence
 
 1. Keep research on AI Search and retain the MCP-specific workspace credentials; Lakebase FTS remains below the promotion threshold.
 2. Run the opt-in reversible write/idempotency gate and simultaneous Job/MCP quota acceptance.
-3. Complete the separately tracked frontend analytics path and two-real-principal workflow.
+3. Complete the two-real-principal action/isolation workflow; frontend analytics P3 is complete under the approved temporary shared-principal exception.
 4. Connect the paid Supervisor, complete Phase 7 evaluations, then run final evidence capture and paid-demo readiness.
 
 ## Current external inputs
@@ -195,3 +195,15 @@ This is the living tracker for implementation progress and external gates. A uni
   matches, and bounded 2/2 trace/event reconciliation. No writes were exercised.
   Research remains on AI Search and the MCP-specific workspace credentials must
   remain configured.
+- 2026-09-30 UTC — Completed P3 under the owner-approved temporary reuse of MCP
+  principal `dbx-ai-de-aug26`. Corrected the Render warehouse-variable contract,
+  deployed commit `969a096` as `dep-dauked8u01pc7382nbn0`, and proved all five
+  bounded Gold queries through the authenticated frontend. A self-cleaning CDC
+  transaction committed at `17:35:12.505834Z`, produced the exact 18 history
+  images, reached Lakehouse Sync at `17:35:44.846Z` (32.34 seconds), and left no
+  operational rows. Incremental activity update
+  `3c5fa83d-f39e-46ed-b324-8629b6c9a0cc` completed; the UI refreshed to current
+  September 30 freshness and displayed the controlled tool row at one call,
+  zero errors, and 123 ms P95. The workspace's inherited catalog grants are
+  broader than the target five-table boundary, so a dedicated least-privilege
+  frontend identity remains required before production or broader access.

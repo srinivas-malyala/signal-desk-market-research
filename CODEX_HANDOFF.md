@@ -293,12 +293,24 @@ output at `build/acceptance/retrieval_eval_v2_2026-09-30.json` and
 `build/acceptance/render-mcp-readonly-v2_2026-09-30.json`. Do not relabel
 Lakebase FTS as semantic search.
 
-### P3 — complete frontend analytics
+### P3 — frontend analytics complete
 
-Temporarily reuse the MCP M2M identity by explicit owner decision, verify the
-warehouse and five Gold reads, then prove all five Gold queries and controlled
-CDC freshness through the deployed authenticated UI. Retain creation of a
-dedicated least-privilege frontend principal as a pre-production hardening item.
+By explicit owner decision, the frontend temporarily reuses MCP principal
+`dbx-ai-de-aug26`. Fixed the deployed warehouse variable contract so the client
+accepts `DATA_WORKSPACE_WAREHOUSE_ID`; Render deployment
+`dep-dauked8u01pc7382nbn0` from commit `969a096` reached Live. All five bounded
+Gold reads succeeded through the authenticated UI. A self-cleaning controlled
+transaction committed at `2026-09-30T17:35:12.505834Z`, produced the exact 18
+history images, and reached Lakehouse Sync at `17:35:44.846Z` (32.34 seconds).
+Incremental activity update `3c5fa83d-f39e-46ed-b324-8629b6c9a0cc` completed;
+the UI refreshed to **Analytics are current**, displayed the new freshness, and
+showed the `phase6_cdf_acceptance` tool row. Sanitized evidence is in ignored
+build output at
+`build/acceptance/render-frontend-analytics-p3_2026-09-30.json`. The workspace's
+inherited `account users` catalog privileges are broader than the preferred
+five-table boundary; creating a dedicated least-privilege frontend principal
+remains a pre-production hardening item, not a P3 blocker under the approved
+temporary exception.
 
 ### P4 — complete action and isolation gates
 

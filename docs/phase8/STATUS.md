@@ -7,7 +7,7 @@ Updated: 2026-09-29
 | 8.1 Flask shell and authentication | Render implementation locally accepted; deployment pending | Flask/Gunicorn retained; generic OIDC login/callback/logout; verified-email allowlist; secure bounded sessions; CSRF on writes; 60-second request-bound RS256 MCP assertions with MCP-session replay rejection; `$PORT`; public health; request IDs/security headers; Render ignores forwarded identity | Register OIDC redirect/client secrets, deploy to Render, and run authenticated/two-principal browser smoke tests |
 | 8.2 Research and evidence workflow | Local implementation complete | Authenticated MCP routes support bounded performance, 2–5 ticker comparison, and hybrid filing/news evidence; UI exposes progress, empty/error/partial/rate-limit states, source links, context labels, as-of metadata, limitations, execution identity, and disclaimer | Deploy MCP/frontend and run the browser evidence-source acceptance flow |
 | 8.3 Watchlists, notes, and reports | Local core workflow complete | Confirmed add/remove, note save, and report save use one authenticated idempotent MCP call; browser confirmation/cancel behavior and user-owned reload views are implemented; watchlist/news overview reads now use MCP and read-only overview no longer creates users | Deployed write/reload/two-user acceptance; note deletion requires a future versioned MCP delete contract because MCP 1.0 intentionally exposes only nine tools |
-| 8.4 Usage analytics page | Render M2M implementation locally accepted; deployment pending | Bounded SQL Warehouse client reads five Phase 6 Gold datasets using the explicit frontend-specific M2M boundary; page shows contextual DAU, error rate, watchlist/save KPIs, exact usage/P95, source/freshness, service-principal execution, and empty/partial/stale/error states | Provision/grant the frontend M2M principal, deploy Phase 6/frontend, then prove a controlled MCP action appears with correct count and freshness |
+| 8.4 Usage analytics page | Deployed authenticated acceptance complete | Bounded SQL Warehouse client reads all five Phase 6 Gold datasets through temporary shared principal `dbx-ai-de-aug26`; a controlled self-cleaning transaction produced 18 CDC images, synced in 32.34 seconds, completed the incremental pipeline, and appeared in the UI with current freshness and exact tool/P95 evidence | Replace the temporary shared principal with a dedicated least-privilege frontend identity before production or broader access |
 
 ## Local security contract
 
@@ -89,10 +89,10 @@ execution because these are shared pseudonymous aggregates, not user-owned
 operational rows. KPI cards include period context, source, and freshness;
 exact tool counts and P95 latency use a table instead of an ornamental chart.
 
-The complete local suite passes 231 tests and whole-repository lint. Render
-packaging and identity/data-client refactors are implemented. OIDC registration,
-the deployed analytics credential/grants, browser acceptance, and the
-final paid-service readiness check remain frontend gates. MCP no longer waits
+The current local suite passes 259 tests and whole-repository lint. Render
+packaging, identity/data-client refactors, deployed analytics, and authenticated
+browser CDC acceptance are complete. A dedicated frontend identity and the
+final paid-service readiness check remain hardening/release gates. MCP no longer waits
 for a workspace M2M repair; its separate Lakebase-only sequence is defined by
 ADR 0007 and `docs/LAKEBASE_ONLY_MCP_SERVING_PLAN.md`. See
 `docs/RENDER_DEPLOYMENT_RUNBOOK.md`.
