@@ -168,6 +168,34 @@ def test_lakebase_limiter_coordinates_independent_hosts() -> None:
     assert state.commits == 6
 
 
+def test_lakebase_limiter_accepts_standard_dbapi_tuple_rows() -> None:
+    state = SharedLakebaseState()
+
+    @contextmanager
+    def connection():
+        with state.connection() as database:
+            original_cursor = database.cursor
+
+            def cursor():
+                value = original_cursor()
+                original_fetchone = value.fetchone
+                value.fetchone = lambda: tuple(original_fetchone().values())
+                return value
+
+            database.cursor = cursor
+            yield database
+
+    limiter = LakebaseRollingLimiter(
+        connection,
+        "bootcamp_students.massive_api_attempts_srini",
+        sleeper=state.sleep,
+        requester="job",
+    )
+    for _ in range(5):
+        limiter.acquire()
+    assert state.attempts == [1000.0, 1000.0, 1000.0, 1000.0, 1060.0]
+
+
 def test_lakebase_limiter_fails_closed_when_store_is_unavailable() -> None:
     @contextmanager
     def unavailable():

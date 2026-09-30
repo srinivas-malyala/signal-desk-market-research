@@ -17,7 +17,7 @@ if __package__ in {None, ""}:
         sys.path.insert(0, str(Path(runtime_file).resolve().parents[1]))
 
 from ingestion.market_backfill import _canonical_json_bytes, atomic_write  # noqa: E402
-from mcp_server.massive_client import MassiveClient, build_rate_limiter  # noqa: E402
+from mcp_server.massive_client import MassiveClient  # noqa: E402
 from shared.contracts.models import Ticker  # noqa: E402
 
 
@@ -141,10 +141,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     raw_root = args.raw_root or Path(f"/Volumes/{args.catalog}/{args.schema}/{args.volume}")
-    limiter = build_rate_limiter(
-        args.rate_limit_backend,
-        state_path=raw_root / "_control" / "massive_rate_limit.json",
-    )
+    from ingestion.market_backfill import _limiter
+
+    limiter = _limiter(args.rate_limit_backend, raw_root, args.profile)
     client = MassiveClient(limiter=limiter, databricks_profile=args.profile)
     metrics = run_article_landing(
         args.tickers or ["AAPL", "MSFT"],

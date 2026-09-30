@@ -123,3 +123,35 @@ def test_render_write_requires_csrf_and_sends_verified_signed_identity(render_ap
     assert claims["sub"] == "oidc-subject-123"
     assert claims["rid"] == accepted.headers["X-Request-ID"]
     assert claims["exp"] - claims["iat"] == 60
+
+
+def test_render_overview_mints_one_assertion_per_mcp_session(render_app) -> None:
+    client = render_app.app.test_client()
+    _sign_in(client)
+    render_app.test_mcp.get_watchlist.return_value = {"status": "success", "tickers": []}
+    render_app.test_mcp.get_notable_updates.return_value = {
+        "status": "success",
+        "new_articles": [],
+    }
+
+    response = client.get("/api/overview", base_url=BASE_URL)
+
+    assert response.status_code == 200
+    watch_token = render_app.test_mcp.get_watchlist.call_args.kwargs["access_token"]
+    updates_token = render_app.test_mcp.get_notable_updates.call_args.kwargs["access_token"]
+    watch_claims = jwt.decode(
+        watch_token,
+        render_app.test_public_key,
+        algorithms=["RS256"],
+        audience="signal-desk-mcp",
+        issuer="signal-desk-frontend",
+    )
+    updates_claims = jwt.decode(
+        updates_token,
+        render_app.test_public_key,
+        algorithms=["RS256"],
+        audience="signal-desk-mcp",
+        issuer="signal-desk-frontend",
+    )
+    assert watch_claims["rid"] == updates_claims["rid"] == response.headers["X-Request-ID"]
+    assert watch_claims["jti"] != updates_claims["jti"]

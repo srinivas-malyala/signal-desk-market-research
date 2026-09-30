@@ -43,6 +43,11 @@ class RateLimiterStateError(RuntimeError):
     """Raised when quota state is corrupt so callers fail closed."""
 
 
+class _QuotaWindowFull(Exception):
+    def __init__(self, wait_seconds: float) -> None:
+        self.wait_seconds = wait_seconds
+
+
 class RateLimiter(Protocol):
     def acquire(self) -> None: ...
 
@@ -181,32 +186,17 @@ class LakebaseRollingLimiter:
     def acquire(self) -> None:
         while True:
             try:
-                with self.connection_factory() as connection, connection.cursor() as cursor:
-                    cursor.execute(
-                        "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
-                        ("signal-desk-massive-free-plan",),
-                    )
-                    cursor.execute(
-                        f"""SELECT COUNT(*) AS active_count,
-                        GREATEST(EXTRACT(EPOCH FROM
-                          (MIN(acquired_at) + (%s * interval '1 second') - clock_timestamp())), 0.001)
-                          AS wait_seconds
-                        FROM {self.table}
-                        WHERE acquired_at > clock_timestamp() - (%s * interval '1 second')""",
-                        (self.window_seconds, self.window_seconds),
-                    )
-                    state = cursor.fetchone()
-                    if int(state["active_count"]) < self.limit:
-                        cursor.execute(
-                            f"""INSERT INTO {self.table}
-                            (attempt_id, acquired_at, requester, contract_version)
-                            VALUES(%s, clock_timestamp(), %s, 1)""",
-                            (str(uuid.uuid4()), self.requester),
-                        )
-                        connection.commit()
+                with self.connection_factory() as connection:
+                    cursor = connection.cursor()
+                    try:
+                        self._acquire_locked(connection, cursor)
                         return
-                    wait_for = max(float(state["wait_seconds"]), 0.001)
-                    connection.commit()
+                    except _QuotaWindowFull as full:
+                        wait_for = full.wait_seconds
+                    finally:
+                        close = getattr(cursor, "close", None)
+                        if close is not None:
+                            close()
             except RateLimiterStateError:
                 raise
             except Exception as error:
@@ -214,6 +204,36 @@ class LakebaseRollingLimiter:
                     "Shared Massive rate-limit coordination is unavailable; refusing API calls"
                 ) from error
             self.sleeper(wait_for)
+
+    def _acquire_locked(self, connection: Any, cursor: Any) -> None:
+        cursor.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+            ("signal-desk-massive-free-plan",),
+        )
+        cursor.execute(
+            f"""SELECT COUNT(*) AS active_count,
+            GREATEST(EXTRACT(EPOCH FROM
+              (MIN(acquired_at) + (%s * interval '1 second') - clock_timestamp())), 0.001)
+              AS wait_seconds
+            FROM {self.table}
+            WHERE acquired_at > clock_timestamp() - (%s * interval '1 second')""",
+            (self.window_seconds, self.window_seconds),
+        )
+        state = cursor.fetchone()
+        active_count = state["active_count"] if isinstance(state, dict) else state[0]
+        wait_seconds = state["wait_seconds"] if isinstance(state, dict) else state[1]
+        if int(active_count) < self.limit:
+            cursor.execute(
+                f"""INSERT INTO {self.table}
+                (attempt_id, acquired_at, requester, contract_version)
+                VALUES(%s, clock_timestamp(), %s, 1)""",
+                (str(uuid.uuid4()), self.requester),
+            )
+            connection.commit()
+            return
+        wait_for = max(float(wait_seconds), 0.001)
+        connection.commit()
+        raise _QuotaWindowFull(wait_for)
 
 
 def build_rate_limiter(

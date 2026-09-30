@@ -69,6 +69,13 @@ def _error(message: str, status_code: int, error_code: str) -> tuple[Response, i
     )
 
 
+def _fresh_mcp_access_token() -> str:
+    """Mint one assertion per downstream MCP session in Render mode."""
+    if hosting_mode() == "render":
+        return trusted_identity(g.request_id).mcp_access_token
+    return g.mcp_access_token
+
+
 @app.before_request
 def establish_request_context():
     g.request_id = str(uuid.uuid4())
@@ -250,7 +257,11 @@ def research():
             )
             company = None
             if tickers and len(tickers) == 1 and payload.get("include_company", True) is True:
-                company = client.get_company_research(ticker=tickers[0], **common)
+                company = client.get_company_research(
+                    ticker=tickers[0],
+                    access_token=_fresh_mcp_access_token(),
+                    request_id=g.request_id,
+                )
             return jsonify(
                 {
                     "status": "success",
@@ -304,7 +315,10 @@ def overview():
     client = _watchlist_client()
     common = {"access_token": g.mcp_access_token, "request_id": g.request_id}
     watch_result = client.get_watchlist(**common)
-    updates = client.get_notable_updates(**common)
+    updates = client.get_notable_updates(
+        access_token=_fresh_mcp_access_token(),
+        request_id=g.request_id,
+    )
     notes = lakebase.query(
         f"SELECT id,ticker,title,note_text,created_at FROM {_table('research_notes')} "
         "WHERE user_id=%s ORDER BY created_at DESC LIMIT 8",

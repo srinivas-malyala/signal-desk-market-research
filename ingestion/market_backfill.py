@@ -25,11 +25,27 @@ if __package__ in {None, ""}:
 
 from ingestion.checkpoints import CheckpointStore, eligible_weekdays  # noqa: E402
 from mcp_server.massive_client import (  # noqa: E402
+    LakebaseRollingLimiter,
     MassiveClient,
     MassiveResponse,
     MassiveResponseError,
     build_rate_limiter,
 )
+
+
+def _limiter(backend: str, raw_root: Path, profile: str | None):
+    if backend == "lakebase":
+        from mcp_server.job_lakebase import connection, quota_table
+
+        return LakebaseRollingLimiter(
+            connection_factory=lambda: connection(profile=profile),
+            table=quota_table(),
+            requester="databricks-market-ingestion",
+        )
+    return build_rate_limiter(
+        backend,
+        state_path=raw_root / "_control" / "massive_rate_limit.json",
+    )
 
 
 class LandingIntegrityError(RuntimeError):
@@ -64,6 +80,8 @@ class BackfillMetrics:
     no_data_dates: int = 0
     retryable_failures: int = 0
     terminal_failures: int = 0
+    last_error_type: str | None = None
+    last_error_cause_type: str | None = None
     landed_rows: int = 0
     landed_bytes: int = 0
     available_rows: int = 0
@@ -229,6 +247,11 @@ def run_backfill(
             if config.stop_after_rows and metrics.available_rows >= config.stop_after_rows:
                 break
         except Exception as error:
+            metrics.last_error_type = type(error).__name__
+            cause = error
+            while cause.__cause__ is not None:
+                cause = cause.__cause__
+            metrics.last_error_cause_type = type(cause).__name__
             retryable = _is_retryable(error)
             checkpoints.fail(trading_date, error, retryable=retryable)
             if retryable:
@@ -279,10 +302,7 @@ def main(argv: list[str] | None = None) -> int:
         (args.start_date, args.end_date) if args.start_date is not None else _default_dates(args.max_dates)
     )
     raw_root = args.raw_root or Path(f"/Volumes/{args.catalog}/{args.schema}/{args.volume}")
-    limiter = build_rate_limiter(
-        args.rate_limit_backend,
-        state_path=raw_root / "_control" / "massive_rate_limit.json",
-    )
+    limiter = _limiter(args.rate_limit_backend, raw_root, args.profile)
     client = MassiveClient(limiter=limiter, databricks_profile=args.profile)
     metrics = run_backfill(
         BackfillConfig(
