@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, Mock
 
 import action_service
@@ -100,3 +101,31 @@ def test_action_failure_rolls_back_both_write_and_idempotency_record(monkeypatch
         action_service._execute("person@example.com", "operation", "request-123", True, fail)
     connection.rollback.assert_called_once()
     connection.commit.assert_not_called()
+
+
+def test_watchlist_result_serializes_database_timestamps_before_idempotency_storage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    added_at = datetime(2026, 9, 30, 18, 30, tzinfo=UTC)
+    cursor = Mock()
+    cursor.fetchone.side_effect = [
+        {"id": 7},
+        {"idempotency_key": "request-123"},
+        {"id": 11},
+    ]
+    cursor.fetchall.return_value = [{"ticker": "SPY", "added_at": added_at}]
+    connection, get_connection = connection_with(cursor)
+    monkeypatch.setattr(action_service.lakebase, "get_connection", get_connection)
+
+    result = action_service.update_watchlist(
+        "person@example.com",
+        "SPY",
+        "add",
+        "Primary",
+        confirmed=True,
+        idempotency_key="request-123",
+    )
+
+    assert result["tickers"] == [{"ticker": "SPY", "added_at": added_at.isoformat()}]
+    assert result["idempotent_replay"] is False
+    connection.commit.assert_called_once()

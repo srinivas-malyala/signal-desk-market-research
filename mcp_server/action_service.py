@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 from collections.abc import Callable
+from datetime import datetime
 from typing import Any
 
 import lakebase
@@ -28,6 +29,10 @@ def _identity_email(email: str) -> str:
 def _fingerprint(value: dict[str, Any]) -> str:
     payload = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _json_value(value: Any) -> Any:
+    return value.isoformat() if isinstance(value, datetime) else value
 
 
 def _execute(
@@ -129,7 +134,10 @@ def update_watchlist(
             "action": action,
             "ticker": ticker,
             "changed": bool(changed),
-            "tickers": [dict(row) for row in cursor.fetchall()],
+            "tickers": [
+                {str(key): _json_value(value) for key, value in dict(row).items()}
+                for row in cursor.fetchall()
+            ],
         }
 
     return _execute(
