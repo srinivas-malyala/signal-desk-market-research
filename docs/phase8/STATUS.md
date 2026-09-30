@@ -79,8 +79,10 @@ input bounds, optional company context, and a distinct rate-limited response.
 Confirmed note/report tests prove cancel/unconfirmed requests make no tool call,
 and one accepted browser request maps to one idempotent MCP write.
 
-The analytics client now uses a frontend-specific, least-privilege OAuth M2M
-identity targeting the paid workspace in Render mode. All five
+The analytics client targets the paid workspace with OAuth M2M in Render mode.
+By explicit owner decision on 2026-09-30, the deployed frontend temporarily
+reuses MCP principal `dbx-ai-de-aug26`; a dedicated frontend identity remains a
+pre-production hardening item. All five
 queries target fully qualified Gold tables, have hard row limits, and share a
 256 KB response ceiling. The UI explicitly discloses service-principal query
 execution because these are shared pseudonymous aggregates, not user-owned
@@ -89,7 +91,7 @@ exact tool counts and P95 latency use a table instead of an ornamental chart.
 
 The complete local suite passes 231 tests and whole-repository lint. Render
 packaging and identity/data-client refactors are implemented. OIDC registration,
-the frontend-specific analytics credential/grants, browser acceptance, and the
+the deployed analytics credential/grants, browser acceptance, and the
 final paid-service readiness check remain frontend gates. MCP no longer waits
 for a workspace M2M repair; its separate Lakebase-only sequence is defined by
 ADR 0007 and `docs/LAKEBASE_ONLY_MCP_SERVING_PLAN.md`. See

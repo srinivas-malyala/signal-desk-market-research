@@ -61,7 +61,10 @@ class DatabricksSQLAnalyticsClient:
 
     @classmethod
     def from_environment(cls) -> DatabricksSQLAnalyticsClient:
-        warehouse = os.getenv("DATABRICKS_WAREHOUSE_ID", "").strip()
+        warehouse = (
+            os.getenv("DATA_WORKSPACE_WAREHOUSE_ID", "").strip()
+            or os.getenv("DATABRICKS_WAREHOUSE_ID", "").strip()
+        )
         if not re.fullmatch(r"[A-Za-z0-9_-]{8,128}", warehouse):
             raise AnalyticsUnavailableError("SQL warehouse is not configured")
         try:

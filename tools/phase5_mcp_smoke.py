@@ -31,6 +31,8 @@ EXPECTED_TOOLS = {
     "get_notable_updates",
 }
 WRITE_TEST_TICKERS = ("SPY", "QQQ", "DIA", "IWM")
+UNITY_CATALOG_MARKET_SOURCE = "Unity Catalog silver_market_bars joined to gold_stock_performance"
+LAKEBASE_MARKET_SOURCE = "Lakebase published market history serving table"
 
 
 def _safe_failure_detail(payload: dict[str, Any]) -> str:
@@ -132,6 +134,7 @@ async def run_mcp_checks(
     client: Any,
     *,
     exercise_writes: bool,
+    expected_market_source: str = UNITY_CATALOG_MARKET_SOURCE,
     trace_reader: Callable[[list[str]], dict[str, Any]] = _trace_evidence,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> dict[str, Any]:
@@ -154,18 +157,20 @@ async def run_mcp_checks(
         )
     )
     correlation_ids.append(_correlation_id(performance))
+    market_source = str(performance.get("source") or "")
     performance_ok = (
         performance.get("status") == "success"
         and performance.get("ticker") == "AAPL"
         and bool(performance.get("as_of"))
-        and str(performance.get("source") or "").startswith("Unity Catalog")
+        and market_source == expected_market_source
     )
     checks.append(
         {
             "name": "governed_performance_retrieval",
             "passed": performance_ok,
             "detail": (
-                f"status={performance.get('status')}, as_of={performance.get('as_of')}"
+                f"status={performance.get('status')}, as_of={performance.get('as_of')}, "
+                f"source_match={market_source == expected_market_source}"
                 f"{_safe_failure_detail(performance)}"
             ),
         }
@@ -306,6 +311,7 @@ async def run_mcp_checks(
         "status": "passed" if all(check["passed"] for check in checks) else "failed",
         "tool_count": len(tool_names),
         "performance_as_of": performance.get("as_of"),
+        "market_source": market_source,
         "semantic_match_count": len(matches),
         "writes": write_summary,
         "trace_evidence": {
@@ -410,7 +416,11 @@ async def run_render(
         auth=bearer_token,
     )
     async with Client(transport, timeout=timeout_seconds) as client:
-        report = await run_mcp_checks(client, exercise_writes=exercise_writes)
+        report = await run_mcp_checks(
+            client,
+            exercise_writes=exercise_writes,
+            expected_market_source=LAKEBASE_MARKET_SOURCE,
+        )
     report["deployment"] = "render"
     report["service_url"] = base_url
     report["health"] = {"passed": health_ok, "status_code": health.status_code}

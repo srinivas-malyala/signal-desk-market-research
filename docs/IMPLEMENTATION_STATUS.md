@@ -1,6 +1,6 @@
 # Capstone Implementation Status
 
-Updated: 2026-09-29 UTC
+Updated: 2026-09-30 UTC
 
 This is the living tracker for implementation progress and external gates. A unit is complete only when its code and deterministic tests pass; workspace-dependent proof is listed separately.
 
@@ -11,20 +11,18 @@ This is the living tracker for implementation progress and external gates. A uni
 | 2 — Spark market pipeline | Workspace acceptance complete | Dedicated deployed market pipeline; 81 manifest dates and 1,255,677 Bronze rows reconcile to 1,255,489 unique Silver rows plus 188 deterministic quarantines; measured free-plan maximum is 4 attempts per rolling minute; Gold coverage and persisted certification passed | None for the volume-certification workflow |
 | 3 — SEC pipeline | Workspace acceptance complete | Dedicated deployed research pipeline; two-company landing and cached rerun completed; 2 companies, 12 filings, 57,806 facts, 86 articles, 549 article/ticker links, and 507 traceable chunks with zero integrity violations; cached rerun made no external calls | None for the bounded two-company workflow |
 | 4 — Lakebase | Workspace acceptance complete | PostgreSQL 17+ connectivity; 16 owned `_srini` tables; five idempotent checksum-protected migrations; six tables with full replica identity; vector; bounded stale-safe pools; rollback; repeatable two-user CRUD/isolation and cleanup all verified | Cross-principal identity proof continues with MCP/frontend deployment |
-| 5 — MCP agent tools | Lakebase market serving populated and locally parity-verified; research FTS not promoted | Canonical 393-row Qwen3 hybrid index; live MCP perimeter; ADR 0007; feature-flagged bounded Lakebase adapters; atomic publish of 1,255,489 market and 393 research rows with zero duplicate keys; exact three-row AAPL parity | Keep research on Databricks because Lakebase FTS Recall@5 was 0.7843 (<0.85); decide whether to improve retrieval or retain the workspace dependency, then run deployed market and remaining gates |
+| 5 — MCP agent tools | Deployed read-only serving acceptance complete; research FTS not promoted | Lakebase market path; replacement 393-row Qwen3 hybrid AI Search index; live MCP perimeter; nine-tool contract; 51-case research quality gate; deployed semantic retrieval; bounded trace/event reconciliation | None for read-only market and research serving; retain MCP workspace credentials while research stays on AI Search |
 | 6 — CDF analytics | Workspace acceptance complete | The active schema maps `databricks_postgres.bootcamp_students` to `bootcamp_students.bootcamp_cdc`; all five `_srini` histories are enabled and queryable; a bounded, self-cleaning Lakebase transaction produced the expected 18 history rows in approximately 82–84 seconds; deployed updates reconciled 34 Bronze rows to 26 effective Silver rows and all five Gold metric families, with a measured maximum source latency of 85 seconds | None |
 | 7 — Agent integration | Render machine-auth implementation locally accepted; connection pending | Prompt/config reconciled to final MCP 1.0 contracts; exact nine-tool routing; ten evaluation fixtures; MCP maps a separate machine credential to a fixed server-side Supervisor subject and ignores model-supplied identity | Create the governed paid-workspace UC HTTP/MCP connection to Render, deploy Supervisor, then capture live evaluations and identity evidence |
 | 8 — Frontend | Render deployed; OIDC/session perimeter accepted | Live frontend health and security headers; Google authorization-code callback and authenticated session flow; fail-closed unauthenticated API/browser behavior; CSRF, signed 60-second request-bound MCP assertions, and bounded MCP client | Repair frontend paid-workspace M2M analytics access, then execute the authenticated core workflow and two-principal/CDC-refresh acceptance |
-| 9 — Release | Both Render services live; acceptance in progress | Reproducible two-service deployment, live public preflight 5/5, Google OIDC flow, MCP transport/tool/audit checks, complete Phase 6 CDC acceptance, architecture and release artifacts | Complete the Lakebase-only MCP cutover, frontend analytics, writes/Supervisor/two-principal/quota gates, then upgrade for the final demo month |
+| 9 — Release | Both Render services live; acceptance in progress | Reproducible two-service deployment, live public preflight 5/5, Google OIDC flow, deployed Lakebase market and AI Search research acceptance, MCP transport/tool/audit checks, complete Phase 6 CDC acceptance, architecture and release artifacts | Complete frontend analytics, writes/Supervisor/two-principal/quota gates, then upgrade for the final demo month |
 
 ## Active sequence
 
-1. Canary the Lakebase market backend in Render and prove no workspace call plus the full known-answer contract.
-2. Keep research on AI Search while deciding whether to tune FTS, evaluate pgvector, or retain the workspace dependency; the current FTS result is below threshold.
-3. Remove MCP workspace credentials only if every active MCP read backend no longer needs them.
-4. Run the opt-in reversible write/idempotency gate and simultaneous Job/MCP quota acceptance.
-5. Complete the separately tracked frontend analytics path and two-real-principal workflow.
-6. Connect the paid Supervisor, complete Phase 7 evaluations, then run final evidence capture and paid-demo readiness.
+1. Keep research on AI Search and retain the MCP-specific workspace credentials; Lakebase FTS remains below the promotion threshold.
+2. Run the opt-in reversible write/idempotency gate and simultaneous Job/MCP quota acceptance.
+3. Complete the separately tracked frontend analytics path and two-real-principal workflow.
+4. Connect the paid Supervisor, complete Phase 7 evaluations, then run final evidence capture and paid-demo readiness.
 
 ## Current external inputs
 
@@ -156,3 +154,44 @@ This is the living tracker for implementation progress and external gates. A uni
   message or credential. The checkpoint passes 243 local tests, repository-wide
   Ruff, and the tracked-file credential scan. Repairing the paid-workspace M2M
   identity remains the external data-plane gate.
+- 2026-09-29 UTC — Verified the new MCP OAuth service principal
+  `dbx-ai-de-aug26` is active and assigned to workspace
+  `dbc-7b106152-caf3`. Render contains the required MCP-specific client ID and
+  secret variable names, and a repeated live `semantic_research` request no
+  longer logged the prior allowlisted `invalid_client` dependency code.
+  Retrieval still returned the sanitized generic `research_error`, so M2M token
+  exchange is improved but AI Search authorization and query success are not
+  yet accepted.
+- 2026-09-29 UTC — Completed the deployed Lakebase market canary. The first
+  live request exposed that the Render environment had not inherited the
+  committed `SIGNAL_DESK_MARKET_BACKEND` value and still selected Unity Catalog.
+  Added the non-secret live value `lakebase`; deployment
+  `dep-dau7kj6gekts73da3khg` reached Live. The repeated authenticated canary
+  passed all seven checks and returned seven bounded AAPL rows through
+  2026-09-09 from `Lakebase published market history serving table`, with
+  correlation ID `41bed80a-2425-465b-a46f-c78d97530821`. This closes the
+  Lakebase market-serving P1 without changing the research backend.
+- 2026-09-30 UTC — P2 diagnosis found that the original AI Search index points
+  to deleted endpoint ID `0f391010-a035-465f-a78e-0aeb39661485`; the generic
+  deployed `research_error` was therefore not sufficient evidence of an OAuth
+  or index-grant failure. Created owned standard endpoint
+  `signal-desk-research-dev` (`4f1e61a9-cf40-4a57-9d7d-7419ffd8fe26`) and a
+  non-destructive replacement Delta Sync hybrid index
+  `bootcamp_students.student_sri.signal_desk_research_chunks_index_v2` from the
+  existing `research_search_documents` source. The endpoint is online and the
+  index remains in initial endpoint provisioning; Render has not been cut over.
+  Repository defaults consistently target v2, the read-only Render harness now
+  enforces the accepted Lakebase market source, all 258 tests and Ruff pass,
+  the credential scan is clean, and strict `dev` bundle validation passes.
+  Promotion remains gated on index readiness, the full 51-case retrieval
+  evaluation, the Render environment update, and deployed read-only MCP proof.
+- 2026-09-30 UTC — Completed P2. The replacement index became ready with 393
+  indexed rows and passed the full 51-case evaluation: Recall@5 1.0000, MRR
+  0.9902, nDCG@5 0.9928, zero provenance failures, and zero filter violations.
+  Render deployment `dep-dau87guk1f9s73aov860` promoted
+  `signal_desk_research_chunks_index_v2` and reached Live. The authenticated
+  read-only MCP harness passed health, all nine tool declarations, the accepted
+  Lakebase market source, `semantic_research` with three provenance-complete
+  matches, and bounded 2/2 trace/event reconciliation. No writes were exercised.
+  Research remains on AI Search and the MCP-specific workspace credentials must
+  remain configured.

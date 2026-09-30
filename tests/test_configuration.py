@@ -206,6 +206,14 @@ def test_managed_research_search_resources_replace_in_process_embeddings() -> No
     assert "databricks-qwen3-embedding-0-6b" in search
     assert "research_search_documents" in search
     assert "chunk_to_embed" in search
+    assert "signal_desk_research_chunks_index_v2" in search
+    assert "signal_desk_research_chunks_index_v2" in (
+        ROOT / "mcp_server" / "research_search.py"
+    ).read_text()
+    assert "signal_desk_research_chunks_index_v2" in (
+        ROOT / "jobs" / "ingest_research_embeddings.py"
+    ).read_text()
+    assert "signal_desk_research_chunks_index_v2" in (ROOT / "render.yaml").read_text()
     assert "chunk_to_retrieve" in (ROOT / "pipelines" / "silver_research_chunks.py").read_text()
     assert "columns_to_sync" not in search
     assert "principal: users" not in search

@@ -18,7 +18,7 @@ runtime_file = globals().get("__file__") or globals().get("filename")
 if runtime_file:
     sys.path.insert(0, str(Path(runtime_file).resolve().parents[1]))
 
-DEFAULT_INDEX = "bootcamp_students.student_sri.signal_desk_research_chunks_index"
+DEFAULT_INDEX = "bootcamp_students.student_sri.signal_desk_research_chunks_index_v2"
 
 
 def run(index_name: str | None = None, workspace: WorkspaceClient | None = None) -> dict:

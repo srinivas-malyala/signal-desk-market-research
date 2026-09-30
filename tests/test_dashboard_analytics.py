@@ -17,13 +17,25 @@ SPEC.loader.exec_module(MODULE)
 
 
 def test_analytics_configuration_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("DATA_WORKSPACE_WAREHOUSE_ID", raising=False)
     monkeypatch.delenv("DATABRICKS_WAREHOUSE_ID", raising=False)
     with pytest.raises(MODULE.AnalyticsUnavailableError):
         MODULE.DatabricksSQLAnalyticsClient.from_environment()
-    monkeypatch.setenv("DATABRICKS_WAREHOUSE_ID", "warehouse123")
+    monkeypatch.setenv("DATA_WORKSPACE_WAREHOUSE_ID", "warehouse123")
     monkeypatch.setenv("DATABRICKS_CATALOG", "bad-name")
     with pytest.raises(MODULE.AnalyticsUnavailableError):
         MODULE.DatabricksSQLAnalyticsClient.from_environment()
+
+
+def test_analytics_configuration_accepts_render_and_legacy_warehouse_names(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DATA_WORKSPACE_WAREHOUSE_ID", "renderwarehouse")
+    monkeypatch.setenv("DATABRICKS_WAREHOUSE_ID", "legacywarehouse")
+    assert MODULE.DatabricksSQLAnalyticsClient.from_environment().warehouse_id == "renderwarehouse"
+
+    monkeypatch.delenv("DATA_WORKSPACE_WAREHOUSE_ID")
+    assert MODULE.DatabricksSQLAnalyticsClient.from_environment().warehouse_id == "legacywarehouse"
 
 
 def test_snapshot_uses_bounded_gold_queries_and_detects_partial_state(monkeypatch: pytest.MonkeyPatch) -> None:

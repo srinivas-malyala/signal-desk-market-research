@@ -30,7 +30,7 @@ services:
       - key: DATABRICKS_SCHEMA
         value: student_sri
       - key: SIGNAL_DESK_VECTOR_SEARCH_INDEX
-        value: bootcamp_students.student_sri.signal_desk_research_chunks_index
+        value: bootcamp_students.student_sri.signal_desk_research_chunks_index_v2
       - key: SIGNAL_DESK_SCHEMA
         value: bootcamp_students
       - key: SIGNAL_DESK_TABLE_SUFFIX

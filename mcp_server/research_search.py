@@ -12,7 +12,7 @@ from databricks.sdk.service.vectorsearch import RerankerConfig, RerankerConfigRe
 
 from shared.databricks_auth import hosting_mode, workspace_client
 
-DEFAULT_INDEX = "bootcamp_students.student_sri.signal_desk_research_chunks_index"
+DEFAULT_INDEX = "bootcamp_students.student_sri.signal_desk_research_chunks_index_v2"
 EMBEDDING_MODEL = "databricks-qwen3-embedding-0-6b"
 QUERY_INSTRUCTION = (
     "Instruct: Retrieve an attributable SEC filing or market-news passage that answers the research question.\n"

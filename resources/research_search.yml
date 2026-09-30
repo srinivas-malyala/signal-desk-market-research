@@ -9,7 +9,7 @@ resources:
 
   vector_search_indexes:
     research_chunks:
-      name: ${var.catalog}.${var.schema}.signal_desk_research_chunks_index
+      name: ${var.catalog}.${var.schema}.signal_desk_research_chunks_index_v2
       endpoint_name: ${resources.vector_search_endpoints.research_search.name}
       index_type: DELTA_SYNC
       index_subtype: HYBRID

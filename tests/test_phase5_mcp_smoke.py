@@ -7,6 +7,7 @@ import pytest
 
 from tools.phase5_mcp_smoke import (
     EXPECTED_TOOLS,
+    LAKEBASE_MARKET_SOURCE,
     _safe_failure_detail,
     _tool_payload,
     run_mcp_checks,
@@ -108,6 +109,28 @@ def test_tool_payload_accepts_structured_fastmcp_result() -> None:
     assert _tool_payload(SimpleNamespace(structuredContent={"status": "success"}, content=[])) == {
         "status": "success"
     }
+
+
+def test_render_market_source_contract_accepts_only_lakebase() -> None:
+    client = FakeClient()
+
+    async def lakebase_call(name: str, arguments: dict):
+        result = await FakeClient.call_tool_mcp(client, name, arguments)
+        if name == "get_stock_performance":
+            result.structuredContent["source"] = LAKEBASE_MARKET_SOURCE
+        return result
+
+    client.call_tool_mcp = lakebase_call
+    result = asyncio.run(
+        run_mcp_checks(
+            client,
+            exercise_writes=False,
+            expected_market_source=LAKEBASE_MARKET_SOURCE,
+            trace_reader=_trace_reader,
+        )
+    )
+    assert result["status"] == "passed"
+    assert result["market_source"] == LAKEBASE_MARKET_SOURCE
 
 
 def test_failure_detail_is_bounded_and_uses_only_sanitized_payload_fields() -> None:

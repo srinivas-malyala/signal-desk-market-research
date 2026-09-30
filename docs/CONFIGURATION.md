@@ -44,12 +44,12 @@ OAuth M2M credentials supplied only through Render secret environment values.
 | `USE_MOCK_BACKEND` | apps | Local development only | Literal `true`; deployed target must use `false` |
 | `DATA_WORKSPACE_HOST` | frontend/MCP paid-data clients | Paid workspace API/SQL target | Non-secret environment value; `https://dbc-7b106152-caf3.cloud.databricks.com` |
 | `DATA_WORKSPACE_WAREHOUSE_ID` | frontend/MCP paid-data clients | Existing paid serverless SQL Warehouse | Non-secret environment value; `b15d3d6f837ba428` |
-| `DATA_WORKSPACE_CLIENT_ID` | frontend/MCP paid-data clients | Service-specific OAuth M2M client in paid workspace | Separate Render secret per service; never shared between services |
-| `DATA_WORKSPACE_CLIENT_SECRET` | frontend/MCP paid-data clients | Service-specific OAuth M2M secret in paid workspace | Separate Render secret per service; never committed or logged |
+| `DATA_WORKSPACE_CLIENT_ID` | frontend/MCP paid-data clients | OAuth M2M client in paid workspace | Temporarily shared as `dbx-ai-de-aug26` by explicit owner decision; split before production |
+| `DATA_WORKSPACE_CLIENT_SECRET` | frontend/MCP paid-data clients | OAuth M2M secret in paid workspace | Temporarily shared only between the two Render services; never committed or logged; split before production |
 | `DATABRICKS_WAREHOUSE_ID` | jobs/local acceptance | Same-workspace Delta SQL access | Existing paid-workspace runtime or explicit local environment; not a Render resource |
 | `DATABRICKS_CATALOG` | MCP retrieval | Governed market tables | Non-secret environment value; `bootcamp_students` |
 | `DATABRICKS_SCHEMA` | MCP retrieval | Governed market tables | Non-secret environment value; `student_sri` |
-| `SIGNAL_DESK_VECTOR_SEARCH_INDEX` | MCP retrieval/index sync | Managed research index | Non-secret full name; `bootcamp_students.student_sri.signal_desk_research_chunks_index` |
+| `SIGNAL_DESK_VECTOR_SEARCH_INDEX` | MCP retrieval/index sync | Managed research index | Non-secret full name; `bootcamp_students.student_sri.signal_desk_research_chunks_index_v2` |
 | `PGHOST`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, `PGPORT` | MCP operational store | Future migration to an attached Lakebase Autoscaling resource | Not used by the current shared classroom URL; never logged |
 | `LAKEBASE_URL` | MCP/frontend local override | Explicit local-only connection override | Runtime environment only; PostgreSQL URL with `sslmode=require` |
 | `LAKEBASE_SECRET_SCOPE` | MCP/frontend | Deployed Lakebase connection | Defaults to admin-managed scope `database` |

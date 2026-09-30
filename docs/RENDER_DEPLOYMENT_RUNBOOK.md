@@ -102,8 +102,11 @@ existing shared PostgreSQL schema, and the manual publisher uses session-local
 staging plus an atomic transaction. Do not add these serving tables to the five
 history tables allowlisted by the activity pipeline, and do not confuse that
 Lakebase-to-UC `bootcamp_cdc` namespace with the separate PostgreSQL
-`bootcamp_cdc` graph destination. The frontend Gold analytics credential
-remains separate and must never be reused by MCP.
+`bootcamp_cdc` graph destination. The preferred production boundary keeps the
+frontend Gold analytics credential separate. For the bounded 2026-09-30
+acceptance window, the owner explicitly approved temporary reuse of MCP
+principal `dbx-ai-de-aug26`; replace this exception with a dedicated frontend
+principal before production or broader user access.
 
 ## 3. Register browser OIDC
 
@@ -137,8 +140,7 @@ Required secret ownership:
 |---|---:|---:|
 | `LAKEBASE_URL` | Yes | Yes |
 | `MASSIVE_API_KEY` | Yes | No |
-| MCP Databricks `DATA_WORKSPACE_CLIENT_ID/SECRET` | Rollback window only; remove after Gate 4 | No |
-| Frontend Databricks `DATA_WORKSPACE_CLIENT_ID/SECRET` | No | Yes |
+| Databricks `DATA_WORKSPACE_CLIENT_ID/SECRET` | Yes | Yes, temporarily shared by explicit owner decision; split before production |
 | `FRONTEND_ASSERTION_PUBLIC_KEY` | Yes | No |
 | `FRONTEND_ASSERTION_PRIVATE_KEY` | No | Yes |
 | `MCP_SUPERVISOR_TOKEN`, `MCP_SUPERVISOR_SUBJECT` | Yes | No |
