@@ -200,6 +200,13 @@ Do not treat those namespaces or sync directions as interchangeable.
   MRR 0.9902, and nDCG@5 0.9928.
 - Lakebase FTS was **not promoted**: Recall@5/MRR/nDCG@5 were 0.7843, below
   the 0.85 Recall@5 minimum, despite zero provenance and filter failures.
+- P4 is complete. The deployed reversible action gate passed confirmation,
+  exact idempotent replay, changed-payload rejection, cleanup, and bounded
+  trace/event reconciliation. Cross-host quota run `734509920661267` proved
+  four Render attempts plus one Job attempt share the Lakebase ledger; attempt
+  five waited 60.225 seconds. Two permitted Google principals then proved
+  isolated watchlists, notes, reports, and traces through the authenticated UI,
+  followed by exact disposable-row cleanup with sanitized evidence retained.
 
 ## Active runtime decisions
 
@@ -312,11 +319,32 @@ five-table boundary; creating a dedicated least-privilege frontend principal
 remains a pre-production hardening item, not a P3 blocker under the approved
 temporary exception.
 
-### P4 — complete action and isolation gates
+### P4 — action and isolation gates complete
 
-Run the opt-in reversible write/idempotency gate, simultaneous Job/MCP Massive
-quota gate, and two-real-principal isolation for watchlists, notes, reports,
-and traces. Clean up disposable rows while retaining sanitized evidence.
+The opt-in reversible write gate passed against MCP deployment
+`dep-dauop049v7es73ad0khg` from commit `357da4c`: confirmed watchlist writes,
+exact idempotent replay, changed-payload rejection, cleanup, and bounded
+trace/event reconciliation all succeeded. Shared result serialization now makes
+all action timestamps safe for the idempotency record.
+
+Cross-host acceptance used market-ingestion Job `591105044211834`, run
+`734509920661267`, for 2026-09-24. Four Render MCP attempts and one Databricks
+Job attempt produced exactly five Lakebase ledger rows; the maximum rolling
+60-second count was four and the fifth acquisition waited 60.225 seconds.
+
+Frontend deployment `dep-dauok47lk1mc73dmkg70` from commit `eb3278f` minted a
+fresh signed assertion for each downstream MCP session. Two real permitted
+Google principals independently created one watchlist ticker, note, and report;
+each principal saw only their own data and three successful write traces after
+sign-out/sign-in round trips. `tools/phase4_principal_cleanup.py` verified the
+separation using pseudonymous owner hashes, removed all six disposable rows and
+six idempotency records, retained sanitized traces/quota evidence, and a final
+UI reload showed no remaining disposable data. Failed diagnostic checkpoint
+entries were also removed without changing the completed 2026-09-24 checkpoint.
+Evidence is stored in ignored output at
+`build/acceptance/render-mcp-writes-p4_2026-09-30.json`,
+`build/acceptance/render-cross-host-quota-p4_2026-09-30.json`, and
+`build/acceptance/render-two-principal-isolation-p4_2026-09-30.json`.
 
 ### P5 — connect and evaluate Supervisor
 

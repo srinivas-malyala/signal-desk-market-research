@@ -1,13 +1,13 @@
 # Phase 5 Status — MCP agent tools and semantic research
 
-Updated: 2026-09-29
+Updated: 2026-09-30
 
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
 | 5.0 Retrieval design | Complete | ADR 0005 records section-aware parent/child chunking, Qwen3 embeddings, Delta Sync AI Search, hybrid retrieval, provenance, and evaluation targets | None |
-| 5.1 Service and observability | Render deployed; transport, Massive fallback, audit, and sanitized dependency-log acceptance passed | `https://signal-desk-mcp.onrender.com` is live; health, unauthenticated rejection, Supervisor authentication, nine-tool discovery, Massive fallback, correlation IDs, bounded Lakebase trace/event reconciliation, and searchable redacted `invalid_client` diagnostics passed | Implement ADR 0007's feature-flagged Lakebase serving path, then rerun governed/semantic retrieval before reversible-write, simultaneous-quota, and cross-principal gates |
+| 5.1 Service and observability | Render deployment accepted | `https://signal-desk-mcp.onrender.com` is live; health, unauthenticated rejection, Supervisor authentication, nine-tool discovery, Lakebase market reads, semantic research, Massive fallback, correlation IDs, and bounded trace/event reconciliation passed | None for MCP deployment; Supervisor evaluation is Phase 7 |
 | 5.2 Retrieval tools | Workspace accepted | Historical performance uses a bounded parameterized Silver/Gold SQL read; a live AAPL known-answer reconciled 9 rows, 0.24% return, two-day freshness, safe free-plan snapshot denial, and one Massive attempt; requested windows are trimmed, sector is not invented, reads do not create user state, and news uses a many-to-many bridge | None for the current workspace dataset |
-| 5.3 Action tools | Workspace acceptance in progress | Watchlist/note/report writes require confirmation and transactional idempotency; different-payload key reuse fails; trusted request identity owns writes; rollback and bounded-input tests pass; migration 0004 and disposable owner-isolation CRUD pass | Prove two principals through deployed MCP |
+| 5.3 Action tools | Deployed acceptance complete | Watchlist/note/report writes require confirmation and transactional idempotency; exact replay returns the stored result; changed-payload reuse fails; two real principals proved ownership isolation through the authenticated UI; exact cleanup passed | None for the accepted action workflow |
 | 5.4 Semantic retrieval | Workspace accepted | Canonical chunks plus CDF Delta serving-table publisher, ready standard endpoint, triggered Qwen3 Delta Sync hybrid index with 393 rows, filtered/reranked SDK search, parent deduplication, provenance, and a passing 51-case live evaluation | None for the current workspace corpus |
 
 ## Accepted implementation sequence
@@ -158,3 +158,14 @@ exactly. The 51-case Lakebase FTS evaluation achieved Recall@5/MRR/nDCG 0.7843
 with zero provenance or filter failures, but failed the 0.85 Recall@5 minimum;
 research therefore remains on the accepted AI Search backend. Neither existing
 `bootcamp_cdc` sync direction was changed.
+
+On 2026-09-30, the opt-in write harness passed the deployed action gate,
+including confirmation, exact replay, changed-payload rejection, cleanup, and
+bounded trace/event reconciliation. Shared recursive result serialization
+ensures watchlist, note, and report timestamps can be persisted in the
+idempotency record; commit `357da4c` reached Live as deployment
+`dep-dauop049v7es73ad0khg`. Two permitted Google principals then each created
+one watchlist ticker, note, and report through the deployed authenticated UI and
+saw only their own data and traces. The sanitized cleanup harness removed every
+disposable operational and idempotency row while retaining audit and quota
+evidence.

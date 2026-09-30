@@ -1,10 +1,10 @@
 # Phase 1 Status — Massive Market Ingestion
 
-Updated: 2026-09-21
+Updated: 2026-09-30
 
 | Unit | Implementation | Evidence | Remaining gate |
 |---|---|---|---|
-| 1.1 Shared Massive client and limiter | Cross-host migration workspace verified | Every physical attempt is limited; file-backed single-host mode retained; deployed MCP and ingestion paths select a Lakebase transaction-lock coordinator with database time, four-attempt/60-second ceiling, and fail-closed behavior; migration `0005` created and verified the shared attempt ledger idempotently | Exercise simultaneous Job/MCP callers after app deployment |
+| 1.1 Shared Massive client and limiter | Cross-host deployment accepted | Every physical attempt is limited; deployed MCP and ingestion paths share a Lakebase transaction-lock coordinator with database time and a four-attempt/60-second ceiling; four MCP plus one Job attempt produced five ledger rows and attempt five waited 60.225 seconds | None |
 | 1.2 Trading dates and checkpoints | Workspace verified | Two-year bounds, weekday planning, six explicit states, atomic persistence, stale recovery, corrupt-state failure, 20-date interruption/resume test, and successful UC Volume resume | None |
 | 1.3 Immutable raw landing | Workspace verified | Atomic response/manifest pairs, SHA-256 validation, replay, holiday no-data state, row stop, structured metrics, strict bundle validation, 10-date workspace run, and zero-call rerun | None for the single-job workspace workflow |
 
@@ -57,3 +57,15 @@ failure raises a safe limiter error before any Massive request is sent.
 The legacy Volume-backed limiter remains available only for explicit
 `process` mode and local/single-host testing. Bundle job parameters and MCP app
 configuration explicitly select `lakebase`; there is no automatic fallback.
+
+## Cross-host deployment acceptance
+
+On 2026-09-30, four authenticated Render MCP requests and market-ingestion Job
+`591105044211834` run `734509920661267` shared one Lakebase quota window for
+2026-09-24. The callers reported five physical attempts and the ledger contained
+exactly five corresponding rows. The maximum rolling 60-second count was four;
+the fifth acquisition waited 60.225 seconds before proceeding. The successful
+checkpoint retained 16,608 rows. Five failed diagnostic checkpoint entries
+were removed afterward, while the successful checkpoint and unrelated
+operational state were preserved. Sanitized evidence is in ignored output at
+`build/acceptance/render-cross-host-quota-p4_2026-09-30.json`.

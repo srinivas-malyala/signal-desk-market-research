@@ -7,22 +7,22 @@ This is the living tracker for implementation progress and external gates. A uni
 | Phase | Status | Completed | Pending or external gate |
 |---|---|---|---|
 | 0 — Foundation | Complete | Architecture/contracts, quality tooling, bundle, Unity Catalog and warehouse validation, Massive, SEC, and Lakebase feasibility verified | CI execution on a remote runner |
-| 1 — Massive ingestion | Cross-host coordination migration applied | Rate-safe client, atomic checkpoints, immutable landing, workspace volume proof, and the fail-closed Lakebase quota ledger are verified; deployed paths select a transaction-lock coordinator with database time and a four-attempt rolling-minute ceiling | Run simultaneous Job/MCP acceptance after app deployment |
+| 1 — Massive ingestion | Cross-host coordination accepted | Rate-safe client, atomic checkpoints, immutable landing, workspace volume proof, and the fail-closed Lakebase quota ledger are verified; live Render/Job acceptance produced exactly five physical attempts, held the rolling count to four, and delayed attempt five by 60.225 seconds | None for the accepted shared-quota workflow |
 | 2 — Spark market pipeline | Workspace acceptance complete | Dedicated deployed market pipeline; 81 manifest dates and 1,255,677 Bronze rows reconcile to 1,255,489 unique Silver rows plus 188 deterministic quarantines; measured free-plan maximum is 4 attempts per rolling minute; Gold coverage and persisted certification passed | None for the volume-certification workflow |
 | 3 — SEC pipeline | Workspace acceptance complete | Dedicated deployed research pipeline; two-company landing and cached rerun completed; 2 companies, 12 filings, 57,806 facts, 86 articles, 549 article/ticker links, and 507 traceable chunks with zero integrity violations; cached rerun made no external calls | None for the bounded two-company workflow |
-| 4 — Lakebase | Workspace acceptance complete | PostgreSQL 17+ connectivity; 16 owned `_srini` tables; five idempotent checksum-protected migrations; six tables with full replica identity; vector; bounded stale-safe pools; rollback; repeatable two-user CRUD/isolation and cleanup all verified | Cross-principal identity proof continues with MCP/frontend deployment |
-| 5 — MCP agent tools | Deployed read-only serving acceptance complete; research FTS not promoted | Lakebase market path; replacement 393-row Qwen3 hybrid AI Search index; live MCP perimeter; nine-tool contract; 51-case research quality gate; deployed semantic retrieval; bounded trace/event reconciliation | None for read-only market and research serving; retain MCP workspace credentials while research stays on AI Search |
+| 4 — Lakebase | Workspace and deployed identity acceptance complete | PostgreSQL 17+ connectivity; 16 owned `_srini` tables; five idempotent checksum-protected migrations; six tables with full replica identity; vector; bounded pools; rollback; live two-real-principal CRUD/isolation and exact cleanup | Replace the broad shared runtime role before production |
+| 5 — MCP agent tools | Deployed read and action acceptance complete; research FTS not promoted | Lakebase market path; replacement 393-row Qwen3 hybrid AI Search index; nine-tool contract; deployed semantic retrieval; confirmed idempotent watchlist/note/report writes; changed-payload rejection; bounded trace/event reconciliation | Retain MCP workspace credentials while research stays on AI Search; Supervisor evaluation is Phase 7 |
 | 6 — CDF analytics | Workspace acceptance complete | The active schema maps `databricks_postgres.bootcamp_students` to `bootcamp_students.bootcamp_cdc`; all five `_srini` histories are enabled and queryable; a bounded, self-cleaning Lakebase transaction produced the expected 18 history rows in approximately 82–84 seconds; deployed updates reconciled 34 Bronze rows to 26 effective Silver rows and all five Gold metric families, with a measured maximum source latency of 85 seconds | None |
 | 7 — Agent integration | Render machine-auth implementation locally accepted; connection pending | Prompt/config reconciled to final MCP 1.0 contracts; exact nine-tool routing; ten evaluation fixtures; MCP maps a separate machine credential to a fixed server-side Supervisor subject and ignores model-supplied identity | Create the governed paid-workspace UC HTTP/MCP connection to Render, deploy Supervisor, then capture live evaluations and identity evidence |
-| 8 — Frontend | Render deployed; OIDC/session and analytics accepted | Live frontend health and security headers; authenticated Google session; all five bounded Gold reads through the SQL Warehouse; controlled CDC refreshed to the authenticated UI in 32.34 seconds; CSRF, signed assertions, and bounded MCP client | Replace the temporary shared M2M principal before production; complete the two-principal action/isolation workflow |
-| 9 — Release | Both Render services live; acceptance in progress | Reproducible two-service deployment, live public preflight 5/5, Google OIDC flow, deployed Lakebase market and AI Search research acceptance, MCP transport/tool/audit checks, complete Phase 6 CDC acceptance, architecture and release artifacts | Complete frontend analytics, writes/Supervisor/two-principal/quota gates, then upgrade for the final demo month |
+| 8 — Frontend | Render deployed; authenticated workflows accepted | Live security/OIDC/CSRF boundary; all five bounded Gold reads; controlled CDC refreshed in 32.34 seconds; fresh assertion per MCP session; two real principals proved isolated watchlists, notes, reports, and traces | Replace the temporary shared M2M principal before production |
+| 9 — Release | P1–P4 live acceptance complete | Public preflight, market and semantic reads, reversible/idempotent writes, shared cross-host quota, all five Gold reads, controlled CDC freshness, and two-real-principal UI isolation are accepted | Connect/evaluate Supervisor, then upgrade for the final demo month |
 
 ## Active sequence
 
 1. Keep research on AI Search and retain the MCP-specific workspace credentials; Lakebase FTS remains below the promotion threshold.
-2. Run the opt-in reversible write/idempotency gate and simultaneous Job/MCP quota acceptance.
-3. Complete the two-real-principal action/isolation workflow; frontend analytics P3 is complete under the approved temporary shared-principal exception.
-4. Connect the paid Supervisor, complete Phase 7 evaluations, then run final evidence capture and paid-demo readiness.
+2. Continue the owner-approved temporary reuse of MCP principal `dbx-ai-de-aug26` for frontend analytics; replace it before production or broader access.
+3. Connect the paid Supervisor and complete the ten Phase 7 live evaluations.
+4. Run final evidence capture and paid-demo readiness.
 
 ## Current external inputs
 
@@ -207,3 +207,23 @@ This is the living tracker for implementation progress and external gates. A uni
   zero errors, and 123 ms P95. The workspace's inherited catalog grants are
   broader than the target five-table boundary, so a dedicated least-privilege
   frontend identity remains required before production or broader access.
+- 2026-09-30 UTC — Completed P4. The opt-in deployed MCP write harness passed
+  confirmed watchlist creation, exact idempotent replay, changed-payload
+  rejection, cleanup, and bounded audit reconciliation. Shared recursive result
+  serialization fixed note/report timestamp persistence; commit `357da4c`
+  reached Live as MCP deployment `dep-dauop049v7es73ad0khg`.
+- 2026-09-30 UTC — Cross-host quota run `734509920661267` on Job
+  `591105044211834` generated one physical Job attempt alongside four Render MCP
+  attempts. The Lakebase ledger contained exactly five rows, never exceeded
+  four acquisitions in a rolling minute, and delayed the fifth by 60.225
+  seconds. The completed 2026-09-24 checkpoint retained 16,608 rows; five
+  failed diagnostic checkpoint entries were removed without disturbing other
+  operational state.
+- 2026-09-30 UTC — Frontend deployment `dep-dauok47lk1mc73dmkg70` from commit
+  `eb3278f` now mints a fresh signed assertion per downstream MCP session. Two
+  real permitted Google principals each created and retrieved one isolated
+  watchlist ticker, note, report, and three successful write traces through the
+  deployed authenticated UI; neither saw the other's data. The cleanup harness
+  verified pseudonymous owners, removed two notes, two reports, two tickers, two
+  empty watchlists, and six idempotency records, and retained only sanitized
+  traces, quota rows, and ignored acceptance evidence.

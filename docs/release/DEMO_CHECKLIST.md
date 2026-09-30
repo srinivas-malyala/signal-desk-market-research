@@ -1,6 +1,6 @@
 # Signal Desk Capstone Demo Checklist
 
-Updated: 2026-09-29
+Updated: 2026-09-30
 
 Do not mark a gate complete from local tests alone. Record sanitized run IDs,
 table counts, timestamps, and screenshots; never capture secrets, tokens,
@@ -51,10 +51,10 @@ connection URLs, direct email values, or user-authored note/report bodies.
   ledger records `0005`, and a second migration pass applies nothing.
 - [x] Deploy the MCP service on Render Free; `https://signal-desk-mcp.onrender.com`
   is live and the accepted Supervisor-token deployment is `dep-darca5p7lnhs73cr1nig`.
-- [ ] Run the Phase 5 post-deployment harness: health, nine-tool discovery,
+- [x] Run the Phase 5 post-deployment harness: health, nine-tool discovery,
   governed retrieval, semantic retrieval, opt-in reversible write,
   idempotent retry, and sanitized trace/event reconciliation.
-- [ ] Run simultaneous Job/MCP quota acceptance; prove acquisition five waits
+- [x] Run simultaneous Job/MCP quota acceptance; prove acquisition five waits
   for the rolling window and no Massive request bypasses Lakebase.
 - [x] Configure the five Lakebase Lakehouse Sync histories in the UI.
 - [x] Deploy/run the activity analytics pipeline; the controlled sequence
@@ -65,11 +65,12 @@ connection URLs, direct email values, or user-authored note/report bodies.
   flow, never a personal token or model-supplied identity.
 - [ ] Deploy the Supervisor, wait for its serving endpoint to become online,
   capture all ten Phase 7 cases, and pass `tools/phase7_agent_eval.py`.
-- [ ] Deploy the frontend on Render Free with OIDC and signed MCP assertions;
+- [x] Deploy the frontend on Render Free with OIDC and signed MCP assertions;
   health, login/callback/session, security headers, fail-closed routes, and the
-  signed MCP boundary pass. Paid-analytics M2M and the authenticated workflow
-  still require acceptance.
-- [ ] Prove two real principals see isolated watchlists, notes, reports, and
+  signed MCP boundary, five Gold reads, controlled CDC refresh, and
+  authenticated workflow pass under the approved shared-MCP-principal
+  exception.
+- [x] Prove two real principals see isolated watchlists, notes, reports, and
   traces through the complete frontend → agent → MCP path.
 - [ ] Upgrade both Render services to the smallest paid tier for the final
   acceptance/demo month; record readiness and verify that no cold start affects
@@ -103,7 +104,9 @@ connection URLs, direct email values, or user-authored note/report bodies.
 - [ ] Unconfirmed note/report/watchlist request makes no write call.
 - [ ] Corrupt/unavailable limiter state prevents the external Massive call.
 - [ ] Analytics contains no direct email, token, API key, connection URL, or authored research body.
-- [ ] Cleanup all disposable acceptance users, memberships, notes, and reports; retain only sanitized evidence.
+- [x] Cleanup all disposable acceptance notes, reports, tickers, empty
+  watchlists, and idempotency records; retain users plus sanitized traces,
+  quota rows, and evidence.
 
 ## E. Submission package
 
