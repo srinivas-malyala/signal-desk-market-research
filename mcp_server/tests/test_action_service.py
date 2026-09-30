@@ -129,3 +129,25 @@ def test_watchlist_result_serializes_database_timestamps_before_idempotency_stor
     assert result["tickers"] == [{"ticker": "SPY", "added_at": added_at.isoformat()}]
     assert result["idempotent_replay"] is False
     connection.commit.assert_called_once()
+
+
+def test_execute_serializes_nested_action_result_before_idempotency_storage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    created_at = datetime(2026, 9, 30, 18, 30, tzinfo=UTC)
+    cursor = Mock()
+    cursor.fetchone.side_effect = [{"id": 7}, {"idempotency_key": "request-123"}]
+    connection, get_connection = connection_with(cursor)
+    monkeypatch.setattr(action_service.lakebase, "get_connection", get_connection)
+    callback = Mock(return_value={"status": "success", "created_at": created_at})
+
+    result = action_service._execute(
+        "person@example.com", "save_research_note", "request-123", True, callback
+    )
+
+    assert result == {
+        "status": "success",
+        "created_at": created_at.isoformat(),
+        "idempotent_replay": False,
+    }
+    connection.commit.assert_called_once()

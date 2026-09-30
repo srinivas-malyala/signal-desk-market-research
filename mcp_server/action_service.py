@@ -32,7 +32,13 @@ def _fingerprint(value: dict[str, Any]) -> str:
 
 
 def _json_value(value: Any) -> Any:
-    return value.isoformat() if isinstance(value, datetime) else value
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, dict):
+        return {str(key): _json_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_value(item) for item in value]
+    return value
 
 
 def _execute(
@@ -80,7 +86,7 @@ def _execute(
                 replay["idempotent_replay"] = True
                 connection.commit()
                 return replay
-            result = action(cursor, user_id)
+            result = _json_value(action(cursor, user_id))
             stored = {**result, "idempotent_replay": False}
             stored_record = {**stored, "_request_fingerprint": request_fingerprint}
             cursor.execute(
