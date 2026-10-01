@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -73,3 +74,17 @@ def test_agent_event_uses_database_action_vocabulary() -> None:
         correlation_id="correlation",
     )
     assert event.action_type == "retrieve"
+
+
+@pytest.mark.contract
+def test_semantic_research_filter_schema_uses_plain_arrays(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1] / "mcp_server"))
+    from stock_research_mcp_server import mcp
+
+    tool = asyncio.run(mcp.get_tools())["semantic_research"]
+    for parameter in ("tickers", "source_types"):
+        schema = tool.parameters["properties"][parameter]
+        assert schema["type"] == "array"
+        assert schema["items"] == {"type": "string"}
+        assert schema["default"] == []
+        assert "anyOf" not in schema

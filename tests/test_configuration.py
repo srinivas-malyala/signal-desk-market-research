@@ -29,7 +29,8 @@ def test_render_blueprint_defines_two_isolated_secret_safe_services() -> None:
     assert "pip install --require-hashes --requirement dashboard/requirements.lock" in text
     assert "python mcp_server/stock_research_mcp_server.py" in text
     assert "--chdir dashboard --pythonpath .." in text
-    assert "healthCheckPath: /health" in text
+    mcp_service = text.split("  - type: web", maxsplit=2)[1]
+    assert "healthCheckPath:" not in mcp_service
     assert "healthCheckPath: /healthz" in text
     assert "0.0.0.0:$PORT" in text
     assert "value: https://accounts.google.com" in text

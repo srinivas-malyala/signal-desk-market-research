@@ -24,7 +24,8 @@ EXPECTED = {
     "signal-desk-mcp": {
         "buildCommand": "pip install --require-hashes --requirement mcp_server/requirements.lock",
         "startCommand": "python mcp_server/stock_research_mcp_server.py",
-        "healthCheckPath": "/health",
+        "healthCheckPath": None,
+        "smokeHealthPath": "/health",
         "lock": ROOT / "mcp_server" / "requirements.lock",
         "imports": "fastmcp,databricks.sdk,jwt,psycopg2",
     },
@@ -35,6 +36,7 @@ EXPECTED = {
             "--workers 2 --threads 4 --timeout 60 app:app"
         ),
         "healthCheckPath": "/healthz",
+        "smokeHealthPath": "/healthz",
         "lock": ROOT / "dashboard" / "requirements.lock",
         "imports": "flask,gunicorn,authlib,databricks.sql,fastmcp,jwt,psycopg2",
     },
@@ -67,9 +69,11 @@ def validate_blueprint() -> None:
     seen_secrets: set[str] = set()
     for name, expected in EXPECTED.items():
         service = services[name]
-        for key in ("buildCommand", "startCommand", "healthCheckPath"):
+        for key in ("buildCommand", "startCommand"):
             if service.get(key) != expected[key]:
                 raise AssertionError(f"{name}.{key} does not match the accepted deployment contract")
+        if service.get("healthCheckPath") != expected["healthCheckPath"]:
+            raise AssertionError(f"{name}.healthCheckPath does not match the accepted deployment contract")
         if service.get("type") != "web" or service.get("runtime") != "python" or service.get("plan") != "free":
             raise AssertionError(f"{name} must be a Python web service on the development free plan")
         for variable in service.get("envVars", []):
@@ -172,7 +176,7 @@ def process_smoke() -> None:
             text=True,
         )
         try:
-            _wait_for_health(port, expected["healthCheckPath"], process)
+            _wait_for_health(port, expected["smokeHealthPath"], process)
         finally:
             process.terminate()
             try:

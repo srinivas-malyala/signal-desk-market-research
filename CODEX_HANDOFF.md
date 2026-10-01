@@ -348,11 +348,58 @@ Evidence is stored in ignored output at
 
 ### P5 — connect and evaluate Supervisor
 
-Create the governed external MCP connection, deploy Supervisor, wait for
-readiness, capture all ten cases, and run:
+The governed path is deployed in `dataexpertio_srini`:
+
+- schema-level HTTP connection
+  `bootcamp_students.student_sri.signal_desk_mcp_connection` is `ACTIVE` and
+  stores its bearer credential in Databricks secret scope
+  `signal-desk-supervisor` (`mcp-bearer-token`);
+- MCP Service `bootcamp_students.student_sri.signal_desk_mcp` exposes the exact
+  nine contract-1.0 tools through Unity Gateway;
+- Supervisor `supervisor-agents/cb6be7ba-3357-48b4-9cf6-2849157d82f0`
+  serves through `mas-cb6be7ba-endpoint`, is `READY`, and uses MLflow
+  experiment `2541423914265277`;
+- four focused Agent Bricks examples cover filing filters, two-turn watchlist
+  confirmation/readback, and draft-without-save behavior.
+
+`tools/phase7_live_capture.py` now captures and atomically checkpoints streamed
+Responses API traces, normalizes namespaced MCP calls, requires explicit
+`--allow-writes`, supports bounded retries/resume, and obtains OAuth only from
+the explicitly named Databricks profile. Sanitized ignored evidence is at
+`build/acceptance/p5-supervisor-results.json`.
+
+The current deployed score is **8/10**. Price, comparison, confirmation-only,
+confirmed watchlist plus readback, confirmed report save, invalid ticker,
+unavailable fundamentals, and read-only notable-updates cases pass. Two gates
+remain:
+
+1. `filing_evidence` calls the correct tools but Agent Bricks serializes
+   `tickers` and `source_types` arrays as strings before falling back to an
+   unfiltered semantic call, so the required filtered call does not score.
+2. `note_draft_is_not_save` emits no completion event within a bounded
+   120-second streamed request, so no result is captured.
+
+The confirmed-write fixtures intentionally persisted NVDA in the Supervisor
+subject's `Primary` watchlist and one report titled `Cloud comparison`. The MCP
+contract has no report-delete tool; do not claim that acceptance state was
+cleaned up.
+
+Render events proved that HTTP `/health` probes were restarting the single
+process during active MCP sessions. The live service now uses Render's default
+TCP liveness probe via deployment `dep-dautl560tbcc73cm1pq0`; `/health` remains
+available for public acceptance. The repository Blueprint and reproducibility
+contract match that setting. No further health-check restarts were observed,
+but the two Supervisor behavior gates above remain open. Re-run with:
 
 ```bash
-python3 tools/phase7_agent_eval.py --results /path/to/captured-supervisor-results.json
+python3 tools/phase7_live_capture.py \
+  --profile dataexpertio_srini \
+  --host https://dbc-7b106152-caf3.cloud.databricks.com \
+  --endpoint mas-cb6be7ba-endpoint \
+  --output build/acceptance/p5-supervisor-results.json \
+  --resume --allow-writes
+python3 tools/phase7_agent_eval.py \
+  --results build/acceptance/p5-supervisor-results.json
 ```
 
 ### P6 — final demo readiness

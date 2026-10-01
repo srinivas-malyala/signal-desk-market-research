@@ -5,7 +5,6 @@ services:
     plan: free
     buildCommand: pip install --require-hashes --requirement mcp_server/requirements.lock
     startCommand: python mcp_server/stock_research_mcp_server.py
-    healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.11

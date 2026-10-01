@@ -1,11 +1,11 @@
 # Phase 7 Status — Agent Bricks Integration
 
-Updated: 2026-09-24
+Updated: 2026-10-01
 
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
-| 7.1 Supervisor Agent and MCP connection | Local contract accepted; Render machine-auth proof pending | Prompt and configuration reconciled to MCP contract 1.0; exact nine-tool inventory; ten executable routing, grounding, confirmation, invalid-input, and unavailable-data fixtures; deterministic captured-trace evaluator; Supervisor remains in `dataexpertio_srini` while MCP moves to Render | Create a governed UC HTTP/MCP connection to the Render endpoint using a separate machine credential or supported OAuth M2M flow, deploy Supervisor, wait for readiness, and capture live traces |
-| 7.2 Identity propagation | Render trust boundary locally accepted | Prompt forbids model-supplied identity; browser users authenticate with OIDC; frontend issues a 60-second RS256 request-bound assertion; MCP rejects expired, tampered, missing, wrong-request and forwarded-header identity; paid reads use separate M2M identities; Supervisor maps to a fixed server-side subject | Prove two real deployed principals, shared-read identity disclosure, and the live Supervisor machine-authentication path |
+| 7.1 Supervisor Agent and MCP connection | Deployed; live evaluation 8/10 | Active governed HTTP connection, exact nine-tool UC MCP Service, READY Supervisor endpoint, four focused examples, streamed capture harness, and eight passing deployed cases | Correct Agent Bricks array serialization for filtered semantic research and the draft-only no-completion timeout; recapture 10/10 |
+| 7.2 Identity propagation | Deployed browser isolation and Supervisor machine identity accepted | Prompt forbids model-supplied identity; browser users authenticate with OIDC; frontend uses request-bound assertions; two real principals proved isolated state; Supervisor uses a fixed secret-backed server-side subject through Unity Gateway | Replace temporary shared data-plane principals before production |
 
 Run local fixture validation:
 
@@ -22,5 +22,6 @@ python tools/phase7_agent_eval.py --results /path/to/captured-supervisor-results
 
 The evaluator checks ordered tool selection, required argument alignment,
 forbidden mutations, explicit confirmation, idempotency-key shape, required
-answer disclosures, and hallucination-sensitive forbidden phrases. It does not
-claim a live pass until captured deployed results are supplied.
+answer disclosures, and hallucination-sensitive forbidden phrases. Current
+ignored deployed evidence scores 8/10; see `CODEX_HANDOFF.md` for the two open
+cases and exact live resource identifiers.

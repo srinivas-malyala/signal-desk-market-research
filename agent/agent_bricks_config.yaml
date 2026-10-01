@@ -8,12 +8,13 @@ supervisor:
   instructions_file: system_prompt.md
 external_mcp_connection:
   tool_name: stock_market_research
-  connection_name: <stock-research-mcp-uc-http-connection>
-  tool_type: uc_connection
+  connection_name: bootcamp_students.student_sri.signal_desk_mcp_connection
+  mcp_service_name: bootcamp_students.student_sri.signal_desk_mcp
+  tool_type: uc_mcp
   description: Retrieves governed market and filing evidence and performs explicitly confirmed user-owned watchlist, note, and report actions.
-  endpoint: https://<your-stock-research-mcp-app>.aws.databricksapps.com/mcp
+  endpoint: https://signal-desk-mcp.onrender.com/mcp
   transport: streamable-http
-  health_endpoint: https://<your-stock-research-mcp-app>.aws.databricksapps.com/health
+  health_endpoint: https://signal-desk-mcp.onrender.com/health
   tools:
     - get_stock_performance
     - get_company_research
@@ -27,7 +28,12 @@ external_mcp_connection:
 evaluation:
   fixture_file: evaluations.json
   evaluator: ../tools/phase7_agent_eval.py
-  results_file: <captured-supervisor-results.json>
+  capture: ../tools/phase7_live_capture.py
+  results_file: ../build/acceptance/p5-supervisor-results.json
+deployment:
+  supervisor_resource: supervisor-agents/cb6be7ba-3357-48b4-9cf6-2849157d82f0
+  serving_endpoint: mas-cb6be7ba-endpoint
+  experiment_id: "2541423914265277"
 guardrails:
   - Never state market facts without a successful tool result.
   - Never silently treat missing or plan-restricted fundamentals as zero.

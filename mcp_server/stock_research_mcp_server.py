@@ -371,8 +371,8 @@ def save_analysis_report(
 def semantic_research(
     query: str,
     top_k: int = 5,
-    tickers: list[str] | None = None,
-    source_types: list[str] | None = None,
+    tickers: tuple[str, ...] = (),
+    source_types: tuple[str, ...] = (),
     start_date: str | None = None,
     end_date: str | None = None,
 ) -> dict:
@@ -381,8 +381,8 @@ def semantic_research(
     Args:
         query: Natural-language investing thesis or research question.
         top_k: Number of parent-deduplicated passages, 1-5.
-        tickers: Optional ticker filter.
-        source_types: Optional ``filing`` or ``article`` filter.
+        tickers: Ticker filter. Pass an empty array to search all tickers.
+        source_types: ``filing`` or ``article`` filter. Pass an empty array to search all source types.
         start_date: Optional inclusive source date in YYYY-MM-DD format.
         end_date: Optional inclusive source date in YYYY-MM-DD format.
     """
@@ -390,8 +390,8 @@ def semantic_research(
     return broker.semantic_research(
         query,
         top_k,
-        tickers,
-        source_types,
+        list(tickers) or None,
+        list(source_types) or None,
         start_date,
         end_date,
         identity.get("access_token"),
