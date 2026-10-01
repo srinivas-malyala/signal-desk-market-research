@@ -4,16 +4,16 @@ Configuration names are stable contracts. Credentials and sensitive resource ide
 
 ## Deployment topology
 
-As of 2026-09-24, `dataexpertio_srini` remains the data workspace for all jobs,
+As of 2026-10-01, `dataexpertio_srini` remains the data workspace for all jobs,
 pipelines, Unity Catalog data, SQL Warehouse queries, AI Search, Lakehouse Sync,
 analytics, and Supervisor processing. Only the FastMCP and Flask runtimes will
 be deployed as two separate Render web services.
 
-The Render split is implemented locally but not yet deployed. Browser users authenticate
+The Render split is deployed. Browser users authenticate
 to Flask through generic OIDC. Flask sends MCP a short-lived asymmetric signed
-identity assertion, not the browser's OIDC token. Each Render service uses a
-separate least-privilege OAuth M2M identity created in the paid workspace for
-shared read-only data access. The Supervisor uses a separate machine credential
+identity assertion, not the browser's OIDC token. Both Render services use the
+owner-approved OAuth M2M identity `dbx-ai-de-aug26` for their bounded workspace
+access. A separate frontend principal is not tracked. The Supervisor uses a separate machine credential
 or supported OAuth M2M flow and is mapped to a fixed server-side identity. See
 `docs/RENDER_DEPLOYMENT_PLAN.md`.
 
@@ -44,8 +44,8 @@ OAuth M2M credentials supplied only through Render secret environment values.
 | `USE_MOCK_BACKEND` | apps | Local development only | Literal `true`; deployed target must use `false` |
 | `DATA_WORKSPACE_HOST` | frontend/MCP paid-data clients | Paid workspace API/SQL target | Non-secret environment value; `https://dbc-7b106152-caf3.cloud.databricks.com` |
 | `DATA_WORKSPACE_WAREHOUSE_ID` | frontend/MCP paid-data clients | Existing paid serverless SQL Warehouse | Non-secret environment value; `b15d3d6f837ba428` |
-| `DATA_WORKSPACE_CLIENT_ID` | frontend/MCP paid-data clients | OAuth M2M client in paid workspace | Temporarily shared as `dbx-ai-de-aug26` by explicit owner decision; split before production |
-| `DATA_WORKSPACE_CLIENT_SECRET` | frontend/MCP paid-data clients | OAuth M2M secret in paid workspace | Temporarily shared only between the two Render services; never committed or logged; split before production |
+| `DATA_WORKSPACE_CLIENT_ID` | frontend/MCP paid-data clients | OAuth M2M client in paid workspace | Owner-approved shared principal `dbx-ai-de-aug26` for both Render services |
+| `DATA_WORKSPACE_CLIENT_SECRET` | frontend/MCP paid-data clients | OAuth M2M secret in paid workspace | Shared only between the two Render services; never committed or logged |
 | `DATABRICKS_WAREHOUSE_ID` | jobs/local acceptance | Same-workspace Delta SQL access | Existing paid-workspace runtime or explicit local environment; not a Render resource |
 | `DATABRICKS_CATALOG` | MCP retrieval | Governed market tables | Non-secret environment value; `bootcamp_students` |
 | `DATABRICKS_SCHEMA` | MCP retrieval | Governed market tables | Non-secret environment value; `student_sri` |
@@ -76,20 +76,20 @@ OAuth M2M credentials supplied only through Render secret environment values.
 | Service | Secret/value | Purpose | Permission intent |
 |---|---|---|---|
 | MCP | `LAKEBASE_URL`, `MASSIVE_API_KEY` | Operational store and bounded external fallback | Read/write only `_srini` tables; Massive calls use the shared quota ledger |
-| MCP | `DATA_WORKSPACE_CLIENT_ID`, `DATA_WORKSPACE_CLIENT_SECRET` | Paid SQL and AI Search access | MCP-specific least-privilege read identity |
+| MCP | `DATA_WORKSPACE_CLIENT_ID`, `DATA_WORKSPACE_CLIENT_SECRET` | Paid SQL and AI Search access | Owner-approved shared workspace read identity |
 | MCP | `FRONTEND_ASSERTION_PUBLIC_KEY`, `MCP_SUPERVISOR_TOKEN` | Verify frontend users and authenticate Supervisor | Verification/machine auth only |
 | Frontend | `LAKEBASE_URL` | Bounded user history reads | Read only permitted `_srini` objects and user-owned rows |
-| Frontend | `DATA_WORKSPACE_CLIENT_ID`, `DATA_WORKSPACE_CLIENT_SECRET` | Paid Gold analytics access | Frontend-specific least-privilege read identity |
+| Frontend | `DATA_WORKSPACE_CLIENT_ID`, `DATA_WORKSPACE_CLIENT_SECRET` | Paid Gold analytics access | Same owner-approved workspace read identity as MCP |
 | Frontend | OIDC settings, `FLASK_SESSION_SECRET` | Browser authentication/session | Frontend only |
 | Frontend | `FRONTEND_ASSERTION_PRIVATE_KEY`, `MCP_SERVER_URL` | Authenticated MCP calls | Signing key available only to frontend; HTTPS URL is non-secret |
 
-The planned `render.yaml` will declare both services and non-secret defaults.
+The deployed `render.yaml` declares both services and non-secret defaults.
 Every secret field must use `sync: false`; no secret value may appear in the
 Blueprint, repository, build output, or logs. The Render services must not
 assume Databricks app resources or ambient `Config()` credentials. Paid SQL,
 Unity Catalog, and AI Search resources remain governed in
-`dataexpertio_srini` and are reached only through the least-privilege M2M
-identities after positive and negative permission tests.
+`dataexpertio_srini` and are reached through the owner-approved shared M2M
+identity after bounded deployed acceptance.
 
 The complete PostgreSQL URL remains protected. Jobs in Databricks continue to
 retrieve it from the administrator-owned `database/lakebase-url` secret;

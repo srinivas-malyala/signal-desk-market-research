@@ -217,7 +217,7 @@ A Databricks Declarative Automation Bundle will version and deploy the data-plan
 - the Lakeflow Spark Declarative Pipeline;
 - Unity Catalog schemas, volumes, and resource variables where supported.
 
-An infrastructure-as-code Render Blueprint will define both Python services, their exact build and start commands, health checks, non-secret configuration, and explicit secret placeholders. Browser identity will use OIDC; the frontend will sign 60-second, request-bound user assertions for MCP. The frontend and MCP services will use separate least-privilege OAuth M2M identities for paid-workspace access, while the Supervisor will use a fixed server-side machine identity.
+An infrastructure-as-code Render Blueprint defines both Python services, their exact build and start commands, health checks, non-secret configuration, and explicit secret placeholders. Browser identity uses OIDC; the frontend signs 60-second, request-bound user assertions for MCP. The frontend and MCP services use the owner-approved shared OAuth M2M identity `dbx-ai-de-aug26` for bounded paid-workspace access, while the Supervisor uses a fixed server-side machine identity.
 
 Lakebase Autoscaling, the shared-schema `_srini` table contract, OIDC/M2M registration, Agent Bricks registration, and Lakebase Sync setup will be documented as environment bootstrap steps where they cannot be completely represented in the bundle or Blueprint. Separate development and production targets will parameterize catalog, schema, application names, and resource identifiers.
 

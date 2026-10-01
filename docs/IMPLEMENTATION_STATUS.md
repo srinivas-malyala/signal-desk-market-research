@@ -13,22 +13,22 @@ This is the living tracker for implementation progress and external gates. A uni
 | 4 — Lakebase | Workspace and deployed identity acceptance complete | PostgreSQL 17+ connectivity; 16 owned `_srini` tables; five idempotent checksum-protected migrations; six tables with full replica identity; vector; bounded pools; rollback; live two-real-principal CRUD/isolation and exact cleanup | Replace the broad shared runtime role before production |
 | 5 — MCP agent tools | Deployed read and action acceptance complete; research FTS not promoted | Lakebase market path; replacement 393-row Qwen3 hybrid AI Search index; nine-tool contract; deployed semantic retrieval; confirmed idempotent watchlist/note/report writes; changed-payload rejection; bounded trace/event reconciliation | Retain MCP workspace credentials while research stays on AI Search; Supervisor evaluation is Phase 7 |
 | 6 — CDF analytics | Workspace acceptance complete | The active schema maps `databricks_postgres.bootcamp_students` to `bootcamp_students.bootcamp_cdc`; all five `_srini` histories are enabled and queryable; a bounded, self-cleaning Lakebase transaction produced the expected 18 history rows in approximately 82–84 seconds; deployed updates reconciled 34 Bronze rows to 26 effective Silver rows and all five Gold metric families, with a measured maximum source latency of 85 seconds | None |
-| 7 — Agent integration | Complete; governed Supervisor live evaluation 10/10 | Active schema-level HTTP connection, nine-tool UC MCP Service, READY Supervisor endpoint, fixed machine identity, four focused examples, streamed/resumable capture harness, plain-array semantic filters, and ten passing deployed cases | Replace temporary shared data-plane principals before production |
-| 8 — Frontend | Render deployed; authenticated workflows accepted | Live security/OIDC/CSRF boundary; all five bounded Gold reads; controlled CDC refreshed in 32.34 seconds; fresh assertion per MCP session; two real principals proved isolated watchlists, notes, reports, and traces | Replace the temporary shared M2M principal before production |
-| 9 — Release | P1–P5 accepted | Public preflight, market and semantic reads, reversible/idempotent writes, shared cross-host quota, all five Gold reads, controlled CDC freshness, two-real-principal UI isolation, and 10/10 governed Supervisor evaluation are accepted | Upgrade both Render services for the final demo month and run the release checklist |
+| 7 — Agent integration | Complete; governed Supervisor live evaluation 10/10 | Active schema-level HTTP connection, nine-tool UC MCP Service, READY Supervisor endpoint, fixed machine identity, four focused examples, streamed/resumable capture harness, plain-array semantic filters, and ten passing deployed cases | None |
+| 8 — Frontend | Complete for the capstone deployment | Live security/OIDC/CSRF boundary; all five bounded Gold reads; controlled CDC refreshed in 32.34 seconds; fresh assertion per MCP session; two real principals proved isolated watchlists, notes, reports, and traces; owner accepted the shared workspace service principal | None |
+| 9 — Release | Free-tier release validation complete | Public health, market and semantic reads, reversible/idempotent writes, shared cross-host quota, five Gold reads, CDC freshness, two-principal isolation, READY Supervisor, 10/10 evaluation, 266 tests, Ruff, reproducibility, credential scan, and strict `dev` bundle validation pass | Paid Render upgrade explicitly deferred by owner; pre-warm both Free services before the live demo |
 
 ## Active sequence
 
 1. Keep research on AI Search and retain the MCP-specific workspace credentials; Lakebase FTS remains below the promotion threshold.
-2. Continue the owner-approved temporary reuse of MCP principal `dbx-ai-de-aug26` for frontend analytics; replace it before production or broader access.
-3. Upgrade both Render services to the smallest paid tier for the demo month and run the final release checklist.
-4. Run final evidence capture and paid-demo readiness; verify TCP liveness and paid-tier cold-start behavior.
+2. Keep owner-approved workspace principal `dbx-ai-de-aug26` configured for both Render services; no identity split is tracked.
+3. Keep both Render services on the Free plan until the owner separately authorizes an upgrade.
+4. Before the live demo, warm MCP first and frontend second, verify both health endpoints, and then follow the five-minute checklist.
 
 ## Current external inputs
 
 - Databricks profile: `dataexpertio_srini` — selected explicitly and reauthenticated as `malyalasrinivas@gmail.com` on 2026-09-29; strict bundle validation passes.
 - Lakebase serving discovery: existing secret maps to shared `summer-bootcamp-2026-v2/production/primary`; no Lakebase UC catalog is registered. The direct publisher avoids the missing managed-sync permission; the current `student` password role remains too broad for final runtime use.
-- Application host: Render — two Python web services are planned; Free instances during development and the smallest paid instances for the final acceptance/demo month.
+- Application host: Render — both Python web services are live on Free instances; paid upgrade is deferred by owner instruction.
 - Hosting contract: all jobs, pipelines, Unity Catalog, SQL Warehouse, AI Search, Lakebase Sync/analytics, and Supervisor processing remain under `dataexpertio_srini`; Render hosts only FastMCP and Flask.
 - Unity Catalog: `bootcamp_students.student_sri` — verified.
 - SQL warehouse: `b15d3d6f837ba428` — verified serverless access.
@@ -195,7 +195,7 @@ This is the living tracker for implementation progress and external gates. A uni
   matches, and bounded 2/2 trace/event reconciliation. No writes were exercised.
   Research remains on AI Search and the MCP-specific workspace credentials must
   remain configured.
-- 2026-09-30 UTC — Completed P3 under the owner-approved temporary reuse of MCP
+- 2026-09-30 UTC — Completed P3 under the owner-approved reuse of MCP
   principal `dbx-ai-de-aug26`. Corrected the Render warehouse-variable contract,
   deployed commit `969a096` as `dep-dauked8u01pc7382nbn0`, and proved all five
   bounded Gold queries through the authenticated frontend. A self-cleaning CDC
@@ -204,9 +204,9 @@ This is the living tracker for implementation progress and external gates. A uni
   operational rows. Incremental activity update
   `3c5fa83d-f39e-46ed-b324-8629b6c9a0cc` completed; the UI refreshed to current
   September 30 freshness and displayed the controlled tool row at one call,
-  zero errors, and 123 ms P95. The workspace's inherited catalog grants are
-  broader than the target five-table boundary, so a dedicated least-privilege
-  frontend identity remains required before production or broader access.
+  zero errors, and 123 ms P95. On 2026-10-01 the owner accepted the current
+  service principal for both Render services and closed the identity-split
+  follow-up.
 - 2026-09-30 UTC — Completed P4. The opt-in deployed MCP write harness passed
   confirmed watchlist creation, exact idempotent replay, changed-payload
   rejection, cleanup, and bounded audit reconciliation. Shared recursive result
@@ -261,3 +261,12 @@ This is the living tracker for implementation progress and external gates. A uni
   schema inspection proved exactly nine tools and no `anyOf` on either filter,
   and the recaptured filing trace passed real `["AAPL"]` and `["filing"]`
   arrays before `get_company_research`. The full local suite passes 264 tests.
+- 2026-10-01 UTC — Completed the non-paid P6 release checkpoint. MCP and
+  frontend public health returned 200; both services were verified Live on the
+  Free plan; the Supervisor remained READY; strict bundle validation passed for
+  target `dev`; and 266 tests, Ruff, Render reproducibility, release artifact
+  tests, and the credential scan passed. The owner accepted
+  `dbx-ai-de-aug26` for both services and instructed that this identity item no
+  longer be tracked. The paid Render upgrade was not performed and remains
+  explicitly deferred. Sanitized evidence is retained at
+  `build/acceptance/p6-release-readiness-2026-10-01.json`.

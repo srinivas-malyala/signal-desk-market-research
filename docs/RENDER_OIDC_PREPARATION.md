@@ -1,6 +1,6 @@
 # Render OIDC and application-credential preparation
 
-Updated: 2026-09-24
+Updated: 2026-10-01
 
 ## Accepted identity contract
 
@@ -84,8 +84,8 @@ committed `.env` files, build arguments, or screenshots.
 
 - [ ] `LAKEBASE_URL` — administrator-provided SSL connection URL.
 - [ ] `MASSIVE_API_KEY` — existing free-plan key.
-- [ ] `DATA_WORKSPACE_CLIENT_ID` — MCP-specific M2M client ID.
-- [ ] `DATA_WORKSPACE_CLIENT_SECRET` — MCP-specific M2M secret.
+- [x] `DATA_WORKSPACE_CLIENT_ID` — owner-approved shared M2M client ID.
+- [x] `DATA_WORKSPACE_CLIENT_SECRET` — owner-approved shared M2M secret.
 - [ ] `FRONTEND_ASSERTION_PUBLIC_KEY` — complete public PEM file.
 - [ ] `MCP_SUPERVISOR_TOKEN` — complete generated token.
 - [ ] `MCP_SUPERVISOR_SUBJECT` — non-secret fixed label, for example
@@ -94,8 +94,8 @@ committed `.env` files, build arguments, or screenshots.
 ### `signal-desk-frontend`
 
 - [ ] `LAKEBASE_URL` — same database endpoint, ownership still enforced by user.
-- [ ] `DATA_WORKSPACE_CLIENT_ID` — frontend-specific M2M client ID.
-- [ ] `DATA_WORKSPACE_CLIENT_SECRET` — frontend-specific M2M secret.
+- [x] `DATA_WORKSPACE_CLIENT_ID` — same owner-approved shared M2M client ID.
+- [x] `DATA_WORKSPACE_CLIENT_SECRET` — same owner-approved shared M2M secret.
 - [ ] `MCP_SERVER_URL` — final HTTPS URL for `signal-desk-mcp`.
 - [ ] `OIDC_CLIENT_ID` — Google Web application client ID.
 - [ ] `OIDC_CLIENT_SECRET` — Google client secret.

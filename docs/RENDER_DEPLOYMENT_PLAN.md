@@ -1,6 +1,6 @@
 # Render deployment implementation plan
 
-Updated: 2026-09-29
+Updated: 2026-10-01
 
 > **Current direction:** ADR 0007 supersedes the MCP OAuth M2M serving portion
 > of this plan. The MCP will move incrementally to Lakebase-only runtime reads
@@ -29,10 +29,9 @@ reauthentication. Continue with `docs/RENDER_DEPLOYMENT_RUNBOOK.md`.
 ## Decision
 
 Deploy the existing Flask frontend and FastMCP server as two separate Render Python web services.
-Use Render Free while implementing and testing, then upgrade both
-services to the smallest paid web-service plan for the final acceptance and
-demo month. At current published pricing, the expected temporary hosting cost
-is approximately $14 for that month.
+Use Render Free for implementation, acceptance, and the current demo-readiness
+checkpoint. A paid upgrade remains an owner-controlled optional change and was
+explicitly deferred on 2026-10-01. Pre-warm MCP and frontend before a live demo.
 
 All Spark jobs, Lakeflow pipelines, Unity Catalog tables, SQL Warehouse, AI
 Search, Lakehouse Sync, analytics, and Supervisor processing remain in the
@@ -199,8 +198,8 @@ value belongs in `render.yaml`.
 - Add OIDC login/callback/logout and secure server-side identity context.
 - Replace the requirement for Databricks forwarded headers in Render mode.
 - Sign a short-lived user assertion for every MCP request.
-- Refactor `analytics_client.py` to use the frontend-specific paid-workspace
-  OAuth M2M identity.
+- Refactor `analytics_client.py` to use the explicit paid-workspace OAuth M2M
+  identity; the owner later accepted `dbx-ai-de-aug26` for both services.
 - Add CSRF enforcement for every consequential browser write.
 - Bind Gunicorn to `$PORT` and retain all security/request-ID headers.
 - Update execution disclosures: user identity comes from OIDC, shared data reads
@@ -314,24 +313,26 @@ all ten Phase 7 evaluation cases.
 Acceptance: deterministic evaluation passes; the model cannot select or forge
 an owner identity; confirmations and idempotency remain enforced by MCP.
 
-### Unit 9 — final paid demo window
+### Unit 9 — final demo window
 
-1. Upgrade both Render services to the smallest paid plan.
+1. Keep both Render services on Free unless the owner separately authorizes an
+   upgrade; pre-warm MCP first and frontend second.
 2. Re-run health, end-to-end, security, quota, CDC latency, and performance
-   acceptance without cold starts.
+   acceptance after any later tier change.
 3. Reconfirm the exported architecture diagram against the live deployment IDs and URLs.
 4. Record sanitized URLs, deploy IDs, commit SHA, timestamps, and test totals.
 5. After submission/demo, suspend, downgrade, or delete the Render services and
    revoke/rotate all deployment credentials.
 
-Acceptance: the complete release checklist passes on the exact deployed commit.
+Acceptance: the complete non-paid release checklist passes on the exact
+deployed commits; any paid-tier evidence remains explicitly deferred.
 
 ## Cost and budget controls
 
 | Stage | Services | Expected hosting cost |
 |---|---|---|
 | Development | Two Render Free web services | $0, subject to sleep and shared free hours |
-| Final acceptance/demo month | Two smallest paid web services | Approximately $14 total at current $7/service pricing |
+| Optional owner-authorized paid window | Two smallest paid web services | Approximately $14 total at current $7/service pricing; currently deferred |
 | After demo | Suspend/downgrade/delete | Return to $0 when services are no longer needed |
 
 Lakebase-only MCP serving removes request-time SQL Warehouse and AI Search
@@ -344,7 +345,7 @@ freshness checks.
 
 | Risk | Severity | Mitigation |
 |---|---|---|
-| Render Free double cold start breaks acceptance timeouts | High | MCP-first deployment and warm-up during development; upgrade both services for final acceptance. |
+| Render Free double cold start breaks acceptance timeouts | High | Warm MCP first and frontend second before the demo; upgrade only with separate owner authorization. |
 | Replacing Databricks proxy identity introduces impersonation risk | Critical | OIDC plus short-lived asymmetric assertions; ignore all model/body/header identity claims; negative tests. |
 | Public MCP endpoint is abused | High | Mandatory auth except health, bounded payloads, rate limits, no CORS, safe errors, Render/UC credentials separated. |
 | Lakebase runtime role is overprivileged | High | Dedicated native role, explicit grants, negative permission tests, TLS, and credential rotation after demo. |

@@ -10,6 +10,8 @@ RELEASE = ROOT / "docs" / "release"
 RENDER_PLAN = ROOT / "docs" / "RENDER_DEPLOYMENT_PLAN.md"
 LAKEBASE_MCP_PLAN = ROOT / "docs" / "LAKEBASE_ONLY_MCP_SERVING_PLAN.md"
 SUPERSEDED_FREE_PLAN = ROOT / "docs" / "SPLIT_WORKSPACE_APP_DEPLOYMENT_PLAN.md"
+PROPOSAL = ROOT / "proposal" / "CAPSTONE_PROPOSAL.md"
+ARCHITECTURE_SVG = ROOT / "proposal" / "signal-desk-capstone-architecture.svg"
 
 
 def test_release_artifacts_exist_and_have_no_template_placeholders() -> None:
@@ -66,7 +68,7 @@ def test_traceability_names_every_required_capstone_component() -> None:
     ):
         assert f"| {component} |" in matrix
     assert "1,255,489" in matrix
-    assert "blocked externally" in matrix.lower()
+    assert "deferred by owner" in matrix.lower()
 
 
 def test_demo_checklist_includes_external_gates_and_negative_cases() -> None:
@@ -75,7 +77,7 @@ def test_demo_checklist_includes_external_gates_and_negative_cases() -> None:
         "dataexpertio_srini",
         "Render",
         "OAuth M2M",
-        "approximately $14",
+        "deferred by owner instruction",
         "migration `0005`",
         "simultaneous Job/MCP quota acceptance",
         "two real principals",
@@ -84,6 +86,21 @@ def test_demo_checklist_includes_external_gates_and_negative_cases() -> None:
         "1,255,489",
     ):
         assert required in checklist
+
+
+def test_release_checklist_only_defers_the_owner_controlled_paid_upgrade() -> None:
+    checklist = (RELEASE / "DEMO_CHECKLIST.md").read_text(encoding="utf-8")
+    unchecked = re.findall(r"^- \[ \] (.+)$", checklist, flags=re.MULTILINE)
+    assert unchecked == ["Upgrade both Render services to the smallest paid tier. Explicitly"]
+    assert "deferred by owner instruction" in checklist
+
+
+def test_submission_artifacts_use_the_final_shared_service_principal_decision() -> None:
+    proposal = PROPOSAL.read_text(encoding="utf-8")
+    diagram = ARCHITECTURE_SVG.read_text(encoding="utf-8")
+    assert "owner-approved shared OAuth M2M identity `dbx-ai-de-aug26`" in proposal
+    assert "Owner-approved shared OAuth M2M reader" in diagram
+    assert "Separate least-privilege OAuth M2M readers" not in diagram
 
 
 def test_render_plan_preserves_data_plane_and_identity_boundaries() -> None:
@@ -95,7 +112,7 @@ def test_render_plan_preserves_data_plane_and_identity_boundaries() -> None:
         "No workspace principal after cutover",
         "51-case quality evaluation",
         "render.yaml",
-        "approximately $14",
+        "currently deferred",
         "codex/render-app-deployment",
         "Supervisor machine identity",
     ):

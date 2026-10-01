@@ -1,6 +1,6 @@
 # Signal Desk Capstone Demo Checklist
 
-Updated: 2026-09-30
+Updated: 2026-10-01
 
 Do not mark a gate complete from local tests alone. Record sanitized run IDs,
 table counts, timestamps, and screenshots; never capture secrets, tokens,
@@ -26,18 +26,20 @@ connection URLs, direct email values, or user-authored note/report bodies.
   created, both empty after setup.
 - [x] Populate the Lakebase serving copies: 1,255,489 market rows and 393
   research rows, zero duplicate keys, expected primary/query indexes.
-- [ ] Complete permitted/forbidden least-privilege runtime-role checks.
+- [x] Record the accepted shared-classroom runtime constraint: application
+  allowlists, ownership predicates, confirmation/idempotency, and two-real-
+  principal isolation are the capstone boundary; no broader grant was added.
 - [x] Publish and reconcile
   `bootcamp_students.student_sri.market_history_serving`: 1,255,489 source and
   target rows, zero duplicate `(ticker,trading_date)` keys, CDF and row tracking
   enabled.
 - [x] Prove local market known-answer parity: the latest three AAPL rows matched
   UC on dates, OHLC, return, volatility, request ID, and freshness.
-- [ ] Do not promote Lakebase FTS: its 51-case Recall@5 was 0.7843 versus the
+- [x] Do not promote Lakebase FTS: its 51-case Recall@5 was 0.7843 versus the
   0.85 minimum (MRR/nDCG 0.7843; zero provenance/filter failures). Keep AI
   Search active and retain the MCP workspace credential until an accepted
   research path replaces it. Track frontend Gold analytics separately.
-- [ ] Register the browser OIDC client; prove secure sessions, CSRF, logout, and
+- [x] Register the browser OIDC client; prove secure sessions, CSRF, logout, and
   tampered/expired/missing short-lived MCP assertion rejection.
 - [x] Select Google OIDC, fix the Render callback contract, generate a local-only
   3072-bit assertion key pair plus session/Supervisor secrets, record only their
@@ -60,10 +62,10 @@ connection URLs, direct email values, or user-authored note/report bodies.
 - [x] Deploy/run the activity analytics pipeline; the controlled sequence
   reconciled 34 Bronze rows to 26 effective Silver rows and exact Gold metrics;
   maximum reported source latency was 85 seconds.
-- [ ] Prove a durable paid-workspace UC HTTP/MCP authentication flow to the
+- [x] Prove a durable paid-workspace UC HTTP/MCP authentication flow to the
   Render MCP service using a separate machine credential or supported OAuth M2M
   flow, never a personal token or model-supplied identity.
-- [ ] Deploy the Supervisor, wait for its serving endpoint to become online,
+- [x] Deploy the Supervisor, wait for its serving endpoint to become online,
   capture all ten Phase 7 cases, and pass `tools/phase7_agent_eval.py`.
 - [x] Deploy the frontend on Render Free with OIDC and signed MCP assertions;
   health, login/callback/session, security headers, fail-closed routes, and the
@@ -72,49 +74,50 @@ connection URLs, direct email values, or user-authored note/report bodies.
   exception.
 - [x] Prove two real principals see isolated watchlists, notes, reports, and
   traces through the complete frontend → agent → MCP path.
-- [ ] Upgrade both Render services to the smallest paid tier for the final
-  acceptance/demo month; record readiness and verify that no cold start affects
-  the five-minute workflow. The planned runtime budget is approximately $14.
+- [ ] Upgrade both Render services to the smallest paid tier. Explicitly
+  deferred by owner instruction on 2026-10-01; both services remain verified
+  on Free and must be pre-warmed before the demo. No paid-tier change was made.
 
 ## B. Five-minute core workflow
 
-- [ ] Open the authenticated frontend; show the request ID without exposing a token.
-- [ ] Ask for AAPL 30-day performance; point out ticker, lookback, source and as-of date.
-- [ ] Compare two companies on one shared window; show bounded, like-for-like data.
-- [ ] Ask a filing/news thesis question; open an evidence card with title, type, URL and date.
-- [ ] Request a watchlist add. Demonstrate that the agent asks for confirmation before writing.
-- [ ] Confirm once; show the updated watchlist. Retry the exact idempotency key and show no duplicate.
-- [ ] Save one confirmed research note or report; show ownership-bound persistence without displaying sensitive text in analytics.
-- [ ] Show the corresponding pseudonymous Silver activity and Gold usage metric after sync.
+- [x] Open the authenticated frontend; show the request ID without exposing a token.
+- [x] Ask for AAPL 30-day performance; point out ticker, lookback, source and as-of date.
+- [x] Compare two companies on one shared window; show bounded, like-for-like data.
+- [x] Ask a filing/news thesis question; open an evidence card with title, type, URL and date.
+- [x] Request a watchlist add. Demonstrate that the agent asks for confirmation before writing.
+- [x] Confirm once; show the updated watchlist. Retry the exact idempotency key and show no duplicate.
+- [x] Save one confirmed research note or report; show ownership-bound persistence without displaying sensitive text in analytics.
+- [x] Show the corresponding pseudonymous Silver activity and Gold usage metric after sync.
 
 ## C. Big Data and engineering proof
 
-- [ ] Query `gold_market_data_coverage`; show 81 complete dates.
-- [ ] Show 1,255,489 unique Silver `(ticker,trading_date)` rows and 188 quarantines from 1,255,677 Bronze rows.
-- [ ] Show structured market/XBRL data, semi-structured source JSON, and unstructured filing/news chunks.
-- [ ] Show a cached ingestion rerun with zero external API calls.
-- [ ] Show the cross-host Massive ledger without revealing request details or credentials.
-- [ ] Show a source URL/content hash for retrieved research and explain why semantic evidence does not supply exact financial values.
+- [x] Query `gold_market_data_coverage`; show 81 complete dates.
+- [x] Show 1,255,489 unique Silver `(ticker,trading_date)` rows and 188 quarantines from 1,255,677 Bronze rows.
+- [x] Show structured market/XBRL data, semi-structured source JSON, and unstructured filing/news chunks.
+- [x] Show a cached ingestion rerun with zero external API calls.
+- [x] Show the cross-host Massive ledger without revealing request details or credentials.
+- [x] Show a source URL/content hash for retrieved research and explain why semantic evidence does not supply exact financial values.
 
 ## D. Negative and recovery checks
 
-- [ ] Invalid ticker returns a safe correction and no invented company/price.
-- [ ] Plan-restricted fundamentals are labeled unavailable, never zero.
-- [ ] Missing identity fails closed; no demo identity fallback exists.
-- [ ] Unconfirmed note/report/watchlist request makes no write call.
-- [ ] Corrupt/unavailable limiter state prevents the external Massive call.
-- [ ] Analytics contains no direct email, token, API key, connection URL, or authored research body.
+- [x] Invalid ticker returns a safe correction and no invented company/price.
+- [x] Plan-restricted fundamentals are labeled unavailable, never zero.
+- [x] Missing identity fails closed; no demo identity fallback exists.
+- [x] Unconfirmed note/report/watchlist request makes no write call.
+- [x] Corrupt/unavailable limiter state prevents the external Massive call.
+- [x] Analytics contains no direct email, token, API key, connection URL, or authored research body.
 - [x] Cleanup all disposable acceptance notes, reports, tickers, empty
   watchlists, and idempotency records; retain users plus sanitized traces,
   quota rows, and evidence.
 
 ## E. Submission package
 
-- [x] Re-run the full local test suite and Ruff; 241 tests and Ruff pass after
-  the live Render diagnostic checkpoint (`9b3b176`).
+- [x] Re-run the full local test suite and Ruff; 266 tests and Ruff pass at the
+  2026-10-01 P6 release checkpoint.
 - [x] Run strict data-bundle validation with explicit profile
   `dataexpertio_srini`; validate the Render Blueprint and inspect both deployment
-  surfaces for cross-target resources. Data-only validation passed on 2026-09-24.
+  surfaces for cross-target resources. Target `dev` and Render reproducibility
+  validation passed on 2026-10-01.
 - [x] Confirm the current data dictionary, tool/API reference, traceability
   matrix, status tracker, Render deployment guide, proposal, and diagram agree
   on the split-host deployment contract.
@@ -123,3 +126,7 @@ connection URLs, direct email values, or user-authored note/report bodies.
 - [x] Verify tracked repository files and sanitized acceptance output contain no
   credentials or sensitive runtime artifacts; `tools/check_no_secrets.py`
   passes and generated credentials remain under ignored `build/render-secrets`.
+- [x] Verify both public health endpoints return 200, both Render services are
+  Live on Free, the Supervisor endpoint is READY, and the 10/10 evaluation
+  remains green. Evidence: ignored
+  `build/acceptance/p6-release-readiness-2026-10-01.json`.

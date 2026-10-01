@@ -54,8 +54,9 @@ Negative:
 - The direct publisher streams 1.25 million market rows through one job-driver
   connection; its duration and source freshness must be measured before any
   schedule is enabled.
-- Frontend Gold analytics retains its separate Databricks credential dependency
-  until a follow-on decision moves those views to a Lakebase serving path.
+- Frontend Gold analytics retains a Databricks credential dependency. The owner
+  accepted sharing `dbx-ai-de-aug26` with MCP on 2026-10-01, so no credential-
+  split follow-up is tracked.
 
 ## Rejected alternatives
 

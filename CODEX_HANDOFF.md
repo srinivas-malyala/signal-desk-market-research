@@ -223,34 +223,21 @@ Consequences:
 - Research requests still require the MCP-specific Databricks OAuth M2M
   identity and AI Search permissions.
 - Do not remove MCP workspace credentials while research remains on AI Search.
-- Frontend SQL analytics temporarily reuses MCP OAuth M2M identity
-  `dbx-ai-de-aug26` by explicit owner decision on 2026-09-30. Keep the shared
-  credential only in the two Render services and replace it with a dedicated
-  frontend identity before production or broader user access.
+- Both Render services use OAuth M2M identity `dbx-ai-de-aug26`. The owner
+  explicitly accepted this shared service-principal design on 2026-10-01; do
+  not track a dedicated frontend principal as remaining work. Keep the
+  credential only in protected Render configuration.
 - Google OIDC is human login only. It is unrelated to Render-to-Databricks M2M
   authentication and to the Supervisor-to-MCP bearer credential.
 
-## Remaining external identity work
+## Accepted workspace service identity
 
-Preferred least-privilege split:
-
-1. MCP service principal:
-   - assigned to workspace `dbc-7b106152-caf3`;
-   - Workspace access entitlement;
-   - `USE CATALOG` on `bootcamp_students`;
-   - `USE SCHEMA` on `bootcamp_students.student_sri`;
-   - `SELECT` on AI Search index
-     `bootcamp_students.student_sri.signal_desk_research_chunks_index`;
-   - OAuth M2M secret stored only in Render MCP configuration.
-2. Frontend service principal (temporary exception):
-   - reuse MCP principal `dbx-ai-de-aug26` until a dedicated frontend identity
-     can be provisioned;
-   - verify SQL Warehouse use and the five Gold reads through the deployed
-     authenticated frontend;
-   - do not copy the shared secret anywhere beyond the two Render services;
-   - later replace this exception with a dedicated principal having Workspace
-     access, Databricks SQL access, `CAN USE` on warehouse
-     `b15d3d6f837ba428`, and `SELECT` only on the five Phase 6 Gold tables.
+Both Render services use the existing workspace service principal
+`dbx-ai-de-aug26`. It is assigned to workspace `dbc-7b106152-caf3`, supports
+the MCP AI Search path and the frontend's five bounded Gold queries, and its
+OAuth secret is stored only in protected Render configuration. This is the
+owner-approved final capstone identity design; a separate frontend principal is
+not an open release or production-hardening item.
 
 The five frontend analytics tables are:
 
@@ -302,7 +289,7 @@ Lakebase FTS as semantic search.
 
 ### P3 — frontend analytics complete
 
-By explicit owner decision, the frontend temporarily reuses MCP principal
+By explicit owner decision, the frontend reuses MCP principal
 `dbx-ai-de-aug26`. Fixed the deployed warehouse variable contract so the client
 accepts `DATA_WORKSPACE_WAREHOUSE_ID`; Render deployment
 `dep-dauked8u01pc7382nbn0` from commit `969a096` reached Live. All five bounded
@@ -313,11 +300,9 @@ Incremental activity update `3c5fa83d-f39e-46ed-b324-8629b6c9a0cc` completed;
 the UI refreshed to **Analytics are current**, displayed the new freshness, and
 showed the `phase6_cdf_acceptance` tool row. Sanitized evidence is in ignored
 build output at
-`build/acceptance/render-frontend-analytics-p3_2026-09-30.json`. The workspace's
-inherited `account users` catalog privileges are broader than the preferred
-five-table boundary; creating a dedicated least-privilege frontend principal
-remains a pre-production hardening item, not a P3 blocker under the approved
-temporary exception.
+`build/acceptance/render-frontend-analytics-p3_2026-09-30.json`. The owner
+accepted the current shared service-principal boundary for both Render services
+on 2026-10-01, so no identity replacement is tracked.
 
 ### P4 — action and isolation gates complete
 
@@ -402,9 +387,15 @@ python3 tools/phase7_agent_eval.py \
 
 ### P6 — final demo readiness
 
-Complete the release checklist, capture final evidence, upgrade both Render
-services to the smallest paid tier for the demo month, and verify that cold
-starts do not disrupt the five-minute workflow.
+Release validation passes on the deployed free-tier services: both public
+health probes returned 200, the Supervisor remains READY with 10/10 evaluation,
+strict `dev` bundle validation passes, and the full local suite passes 266
+tests, Ruff, Render reproducibility, and the credential scan. Sanitized evidence
+is retained at `build/acceptance/p6-release-readiness-2026-10-01.json`.
+
+Both Render services remain on the Free plan by explicit owner instruction.
+The paid-tier upgrade is deferred and was not performed. Warm both services
+before a live demonstration because Free instances can sleep.
 
 ## Safe validation commands
 
@@ -415,7 +406,7 @@ git status --short
 python3 -m pytest -q
 ruff check .
 python3 tools/check_no_secrets.py
-databricks bundle validate -t development --profile dataexpertio_srini
+databricks bundle validate -t dev --profile dataexpertio_srini
 ```
 
 Do not run a full-refresh pipeline, destructive PostgreSQL statement, resource

@@ -1,6 +1,6 @@
 # Render deployment runbook
 
-Updated: 2026-09-29
+Updated: 2026-10-01
 
 This runbook deploys only the Flask frontend and FastMCP service to Render. All
 jobs, pipelines, Unity Catalog data, SQL Warehouse, AI Search, Lakehouse Sync,
@@ -102,11 +102,10 @@ existing shared PostgreSQL schema, and the manual publisher uses session-local
 staging plus an atomic transaction. Do not add these serving tables to the five
 history tables allowlisted by the activity pipeline, and do not confuse that
 Lakebase-to-UC `bootcamp_cdc` namespace with the separate PostgreSQL
-`bootcamp_cdc` graph destination. The preferred production boundary keeps the
-frontend Gold analytics credential separate. For the bounded 2026-09-30
-acceptance window, the owner explicitly approved temporary reuse of MCP
-principal `dbx-ai-de-aug26`; replace this exception with a dedicated frontend
-principal before production or broader user access.
+`bootcamp_cdc` graph destination. The owner accepted workspace principal
+`dbx-ai-de-aug26` for both Render services on 2026-10-01. Keep its secret only
+in protected Render configuration; a separate frontend principal is not
+tracked.
 
 ## 3. Register browser OIDC
 
@@ -140,7 +139,7 @@ Required secret ownership:
 |---|---:|---:|
 | `LAKEBASE_URL` | Yes | Yes |
 | `MASSIVE_API_KEY` | Yes | No |
-| Databricks `DATA_WORKSPACE_CLIENT_ID/SECRET` | Yes | Yes, temporarily shared by explicit owner decision; split before production |
+| Databricks `DATA_WORKSPACE_CLIENT_ID/SECRET` | Yes | Yes, shared by final owner decision; no split follow-up |
 | `FRONTEND_ASSERTION_PUBLIC_KEY` | Yes | No |
 | `FRONTEND_ASSERTION_PRIVATE_KEY` | No | Yes |
 | `MCP_SUPERVISOR_TOKEN`, `MCP_SUPERVISOR_SUBJECT` | Yes | No |
@@ -219,12 +218,14 @@ fixtures, and run:
 python tools/phase7_agent_eval.py --results /path/to/sanitized-results.json
 ```
 
-## 9. Final paid demo window and teardown
+## 9. Final demo window and teardown
 
-Before final acceptance, upgrade both services to the smallest paid plan and
-repeat all health, security, workflow, quota, CDC freshness, and performance
-checks. The expected temporary hosting cost is approximately $14 at the planned
-pricing. Record the exact commit SHA used for both deployments.
+Both services remain on the Free plan by explicit owner instruction. Before a
+live demo, warm MCP first with `/health`, warm frontend second with `/healthz`,
+confirm the Supervisor is READY, and only then start the five-minute workflow.
+If the owner later authorizes a paid upgrade, repeat all health, security,
+workflow, quota, CDC freshness, and performance checks and record the exact
+commit SHA used for both deployments.
 
 After the demonstration, suspend, downgrade, or delete both Render services and
 rotate/revoke the Lakebase runtime password, any remaining frontend Databricks

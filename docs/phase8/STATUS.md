@@ -1,13 +1,13 @@
 # Phase 8 — Frontend Databricks App
 
-Updated: 2026-09-29
+Updated: 2026-10-01
 
 | Unit | Status | Evidence | Remaining gate |
 |---|---|---|---|
-| 8.1 Flask shell and authentication | Render implementation locally accepted; deployment pending | Flask/Gunicorn retained; generic OIDC login/callback/logout; verified-email allowlist; secure bounded sessions; CSRF on writes; 60-second request-bound RS256 MCP assertions with MCP-session replay rejection; `$PORT`; public health; request IDs/security headers; Render ignores forwarded identity | Register OIDC redirect/client secrets, deploy to Render, and run authenticated/two-principal browser smoke tests |
-| 8.2 Research and evidence workflow | Local implementation complete | Authenticated MCP routes support bounded performance, 2–5 ticker comparison, and hybrid filing/news evidence; UI exposes progress, empty/error/partial/rate-limit states, source links, context labels, as-of metadata, limitations, execution identity, and disclaimer | Deploy MCP/frontend and run the browser evidence-source acceptance flow |
-| 8.3 Watchlists, notes, and reports | Local core workflow complete | Confirmed add/remove, note save, and report save use one authenticated idempotent MCP call; browser confirmation/cancel behavior and user-owned reload views are implemented; watchlist/news overview reads now use MCP and read-only overview no longer creates users | Deployed write/reload/two-user acceptance; note deletion requires a future versioned MCP delete contract because MCP 1.0 intentionally exposes only nine tools |
-| 8.4 Usage analytics page | Deployed authenticated acceptance complete | Bounded SQL Warehouse client reads all five Phase 6 Gold datasets through temporary shared principal `dbx-ai-de-aug26`; a controlled self-cleaning transaction produced 18 CDC images, synced in 32.34 seconds, completed the incremental pipeline, and appeared in the UI with current freshness and exact tool/P95 evidence | Replace the temporary shared principal with a dedicated least-privilege frontend identity before production or broader access |
+| 8.1 Flask shell and authentication | Deployed acceptance complete | Flask/Gunicorn retained; Google OIDC login/callback/logout; verified-email allowlist; secure bounded sessions; CSRF on writes; 60-second request-bound RS256 MCP assertions with MCP-session replay rejection; public health; request IDs/security headers; two real principals accepted | None |
+| 8.2 Research and evidence workflow | Deployed acceptance complete | Authenticated MCP routes support bounded performance, 2–5 ticker comparison, and hybrid filing/news evidence; UI exposes required states, source links, as-of metadata, limitations, execution identity, and disclaimer | None |
+| 8.3 Watchlists, notes, and reports | Deployed acceptance complete | Confirmed add/remove, note save, and report save use authenticated idempotent MCP calls; two real principals proved ownership isolation and exact disposable-row cleanup | Note deletion remains intentionally outside MCP contract 1.0, not a release gate |
+| 8.4 Usage analytics page | Deployed authenticated acceptance complete | Bounded SQL Warehouse client reads all five Phase 6 Gold datasets through owner-approved shared principal `dbx-ai-de-aug26`; a controlled self-cleaning transaction produced 18 CDC images, synced in 32.34 seconds, completed the incremental pipeline, and appeared in the UI with current freshness and exact tool/P95 evidence | None |
 
 ## Local security contract
 
@@ -80,19 +80,18 @@ Confirmed note/report tests prove cancel/unconfirmed requests make no tool call,
 and one accepted browser request maps to one idempotent MCP write.
 
 The analytics client targets the paid workspace with OAuth M2M in Render mode.
-By explicit owner decision on 2026-09-30, the deployed frontend temporarily
-reuses MCP principal `dbx-ai-de-aug26`; a dedicated frontend identity remains a
-pre-production hardening item. All five
+By explicit owner decision finalized on 2026-10-01, both Render services use
+principal `dbx-ai-de-aug26`; a dedicated frontend identity is not tracked. All five
 queries target fully qualified Gold tables, have hard row limits, and share a
 256 KB response ceiling. The UI explicitly discloses service-principal query
 execution because these are shared pseudonymous aggregates, not user-owned
 operational rows. KPI cards include period context, source, and freshness;
 exact tool counts and P95 latency use a table instead of an ornamental chart.
 
-The current local suite passes 259 tests and whole-repository lint. Render
+The current local suite passes 266 tests and whole-repository lint. Render
 packaging, identity/data-client refactors, deployed analytics, and authenticated
-browser CDC acceptance are complete. A dedicated frontend identity and the
-final paid-service readiness check remain hardening/release gates. MCP no longer waits
+browser CDC acceptance are complete. The paid-service upgrade is explicitly
+deferred by owner instruction; pre-warm the Free services before a demo. MCP no longer waits
 for a workspace M2M repair; its separate Lakebase-only sequence is defined by
 ADR 0007 and `docs/LAKEBASE_ONLY_MCP_SERVING_PLAN.md`. See
 `docs/RENDER_DEPLOYMENT_RUNBOOK.md`.
