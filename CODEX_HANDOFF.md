@@ -368,16 +368,14 @@ Responses API traces, normalizes namespaced MCP calls, requires explicit
 the explicitly named Databricks profile. Sanitized ignored evidence is at
 `build/acceptance/p5-supervisor-results.json`.
 
-The current deployed score is **8/10**. Price, comparison, confirmation-only,
-confirmed watchlist plus readback, confirmed report save, invalid ticker,
-unavailable fundamentals, and read-only notable-updates cases pass. Two gates
-remain:
-
-1. `filing_evidence` calls the correct tools but Agent Bricks serializes
-   `tickers` and `source_types` arrays as strings before falling back to an
-   unfiltered semantic call, so the required filtered call does not score.
-2. `note_draft_is_not_save` emits no completion event within a bounded
-   120-second streamed request, so no result is captured.
+The current deployed score is **10/10**. The draft-only case completed without
+any write after a longer evidence-gathering run. The final MCP deployment
+`dep-dauu1fh7lnhs739v40f0` from commit `451c789` changed the optional semantic
+filters to a plain-array JSON schema. Direct live inspection proved exactly nine
+tools and `type: array`, `default: []`, with no nullable `anyOf` for both
+`tickers` and `source_types`. The recaptured `filing_evidence` trace then called
+`semantic_research` with real arrays `tickers=["AAPL"]` and
+`source_types=["filing"]`, followed by `get_company_research`.
 
 The confirmed-write fixtures intentionally persisted NVDA in the Supervisor
 subject's `Primary` watchlist and one report titled `Cloud comparison`. The MCP
@@ -389,7 +387,7 @@ process during active MCP sessions. The live service now uses Render's default
 TCP liveness probe via deployment `dep-dautl560tbcc73cm1pq0`; `/health` remains
 available for public acceptance. The repository Blueprint and reproducibility
 contract match that setting. No further health-check restarts were observed,
-but the two Supervisor behavior gates above remain open. Re-run with:
+and P5 is complete. Re-run with:
 
 ```bash
 python3 tools/phase7_live_capture.py \

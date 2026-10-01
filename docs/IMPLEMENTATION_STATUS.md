@@ -13,15 +13,15 @@ This is the living tracker for implementation progress and external gates. A uni
 | 4 — Lakebase | Workspace and deployed identity acceptance complete | PostgreSQL 17+ connectivity; 16 owned `_srini` tables; five idempotent checksum-protected migrations; six tables with full replica identity; vector; bounded pools; rollback; live two-real-principal CRUD/isolation and exact cleanup | Replace the broad shared runtime role before production |
 | 5 — MCP agent tools | Deployed read and action acceptance complete; research FTS not promoted | Lakebase market path; replacement 393-row Qwen3 hybrid AI Search index; nine-tool contract; deployed semantic retrieval; confirmed idempotent watchlist/note/report writes; changed-payload rejection; bounded trace/event reconciliation | Retain MCP workspace credentials while research stays on AI Search; Supervisor evaluation is Phase 7 |
 | 6 — CDF analytics | Workspace acceptance complete | The active schema maps `databricks_postgres.bootcamp_students` to `bootcamp_students.bootcamp_cdc`; all five `_srini` histories are enabled and queryable; a bounded, self-cleaning Lakebase transaction produced the expected 18 history rows in approximately 82–84 seconds; deployed updates reconciled 34 Bronze rows to 26 effective Silver rows and all five Gold metric families, with a measured maximum source latency of 85 seconds | None |
-| 7 — Agent integration | Governed Supervisor deployed; live evaluation 8/10 | Active schema-level HTTP connection, nine-tool UC MCP Service, READY Supervisor endpoint, fixed machine identity, four focused examples, streamed/resumable capture harness, and eight passing deployed cases | Fix Agent Bricks array-argument serialization for the filtered filing case and the no-completion timeout for the draft-only case; then capture 10/10 |
+| 7 — Agent integration | Complete; governed Supervisor live evaluation 10/10 | Active schema-level HTTP connection, nine-tool UC MCP Service, READY Supervisor endpoint, fixed machine identity, four focused examples, streamed/resumable capture harness, plain-array semantic filters, and ten passing deployed cases | Replace temporary shared data-plane principals before production |
 | 8 — Frontend | Render deployed; authenticated workflows accepted | Live security/OIDC/CSRF boundary; all five bounded Gold reads; controlled CDC refreshed in 32.34 seconds; fresh assertion per MCP session; two real principals proved isolated watchlists, notes, reports, and traces | Replace the temporary shared M2M principal before production |
-| 9 — Release | P1–P4 accepted; P5 at 8/10 | Public preflight, market and semantic reads, reversible/idempotent writes, shared cross-host quota, all five Gold reads, controlled CDC freshness, two-real-principal UI isolation, and governed Supervisor deployment are accepted | Close the final two Supervisor cases, then upgrade for the final demo month |
+| 9 — Release | P1–P5 accepted | Public preflight, market and semantic reads, reversible/idempotent writes, shared cross-host quota, all five Gold reads, controlled CDC freshness, two-real-principal UI isolation, and 10/10 governed Supervisor evaluation are accepted | Upgrade both Render services for the final demo month and run the release checklist |
 
 ## Active sequence
 
 1. Keep research on AI Search and retain the MCP-specific workspace credentials; Lakebase FTS remains below the promotion threshold.
 2. Continue the owner-approved temporary reuse of MCP principal `dbx-ai-de-aug26` for frontend analytics; replace it before production or broader access.
-3. Resolve the Supervisor's array-filter serialization and draft-only completion timeout, then recapture the final two Phase 7 cases.
+3. Upgrade both Render services to the smallest paid tier for the demo month and run the final release checklist.
 4. Run final evidence capture and paid-demo readiness; verify TCP liveness and paid-tier cold-start behavior.
 
 ## Current external inputs
@@ -240,11 +240,11 @@ This is the living tracker for implementation progress and external gates. A uni
   and four focused Supervisor examples. Prompt iteration corrected the exact
   `As-of date:` disclosure, enforced two-turn watchlist confirmation, and added
   post-write readback. Nine cases were captured in ignored evidence at
-  `build/acceptance/p5-supervisor-results.json`; deterministic scoring is 8/10.
-  The filtered filing case still serializes array filters as strings despite the
-  correct MCP JSON schema, and the draft-only case emits no completion within
-  120 seconds. The remaining eight cases pass, including both confirmed writes
-  and all negative/read-only safety cases. Those write fixtures persist NVDA in
+  `build/acceptance/p5-supervisor-results.json`; this initial checkpoint scored
+  8/10. The filtered filing case serialized array filters as strings under the
+  original nullable schema, and the draft-only case exceeded the first bounded
+  capture. Both were closed by the final 10/10 checkpoint recorded below. The
+  confirmed-write fixtures persist NVDA in
   the fixed Supervisor subject's `Primary` watchlist and one `Cloud comparison`
   report; the nine-tool contract has no report-delete operation.
 - 2026-10-01 UTC — Render events isolated repeated Supervisor registration
@@ -254,3 +254,10 @@ This is the living tracker for implementation progress and external gates. A uni
   public `/health` endpoint. Configuration deployment
   `dep-dautl560tbcc73cm1pq0` reached Live, and subsequent tool cases completed
   without the earlier health-check restart cycle.
+- 2026-10-01 UTC — Closed P5 at 10/10. The draft-only case completed after a
+  longer read-only evidence workflow and made no write. Commit `451c789`
+  changed the MCP semantic filters from nullable arrays to plain arrays with
+  empty defaults; deployment `dep-dauu1fh7lnhs739v40f0` reached Live. Direct
+  schema inspection proved exactly nine tools and no `anyOf` on either filter,
+  and the recaptured filing trace passed real `["AAPL"]` and `["filing"]`
+  arrays before `get_company_research`. The full local suite passes 264 tests.
