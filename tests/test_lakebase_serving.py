@@ -13,6 +13,7 @@ sys.path.insert(0, str(MCP_ROOT))
 
 from lakebase_serving import (  # noqa: E402
     LakebaseResearchSearch,
+    fetch_latest_market_bars,
     fetch_market_bars,
     market_backend,
     research_backend,
@@ -76,6 +77,46 @@ def test_market_serving_query_is_parameterized_bounded_and_normalized(
     assert "LIMIT 370" in sql
     assert "AAPL" not in sql
     assert params == ("AAPL", "2026-09-01", "2026-09-10")
+
+
+def test_latest_market_bars_are_bounded_to_requested_watchlist_tickers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SIGNAL_DESK_SERVING_SCHEMA", "bootcamp_students")
+    connection, cursor = _connection(
+        [
+            {
+                "ticker": "MSFT",
+                "close": Decimal("425.50"),
+                "change_percent": Decimal("1.25"),
+                "captured_at": "2026-09-30",
+            }
+        ]
+    )
+
+    rows = fetch_latest_market_bars([" msft ", "MSFT"], connection=connection)
+
+    assert rows == [
+        {
+            "ticker": "MSFT",
+            "close": 425.5,
+            "change_percent": 1.25,
+            "captured_at": "2026-09-30",
+        }
+    ]
+    sql, params = cursor.execute.call_args.args
+    assert "bootcamp_students.market_history_serving_srini" in sql
+    assert "DISTINCT ON (ticker)" in sql
+    assert "daily_return * 100 AS change_percent" in sql
+    assert "MSFT" not in sql
+    assert params == (["MSFT"], 1)
+
+
+def test_latest_market_bars_skips_database_for_empty_ticker_list() -> None:
+    connection, cursor = _connection([])
+
+    assert fetch_latest_market_bars([], connection=connection) == []
+    cursor.execute.assert_not_called()
 
 
 def test_full_text_search_filters_deduplicates_and_labels_nonsemantic_backend(

@@ -64,6 +64,23 @@ def test_company_mapping_does_not_invent_sector(monkeypatch):
     assert writes[0][4] == "Electronic Computers"
 
 
+def test_refresh_company_profile_fetches_and_persists_public_details(monkeypatch):
+    fake = Mock()
+    fake.get_ticker_details.return_value = {
+        "ticker": "MSFT",
+        "name": "Microsoft Corporation",
+        "sic_description": "Services-Prepackaged Software",
+    }
+    upsert = Mock()
+    monkeypatch.setattr(broker, "client", lambda: fake)
+    monkeypatch.setattr(broker, "_upsert_company", upsert)
+
+    broker._refresh_company_profile("MSFT")
+
+    fake.get_ticker_details.assert_called_once_with("MSFT")
+    upsert.assert_called_once_with("MSFT", fake.get_ticker_details.return_value)
+
+
 def test_performance_prefers_governed_lakehouse_history(monkeypatch):
     fake = Mock()
     fake.get_snapshot.return_value = {"lastTrade": {"p": 110}}

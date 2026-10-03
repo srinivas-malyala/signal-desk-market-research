@@ -52,8 +52,18 @@ def test_existing_massive_pagination_is_characterized(monkeypatch: pytest.Monkey
 def test_existing_watchlist_add_semantics_are_characterized(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    update = Mock(return_value={"status": "success", "ticker": "AAPL", "action": "add", "tickers": []})
+    update = Mock(
+        return_value={
+            "status": "success",
+            "ticker": "AAPL",
+            "action": "add",
+            "tickers": [],
+            "idempotent_replay": False,
+        }
+    )
+    refresh_profile = Mock()
     monkeypatch.setattr(broker.actions, "update_watchlist", update)
+    monkeypatch.setattr(broker, "_refresh_company_profile", refresh_profile)
     result = broker.update_watchlist(
         "person@example.com", " aapl ", "add", confirmed=True, idempotency_key="request-123"
     )
@@ -64,6 +74,155 @@ def test_existing_watchlist_add_semantics_are_characterized(
     update.assert_called_once_with(
         "person@example.com", "AAPL", "add", "Primary", confirmed=True, idempotency_key="request-123"
     )
+    refresh_profile.assert_called_once_with("AAPL")
+
+
+def test_watchlist_profile_enrichment_failure_does_not_undo_confirmed_add(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    update = Mock(
+        return_value={
+            "status": "success",
+            "ticker": "MSFT",
+            "action": "add",
+            "changed": True,
+            "idempotent_replay": False,
+        }
+    )
+    monkeypatch.setattr(broker.actions, "update_watchlist", update)
+    monkeypatch.setattr(
+        broker,
+        "_refresh_company_profile",
+        Mock(side_effect=RuntimeError("profile provider unavailable")),
+    )
+
+    result = broker.update_watchlist(
+        "person@example.com", "MSFT", "add", confirmed=True, idempotency_key="request-456"
+    )
+
+    assert result["status"] == "success"
+    assert result["changed"] is True
+
+
+def test_watchlist_remove_and_idempotent_replay_skip_profile_enrichment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    refresh_profile = Mock()
+    monkeypatch.setattr(broker, "_refresh_company_profile", refresh_profile)
+    monkeypatch.setattr(
+        broker.actions,
+        "update_watchlist",
+        Mock(return_value={"status": "success", "action": "remove", "idempotent_replay": False}),
+    )
+    broker.update_watchlist(
+        "person@example.com", "MSFT", "remove", confirmed=True, idempotency_key="request-remove"
+    )
+    monkeypatch.setattr(
+        broker.actions,
+        "update_watchlist",
+        Mock(return_value={"status": "success", "action": "add", "idempotent_replay": True}),
+    )
+    broker.update_watchlist(
+        "person@example.com", "MSFT", "add", confirmed=True, idempotency_key="request-replay"
+    )
+
+    refresh_profile.assert_not_called()
+
+
+def test_watchlist_uses_lakebase_serving_prices_when_market_backend_is_active(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    legacy_rows = [
+        {
+            "ticker": "MSFT",
+            "added_at": "time",
+            "name": None,
+            "description": None,
+            "market_cap": None,
+            "close": None,
+            "change_percent": None,
+            "captured_at": None,
+        }
+    ]
+    monkeypatch.setattr(broker.lakebase, "query", Mock(return_value=legacy_rows))
+    monkeypatch.setenv("SIGNAL_DESK_MARKET_BACKEND", "lakebase")
+    latest = Mock(
+        return_value=[
+            {
+                "ticker": "MSFT",
+                "close": 425.5,
+                "change_percent": 1.25,
+                "captured_at": "2026-09-30",
+            }
+        ]
+    )
+    monkeypatch.setattr("lakebase_serving.fetch_latest_market_bars", latest)
+
+    result = broker.get_watchlist("person@example.com")
+
+    assert result["status"] == "success"
+    assert result["tickers"][0]["ticker"] == "MSFT"
+    assert result["tickers"][0]["close"] == 425.5
+    assert result["tickers"][0]["change_percent"] == 1.25
+    assert result["tickers"][0]["captured_at"] == "2026-09-30"
+    latest.assert_called_once_with(["MSFT"])
+
+
+def test_watchlist_keeps_legacy_snapshot_when_market_serving_is_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    legacy_rows = [
+        {
+            "ticker": "AAPL",
+            "close": 338.4,
+            "change_percent": -0.78,
+            "captured_at": "2026-09-28T04:00:00+00:00",
+        }
+    ]
+    monkeypatch.setattr(broker.lakebase, "query", Mock(return_value=legacy_rows))
+    monkeypatch.setenv("SIGNAL_DESK_MARKET_BACKEND", "lakebase")
+    monkeypatch.setattr(
+        "lakebase_serving.fetch_latest_market_bars",
+        Mock(side_effect=RuntimeError("serving table temporarily unavailable")),
+    )
+
+    result = broker.get_watchlist("person@example.com")
+
+    assert result == {"status": "success", "watchlist": "Primary", "tickers": legacy_rows}
+
+
+def test_watchlist_does_not_replace_a_newer_legacy_snapshot_with_older_serving_data(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    legacy_rows = [
+        {
+            "ticker": "AAPL",
+            "close": 338.4,
+            "change_percent": -0.78,
+            "captured_at": "2026-09-28T04:00:00+00:00",
+        }
+    ]
+    monkeypatch.setattr(broker.lakebase, "query", Mock(return_value=legacy_rows))
+    monkeypatch.setenv("SIGNAL_DESK_MARKET_BACKEND", "lakebase")
+    monkeypatch.setattr(
+        "lakebase_serving.fetch_latest_market_bars",
+        Mock(
+            return_value=[
+                {
+                    "ticker": "AAPL",
+                    "close": 230.0,
+                    "change_percent": 0.5,
+                    "captured_at": "2026-09-09",
+                }
+            ]
+        ),
+    )
+
+    result = broker.get_watchlist("person@example.com")
+
+    assert result["tickers"][0]["close"] == 338.4
+    assert result["tickers"][0]["change_percent"] == -0.78
+    assert result["tickers"][0]["captured_at"] == "2026-09-28T04:00:00+00:00"
 
 
 def test_existing_note_and_report_response_shapes_are_characterized(

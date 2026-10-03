@@ -88,6 +88,12 @@ def _upsert_company(ticker: str, data: dict) -> None:
     )
 
 
+def _refresh_company_profile(ticker: str) -> None:
+    details = client().get_ticker_details(ticker)
+    if details:
+        _upsert_company(ticker, details)
+
+
 def _bar(row: dict) -> dict:
     ts = datetime.fromtimestamp(row["t"] / 1000, tz=UTC)
     return {
@@ -407,6 +413,35 @@ def get_watchlist(user_email: str, watchlist_name: str = "Primary") -> dict:
           WHERE u.email=%s AND w.name=%s ORDER BY wt.added_at""",
             (email, name),
         )
+        if rows:
+            from lakebase_serving import fetch_latest_market_bars, market_backend
+
+            if market_backend() == "lakebase":
+                try:
+                    latest_by_ticker = {
+                        row["ticker"]: row
+                        for row in fetch_latest_market_bars([row["ticker"] for row in rows])
+                    }
+                except Exception:
+                    # Membership and any legacy snapshot remain useful when the
+                    # independently published serving copy is unavailable.
+                    latest_by_ticker = {}
+                for row in rows:
+                    latest = latest_by_ticker.get(row["ticker"])
+                    legacy_date = str(row.get("captured_at") or "")[:10]
+                    serving_date = str((latest or {}).get("captured_at") or "")[:10]
+                    if latest and (
+                        row.get("close") is None
+                        or not legacy_date
+                        or serving_date >= legacy_date
+                    ):
+                        row.update(
+                            {
+                                "close": latest.get("close"),
+                                "change_percent": latest.get("change_percent"),
+                                "captured_at": latest.get("captured_at"),
+                            }
+                        )
         return {"status": "success", "watchlist": name, "tickers": rows}
     except Exception as error:
         return _error(error)
@@ -429,7 +464,7 @@ def update_watchlist(
         name = (watchlist_name or "Primary").strip()
         if not name or len(name) > 100:
             raise ValueError("watchlist_name must contain 1-100 characters.")
-        return actions.update_watchlist(
+        result = actions.update_watchlist(
             user_email,
             symbol,
             verb,
@@ -437,6 +472,15 @@ def update_watchlist(
             confirmed=confirmed,
             idempotency_key=idempotency_key,
         )
+        if result.get("status") == "success" and verb == "add" and not result.get("idempotent_replay"):
+            try:
+                _refresh_company_profile(symbol)
+            except Exception:
+                # The confirmed membership write is authoritative. Profile
+                # enrichment is public-data cache warming and may be retried by
+                # a later add or company-research request.
+                pass
+        return result
     except Exception as error:
         return _error(error)
 

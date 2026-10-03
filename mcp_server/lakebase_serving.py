@@ -26,6 +26,7 @@ NUMERIC_FIELDS = frozenset(
         "transactions",
         "daily_return",
         "annualized_volatility_20d",
+        "change_percent",
         "score",
     }
 )
@@ -139,6 +140,36 @@ def fetch_market_bars(
     def run(active_connection) -> list[dict[str, Any]]:
         with active_connection.cursor() as cursor:
             cursor.execute(sql, (ticker, start_date, end_date))
+            return [_normalized(dict(row)) for row in cursor.fetchall()]
+
+    if connection is not None:
+        return run(connection)
+    with serving_connection() as active_connection:
+        return run(active_connection)
+
+
+def fetch_latest_market_bars(
+    tickers: list[str],
+    *,
+    connection=None,
+) -> list[dict[str, Any]]:
+    """Read the latest published close for each requested watchlist ticker."""
+
+    symbols = sorted({str(ticker).strip().upper() for ticker in tickers if str(ticker).strip()})
+    if not symbols:
+        return []
+    table = serving_table("SIGNAL_DESK_MARKET_SERVING_TABLE", "market_history_serving_srini")
+    sql = f"""SELECT DISTINCT ON (ticker) ticker, close,
+              daily_return * 100 AS change_percent,
+              CAST(trading_date AS TEXT) AS captured_at
+        FROM {table}
+        WHERE ticker = ANY(%s)
+        ORDER BY ticker, trading_date DESC
+        LIMIT %s"""
+
+    def run(active_connection) -> list[dict[str, Any]]:
+        with active_connection.cursor() as cursor:
+            cursor.execute(sql, (symbols, len(symbols)))
             return [_normalized(dict(row)) for row in cursor.fetchall()]
 
     if connection is not None:
