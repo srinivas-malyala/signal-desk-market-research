@@ -41,3 +41,4 @@ def test_frontend_handles_required_data_states_and_provenance() -> None:
     assert "Idempotency-Key" in SCRIPT
     assert "Provider:" in SCRIPT
     assert "company_warning" in SCRIPT
+    assert "body.include_company=false" in SCRIPT

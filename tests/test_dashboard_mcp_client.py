@@ -35,6 +35,7 @@ def test_mcp_endpoint_configuration_fails_closed_and_requires_tls(
     monkeypatch.setenv("MCP_SERVER_URL", "https://mcp.example.test")
     client = FastMCPWatchlistClient.from_environment()
     assert client.endpoint == "https://mcp.example.test/mcp"
+    assert client.timeout_seconds == 50
 
     monkeypatch.setenv("MCP_TIMEOUT_SECONDS", "not-a-number")
     with pytest.raises(MCPConfigurationError, match="timeout"):

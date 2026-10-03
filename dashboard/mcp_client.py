@@ -81,7 +81,7 @@ def _payload(result: Any) -> dict[str, Any]:
 @dataclass(frozen=True)
 class FastMCPSignalDeskClient:
     endpoint: str
-    timeout_seconds: int = 20
+    timeout_seconds: int = 50
 
     @classmethod
     def from_environment(cls) -> FastMCPSignalDeskClient:
@@ -100,7 +100,7 @@ class FastMCPSignalDeskClient:
         ):
             raise MCPConfigurationError("The research service is not configured.")
         try:
-            timeout = int(os.getenv("MCP_TIMEOUT_SECONDS", "20"))
+            timeout = int(os.getenv("MCP_TIMEOUT_SECONDS", "50"))
         except ValueError as exc:
             raise MCPConfigurationError("The research service timeout is invalid.") from exc
         if timeout < 1 or timeout > 60:
