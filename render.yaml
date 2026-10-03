@@ -109,8 +109,6 @@ services:
         sync: false
       - key: MCP_SERVER_URL
         sync: false
-      - key: MCP_TIMEOUT_SECONDS
-        value: "50"
       - key: OIDC_ISSUER_URL
         value: https://accounts.google.com
       - key: OIDC_CLIENT_ID

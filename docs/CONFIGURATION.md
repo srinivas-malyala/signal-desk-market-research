@@ -60,7 +60,7 @@ OAuth M2M credentials supplied only through Render secret environment values.
 | `lakebase_table_suffix` | Activity analytics bundle | Resolves Lakehouse Sync history names for shared-schema source tables | Bundle variable; development value `srini` |
 | `cdc_source_catalog`, `cdc_source_schema` | Activity analytics bundle | Lakehouse Sync history-table namespace, independent of the pipeline output namespace | Development values `bootcamp_students`, `bootcamp_cdc` |
 | `MCP_SERVER_URL` | frontend write service | Watchlist and later research/action tool calls | Render MCP HTTPS URL; deployed binding remains a Phase 8 gate |
-| `MCP_TIMEOUT_SECONDS` | frontend write service | Optional MCP timeout override | Integer 1–60; defaults to 50 seconds |
+| `MCP_TIMEOUT_SECONDS` | frontend write service | Optional MCP timeout override | Integer 1–60; defaults to 20 seconds |
 | `SIGNAL_DESK_HOSTING` | MCP/frontend | Select deployed host behavior | Literal `render` in both Render services |
 | `SIGNAL_DESK_IDENTITY_MODE` | MCP/frontend | Select deployed identity provider | `oidc_session` for frontend; `signed_assertion` for MCP |
 | `OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URI` | frontend | Browser sign-in | Provider registration; client secret stored only as a Render secret |

@@ -35,7 +35,7 @@ def test_mcp_endpoint_configuration_fails_closed_and_requires_tls(
     monkeypatch.setenv("MCP_SERVER_URL", "https://mcp.example.test")
     client = FastMCPWatchlistClient.from_environment()
     assert client.endpoint == "https://mcp.example.test/mcp"
-    assert client.timeout_seconds == 50
+    assert client.timeout_seconds == 20
 
     monkeypatch.setenv("MCP_TIMEOUT_SECONDS", "not-a-number")
     with pytest.raises(MCPConfigurationError, match="timeout"):
@@ -129,7 +129,44 @@ def test_research_methods_align_with_final_mcp_arguments(monkeypatch: pytest.Mon
         "get_company_research",
     ]
     assert calls[2][1]["top_k"] == 5
+    assert calls[2][1]["tickers"] == ["AAPL"]
+    assert calls[2][1]["source_types"] == ["filing"]
     assert calls[3][1]["include_fundamentals"] is True
+
+
+def test_semantic_research_normalizes_unfiltered_lists_for_mcp_schema(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = []
+
+    async def fake_call(self, name, arguments, access_token, request_id):
+        calls.append((name, arguments))
+        return {"status": "success"}
+
+    monkeypatch.setattr(FastMCPWatchlistClient, "_call", fake_call)
+    client = FastMCPWatchlistClient("https://mcp.example.test/mcp")
+
+    client.semantic_research(
+        query="services growth",
+        tickers=None,
+        source_types=None,
+        start_date=None,
+        end_date=None,
+        access_token="token",
+        request_id="req",
+    )
+
+    assert calls == [
+        (
+            "semantic_research",
+            {
+                "query": "services growth",
+                "top_k": 5,
+                "tickers": [],
+                "source_types": [],
+                "start_date": None,
+                "end_date": None,
+            },
+        )
+    ]
 
 
 def test_saved_research_methods_are_confirmed_and_idempotent(monkeypatch: pytest.MonkeyPatch) -> None:

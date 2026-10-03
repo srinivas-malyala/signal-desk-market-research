@@ -81,7 +81,7 @@ def _payload(result: Any) -> dict[str, Any]:
 @dataclass(frozen=True)
 class FastMCPSignalDeskClient:
     endpoint: str
-    timeout_seconds: int = 50
+    timeout_seconds: int = 20
 
     @classmethod
     def from_environment(cls) -> FastMCPSignalDeskClient:
@@ -100,7 +100,7 @@ class FastMCPSignalDeskClient:
         ):
             raise MCPConfigurationError("The research service is not configured.")
         try:
-            timeout = int(os.getenv("MCP_TIMEOUT_SECONDS", "50"))
+            timeout = int(os.getenv("MCP_TIMEOUT_SECONDS", "20"))
         except ValueError as exc:
             raise MCPConfigurationError("The research service timeout is invalid.") from exc
         if timeout < 1 or timeout > 60:
@@ -180,7 +180,14 @@ class FastMCPSignalDeskClient:
     ) -> dict[str, Any]:
         return self._run(
             "semantic_research",
-            {"query": query, "top_k": 5, "tickers": tickers, "source_types": source_types, "start_date": start_date, "end_date": end_date},
+            {
+                "query": query,
+                "top_k": 5,
+                "tickers": tickers or [],
+                "source_types": source_types or [],
+                "start_date": start_date,
+                "end_date": end_date,
+            },
             access_token,
             request_id,
         )
