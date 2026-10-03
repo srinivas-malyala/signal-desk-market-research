@@ -72,3 +72,32 @@ def test_lakebase_market_backend_fails_closed_without_massive_fallback(monkeypat
     assert result["status"] == "error"
     assert result["error_code"] == "research_error"
     fake.get_daily_bars.assert_not_called()
+
+
+def test_performance_keeps_governed_history_when_live_snapshot_dependency_fails(monkeypatch):
+    fake = Mock()
+    fake.get_snapshot.side_effect = RuntimeError("transient snapshot dependency failure")
+    monkeypatch.setattr(broker, "client", lambda: fake)
+    monkeypatch.setattr(
+        broker,
+        "fetch_market_bars",
+        lambda *_args, **_kwargs: [
+            {"date": "2026-09-01", "open": 99.0, "high": 101.0, "low": 98.0, "close": 100.0},
+            {"date": "2026-09-10", "open": 100.0, "high": 111.0, "low": 99.0, "close": 110.0},
+        ],
+    )
+
+    result = broker.get_stock_performance("AAPL", 30)
+
+    assert result["status"] == "success"
+    assert result["ticker"] == "AAPL"
+    assert result["as_of"] == "2026-09-10"
+    assert result["change_percent"] == 10.0
+    assert result["current_snapshot"] == {
+        "available": False,
+        "message": "The live market snapshot is temporarily unavailable.",
+        "fallback": "latest historical close",
+    }
+    assert result["limitations"][-1] == (
+        "The live snapshot was unavailable; the latest historical close is shown."
+    )

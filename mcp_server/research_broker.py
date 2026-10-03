@@ -251,8 +251,18 @@ def get_stock_performance(ticker: str, lookback_days: int = 30, access_token: st
                 "previous_day": snapshot.get("prevDay"),
                 "updated": snapshot.get("updated"),
             }
-        except requests.HTTPError as exc:
-            current = {"available": False, "message": _error(exc)["message"], "fallback": "latest daily aggregate"}
+        except Exception:
+            # The live snapshot is optional enrichment.  A transient Massive,
+            # quota-coordination, or response-validation failure must not discard
+            # the governed historical series that was already retrieved.
+            current = {
+                "available": False,
+                "message": "The live market snapshot is temporarily unavailable.",
+                "fallback": "latest historical close",
+            }
+            history_fallback = (
+                f"{history_fallback} " if history_fallback else ""
+            ) + "The live snapshot was unavailable; the latest historical close is shown."
         return {
             "status": "success",
             "ticker": symbol,
