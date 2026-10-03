@@ -261,6 +261,29 @@ def test_evidence_research_returns_sources_and_optional_company_context(app_modu
     )
 
 
+def test_evidence_research_survives_unavailable_company_enrichment(app_module) -> None:
+    app_module.test_mcp.get_company_research.side_effect = app_module.MCPUnavailableError(
+        "Company enrichment timed out."
+    )
+
+    response = app_module.app.test_client().post(
+        "/api/research",
+        json={
+            "mode": "evidence",
+            "query": "What filing evidence supports services growth?",
+            "tickers": ["AAPL"],
+            "source_types": ["filing"],
+        },
+        headers=AUTH_HEADERS,
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["evidence"]["status"] == "success"
+    assert payload["company"] is None
+    assert "semantic evidence is still shown" in payload["company_warning"]
+
+
 def test_research_rate_limit_has_distinct_http_state(app_module) -> None:
     app_module.test_mcp.get_stock_performance.side_effect = app_module.MCPToolError(
         "The Massive API rate limit was reached.", "massive_http_429"

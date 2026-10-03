@@ -20,6 +20,16 @@ def test_frontend_has_accessible_status_and_keyboard_contracts() -> None:
     assert "focus-visible" in STYLES
     assert "prefers-reduced-motion" in STYLES
     assert "aria-label=\"Remove" in SCRIPT
+    for control in (
+        "research-mode",
+        "research-ticker",
+        "research-tickers",
+        "research-query",
+        "research-source",
+        "research-lookback",
+    ):
+        assert f'for="{control}"' in TEMPLATE
+        assert f'id="{control}"' in TEMPLATE
 
 
 def test_frontend_handles_required_data_states_and_provenance() -> None:
@@ -29,3 +39,5 @@ def test_frontend_handles_required_data_states_and_provenance() -> None:
         assert context in SCRIPT
     assert "window.confirm" in SCRIPT
     assert "Idempotency-Key" in SCRIPT
+    assert "Provider:" in SCRIPT
+    assert "company_warning" in SCRIPT

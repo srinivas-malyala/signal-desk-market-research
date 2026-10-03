@@ -31,6 +31,31 @@ def test_compare_requires_two_tickers():
     assert result["status"] == "error"
 
 
+def test_compare_preserves_market_provider_for_each_claim(monkeypatch):
+    monkeypatch.setattr(
+        broker,
+        "get_stock_performance",
+        lambda ticker, *_args: {
+            "status": "success",
+            "ticker": ticker,
+            "as_of": "2026-09-10",
+            "latest": {"close": 110.0},
+            "change_percent": 10.0,
+            "period_high": 111.0,
+            "period_low": 98.0,
+            "source": "Unity Catalog silver_market_bars",
+        },
+    )
+
+    result = broker.compare_stocks(["AAPL", "MSFT"], 30)
+
+    assert result["status"] == "success"
+    assert [row["source"] for row in result["comparisons"]] == [
+        "Unity Catalog silver_market_bars",
+        "Unity Catalog silver_market_bars",
+    ]
+
+
 def test_company_mapping_does_not_invent_sector(monkeypatch):
     writes = []
     monkeypatch.setattr(broker.lakebase, "write", lambda _sql, params, *_args: writes.append(params))

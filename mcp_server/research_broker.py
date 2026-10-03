@@ -361,7 +361,18 @@ def compare_stocks(tickers: list[str], lookback_days: int = 30, access_token: st
         result = get_stock_performance(ticker, lookback_days, access_token)
         if result.get("status") == "success":
             comparisons.append(
-                {k: result[k] for k in ("ticker", "as_of", "latest", "change_percent", "period_high", "period_low")}
+                {
+                    k: result[k]
+                    for k in (
+                        "ticker",
+                        "as_of",
+                        "latest",
+                        "change_percent",
+                        "period_high",
+                        "period_low",
+                        "source",
+                    )
+                }
             )
         else:
             errors.append({"ticker": ticker, "message": result.get("message")})

@@ -21,6 +21,7 @@ from auth import (
 from flask import Flask, Response, g, jsonify, redirect, render_template, request, url_for
 from mcp_client import (
     FastMCPSignalDeskClient,
+    MCPClientError,
     MCPConfigurationError,
     MCPToolError,
     MCPUnavailableError,
@@ -256,18 +257,32 @@ def research():
                 **common,
             )
             company = None
+            company_warning = None
             if tickers and len(tickers) == 1 and payload.get("include_company", True) is True:
-                company = client.get_company_research(
-                    ticker=tickers[0],
-                    access_token=_fresh_mcp_access_token(),
-                    request_id=g.request_id,
-                )
+                try:
+                    company = client.get_company_research(
+                        ticker=tickers[0],
+                        access_token=_fresh_mcp_access_token(),
+                        request_id=g.request_id,
+                    )
+                except MCPClientError as exc:
+                    company_warning = (
+                        "Company profile enrichment is temporarily unavailable; "
+                        "the cited semantic evidence is still shown."
+                    )
+                    logger.warning(
+                        "company_enrichment_unavailable request_id=%s ticker=%s error_type=%s",
+                        g.request_id,
+                        tickers[0],
+                        type(exc).__name__,
+                    )
             return jsonify(
                 {
                     "status": "success",
                     "mode": mode,
                     "evidence": result,
                     "company": company,
+                    "company_warning": company_warning,
                     "execution_identity": "authenticated user",
                     "disclaimer": "Retrieved evidence may be incomplete; verify sources before relying on it.",
                     "request_id": g.request_id,
