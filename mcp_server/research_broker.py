@@ -414,6 +414,28 @@ def get_watchlist(user_email: str, watchlist_name: str = "Primary") -> dict:
             (email, name),
         )
         if rows:
+            missing_profiles = sorted({row["ticker"] for row in rows if not row.get("name")})
+            if missing_profiles:
+                try:
+                    # Bound legacy self-healing to one provider call per read;
+                    # newly added tickers are already enriched on write.
+                    _refresh_company_profile(missing_profiles[0])
+                except Exception:
+                    # A watchlist read remains useful when the public profile
+                    # provider is temporarily unavailable. Missing profiles
+                    # will be retried on a later read.
+                    pass
+            if missing_profiles:
+                profiles = lakebase.query(
+                    f"""SELECT ticker,name,description,market_cap
+                    FROM {_table("companies")} WHERE ticker = ANY(%s)""",
+                    (missing_profiles,),
+                )
+                profiles_by_ticker = {profile["ticker"]: profile for profile in profiles}
+                for row in rows:
+                    if profile := profiles_by_ticker.get(row["ticker"]):
+                        row.update(profile)
+
             from lakebase_serving import fetch_latest_market_bars, market_backend
 
             if market_backend() == "lakebase":

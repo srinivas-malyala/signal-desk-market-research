@@ -144,7 +144,13 @@ def test_watchlist_uses_lakebase_serving_prices_when_market_backend_is_active(
             "captured_at": None,
         }
     ]
-    monkeypatch.setattr(broker.lakebase, "query", Mock(return_value=legacy_rows))
+    monkeypatch.setattr(
+        broker.lakebase,
+        "query",
+        Mock(side_effect=[legacy_rows, [{"ticker": "MSFT", "name": "Microsoft Corporation"}]]),
+    )
+    refresh_profile = Mock()
+    monkeypatch.setattr(broker, "_refresh_company_profile", refresh_profile)
     monkeypatch.setenv("SIGNAL_DESK_MARKET_BACKEND", "lakebase")
     latest = Mock(
         return_value=[
@@ -165,7 +171,26 @@ def test_watchlist_uses_lakebase_serving_prices_when_market_backend_is_active(
     assert result["tickers"][0]["close"] == 425.5
     assert result["tickers"][0]["change_percent"] == 1.25
     assert result["tickers"][0]["captured_at"] == "2026-09-30"
+    assert result["tickers"][0]["name"] == "Microsoft Corporation"
+    refresh_profile.assert_called_once_with("MSFT")
     latest.assert_called_once_with(["MSFT"])
+
+
+def test_watchlist_missing_profile_refresh_failure_keeps_row_available(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rows = [{"ticker": "MSFT", "name": None, "close": None, "captured_at": None}]
+    monkeypatch.setattr(broker.lakebase, "query", Mock(side_effect=[rows, []]))
+    monkeypatch.setattr(
+        broker,
+        "_refresh_company_profile",
+        Mock(side_effect=RuntimeError("profile provider unavailable")),
+    )
+    monkeypatch.setenv("SIGNAL_DESK_MARKET_BACKEND", "databricks")
+
+    result = broker.get_watchlist("person@example.com")
+
+    assert result == {"status": "success", "watchlist": "Primary", "tickers": rows}
 
 
 def test_watchlist_keeps_legacy_snapshot_when_market_serving_is_unavailable(
@@ -174,6 +199,7 @@ def test_watchlist_keeps_legacy_snapshot_when_market_serving_is_unavailable(
     legacy_rows = [
         {
             "ticker": "AAPL",
+            "name": "Apple Inc.",
             "close": 338.4,
             "change_percent": -0.78,
             "captured_at": "2026-09-28T04:00:00+00:00",
@@ -197,6 +223,7 @@ def test_watchlist_does_not_replace_a_newer_legacy_snapshot_with_older_serving_d
     legacy_rows = [
         {
             "ticker": "AAPL",
+            "name": "Apple Inc.",
             "close": 338.4,
             "change_percent": -0.78,
             "captured_at": "2026-09-28T04:00:00+00:00",

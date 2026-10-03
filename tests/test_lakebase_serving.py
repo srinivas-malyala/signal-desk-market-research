@@ -7,10 +7,12 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
+from psycopg2 import OperationalError
 
 MCP_ROOT = Path(__file__).parents[1] / "mcp_server"
 sys.path.insert(0, str(MCP_ROOT))
 
+import lakebase_serving  # noqa: E402
 from lakebase_serving import (  # noqa: E402
     LakebaseResearchSearch,
     fetch_latest_market_bars,
@@ -117,6 +119,28 @@ def test_latest_market_bars_skips_database_for_empty_ticker_list() -> None:
 
     assert fetch_latest_market_bars([], connection=connection) == []
     cursor.execute.assert_not_called()
+
+
+def test_serving_connection_replaces_stale_connection_and_resets_transaction(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    stale = Mock()
+    stale.cursor.side_effect = OperationalError("server closed the connection")
+    fresh = Mock(closed=0)
+    fresh_cursor = Mock()
+    fresh_cursor.__enter__ = Mock(return_value=fresh_cursor)
+    fresh_cursor.__exit__ = Mock(return_value=False)
+    fresh.cursor.return_value = fresh_cursor
+    connection_pool = Mock()
+    connection_pool.getconn.side_effect = [stale, fresh]
+    monkeypatch.setattr(lakebase_serving, "_get_serving_pool", lambda: connection_pool)
+
+    with lakebase_serving.serving_connection() as connection:
+        assert connection is fresh
+
+    connection_pool.putconn.assert_any_call(stale, close=True)
+    fresh.rollback.assert_called_once_with()
+    connection_pool.putconn.assert_called_with(fresh, close=False)
 
 
 def test_full_text_search_filters_deduplicates_and_labels_nonsemantic_backend(

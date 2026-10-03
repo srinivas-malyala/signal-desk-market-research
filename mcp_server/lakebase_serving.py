@@ -10,7 +10,7 @@ from decimal import Decimal
 from typing import Any
 
 import lakebase
-from psycopg2 import pool
+from psycopg2 import InterfaceError, OperationalError, pool
 from psycopg2.extras import RealDictCursor
 
 IDENTIFIER = re.compile(r"^[a-z_][a-z0-9_]*$")
@@ -85,16 +85,31 @@ def _get_serving_pool() -> pool.ThreadedConnectionPool:
     return _serving_pool
 
 
+def _checkout(connection_pool: pool.ThreadedConnectionPool):
+    """Return a live serving connection, replacing one stale connection once."""
+
+    connection = connection_pool.getconn()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+    except (InterfaceError, OperationalError):
+        connection_pool.putconn(connection, close=True)
+        connection = connection_pool.getconn()
+    return connection
+
+
 @contextmanager
 def serving_connection():
     connection_pool = _get_serving_pool()
-    connection = connection_pool.getconn()
+    connection = _checkout(connection_pool)
     try:
         yield connection
-    except Exception:
-        connection.rollback()
-        raise
     finally:
+        if not connection.closed:
+            # Read-only serving queries still open a PostgreSQL transaction.
+            # End it before pooling the connection so later watchlist reads do
+            # not inherit an idle or aborted transaction.
+            connection.rollback()
         connection_pool.putconn(connection, close=bool(connection.closed))
 
 
