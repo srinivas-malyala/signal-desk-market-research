@@ -1,237 +1,247 @@
-# Signal Desk — AI Stock Market Research Assistant
+# Signal Desk AI Stock Market Research Assistant
 
-A Databricks capstone implementation that evolves the original standalone prototype combining a FastMCP
-server, Massive Stocks data, Lakebase Postgres, managed Databricks AI Search, an Agent Bricks agent,
-and a small activity dashboard. The capstone proposal remains a new-project
-proposal; the implementation inventory and migration decisions are recorded in
-`docs/architecture/EXISTING_CODE_INVENTORY.md`.
+Signal Desk is an authenticated stock-research application built for the
+Databricks AI capstone. It combines governed market and research pipelines,
+Databricks AI Search, Lakebase operational state, a nine-tool FastMCP service,
+an Agent Bricks Supervisor, and a Flask web application.
 
-## Phase 0 foundation
+The deployed application is available at
+[signal-desk-frontend-s88i.onrender.com](https://signal-desk-frontend-s88i.onrender.com/).
+Access is restricted to configured Google OIDC users. The application supports
+research and evidence review; it does not execute trades or provide personalized
+investment advice.
 
-Phase 0 adds versioned contracts, characterization tests, architecture
-decisions, CI/quality gates, a multi-environment Declarative Automation Bundle,
-and a credential-safe feasibility harness. Start with:
+## Current implementation
 
-```bash
-make install
-make test
-```
-
-Workspace validation always requires an explicit user-selected profile:
-
-```bash
-databricks bundle validate --strict --target dev --profile '<selected-profile>'
-```
-
-See `docs/phase0/RESOURCE_BOOTSTRAP.md` and
-`docs/phase0/FEASIBILITY_REPORT.md` before deploying or running live checks.
+- **Frontend:** Flask on Render with Google OIDC, secure sessions, CSRF
+  protection, request IDs, restrictive security headers, and short-lived signed
+  assertions for downstream MCP calls.
+- **MCP service:** FastMCP on Render with six read tools and three explicitly
+  confirmed, idempotent write tools.
+- **Market serving:** request-time price history is read from an atomically
+  published Lakebase serving table.
+- **Research serving:** SEC filing and news passages are retrieved from the
+  accepted Databricks AI Search hybrid index with metadata filters, reranking,
+  source URLs, and dates.
+- **Operational state:** Lakebase stores users, watchlists, notes, reports,
+  action events, traces, and the shared Massive API quota ledger in suffix-owned
+  `_srini` tables.
+- **Analytics:** Lakebase history is synchronized to Unity Catalog and processed
+  into five Gold metric families displayed by the frontend.
+- **Agent:** an Agent Bricks Supervisor uses the governed UC MCP service backed
+  by the deployed Render MCP endpoint.
+- **Hosting:** Render runs only the frontend and MCP web services. Databricks
+  retains ingestion, Lakeflow pipelines, Unity Catalog data, SQL Warehouse,
+  AI Search, Lakehouse Sync analytics, and Supervisor processing.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  U[Browser user] -->|OIDC| F[Flask on Render]
-  F -->|60-second signed assertion| M[FastMCP on Render]
-  A[Agent Bricks Supervisor] -->|Machine-authenticated HTTP /mcp| M
-  M --> B[Research adapter]
-  B --> X[Massive Stocks REST API]
-  B <--> L[(Lakebase Postgres)]
-  M --> L
-  D[(Databricks pipelines and governed Delta)] -->|Triggered serving sync| L
-  F -->|Separate OAuth M2M| D
-  F --> L
+  U[Browser user] -->|Google OIDC| F[Flask frontend on Render]
+  F -->|Short-lived signed assertion| M[FastMCP on Render]
+  S[Agent Bricks Supervisor] -->|Machine-authenticated UC MCP| M
+
+  M -->|Market and user state| L[(Lakebase Postgres)]
+  M -->|Semantic research| V[Databricks AI Search]
+  M -->|Bounded live enrichment| P[Massive Stocks API]
+
+  P2[Massive and SEC APIs] --> I[Databricks ingestion jobs]
+  I --> R[Managed Volume landing]
+  R --> D[Lakeflow Spark pipelines]
+  D --> C[(Unity Catalog Delta)]
+  C --> V
+  C -->|Atomic serving publish| L
+  L -->|Lakehouse Sync history| A[Bronze Silver Gold activity analytics]
+  A -->|SQL Warehouse reads| F
 ```
 
-The source API is [Massive Stocks](https://massive.com/docs/rest/stocks). The
-client uses the official ticker overview, custom daily aggregate bars, news,
-SEC EDGAR index, income statement, and balance sheet endpoints. Massive requires an API key;
-the key is read from the Databricks secret `massive/api-key` and is never
-committed. Fundamentals availability depends on the Massive subscription.
+The source systems are
+[Massive Stocks](https://massive.com/docs/rest/stocks) for market, company, and
+article data and SEC EDGAR/data.sec.gov for filings and Company Facts. API keys,
+OAuth credentials, database URLs, assertion keys, and machine credentials are
+stored only in approved secret stores or protected deployment configuration.
 
-## MCP tools
+## User functionality
+
+The authenticated frontend provides four connected workflows:
+
+1. **Research** — view ticker performance, compare two to five tickers on a
+   common time window, or retrieve filing and article evidence for a research
+   question.
+2. **Watchlist and signals** — add or remove tickers, view the latest locally
+   served prices, and review notable moves and new articles.
+3. **Saved research** — persist user-owned notes and multi-ticker reports after
+   explicit confirmation.
+4. **Usage analytics** — review daily active researchers, tool usage and P95
+   latency, agent error rate, watchlist changes, and research saves.
+
+Every user-owned read or write is scoped to the authenticated identity. Write
+operations require confirmation and a stable idempotency key so retries do not
+duplicate changes.
+
+## MCP tool contract
 
 | Tool | Capability |
 |---|---|
-| `get_stock_performance` | Most recent entitled snapshot plus daily bars, return, high and low |
-| `get_company_research` | Company profile, news and available reported fundamentals |
-| `compare_stocks` | Like-for-like price-action comparison for 2–5 tickers |
-| `get_watchlist` | User-scoped watchlist with latest locally synced price |
-| `update_watchlist` | Confirmed, idempotent add/remove mutation |
-| `save_research_note` | Confirmed, idempotent ticker-note write |
-| `save_analysis_report` | Confirmed, idempotent multi-ticker report write |
-| `semantic_research` | Attributable SEC/news retrieval; managed AI Search remains accepted while a feature-flagged Lakebase backend is evaluated against the same 51-case thresholds |
-| `get_notable_updates` | Price moves and articles since the user's last visit |
+| `get_stock_performance` | Return stored daily bars, latest price, period return, high, low, source, and as-of context |
+| `get_company_research` | Return a company profile, recent news, SEC links, and available reported fundamentals |
+| `compare_stocks` | Compare two to five tickers over the same bounded window |
+| `get_watchlist` | Read the authenticated user's watchlist with locally served price facts |
+| `semantic_research` | Retrieve attributable filing and article passages with optional ticker, source-type, and date filters |
+| `get_notable_updates` | Return watchlist price moves and new articles since the user's previous visit |
+| `update_watchlist` | Add or remove one ticker after explicit confirmation |
+| `save_research_note` | Save a ticker-linked note after explicit confirmation |
+| `save_analysis_report` | Save a multi-ticker report and provenance context after explicit confirmation |
 
-Tool functions are intentionally thin. `research_broker.py` owns HTTP calls,
-normalization, persistence, calculations, and safe error envelopes.
-User-scoped tools derive ownership from either the retained trusted Databricks
-proxy identity or, on Render, a short-lived frontend-signed OIDC identity. They
-do not accept a `user_email` argument. Every consequential write requires
-`confirmed=true` and a stable idempotency key; retries of the same request return
-the original result without repeating the write.
+Tool definitions are in `mcp_server/stock_research_mcp_server.py`. Business
+logic, normalization, calculations, serving adapters, and safe error envelopes
+are implemented behind the tool layer rather than in the tool wrappers.
 
-## Lakebase schema and context engineering
+## Data workflows
 
-The requested operational tables are `users`, `watchlists`,
-`watchlist_tickers`, `companies`, `price_snapshots`, `news_articles`,
-`research_notes`, and `analysis_reports`. `stock_research_mcp_traces` and the
-agent session/event tables support auditability and analytics. The governed
-research corpus and its managed search index remain in Unity Catalog as the
-governed source and rollback path. ADR 0007 adds synchronized, read-only
-Lakebase serving copies for MCP request-time market and research reads.
+The active Databricks bundle is defined by `databricks.yml` and includes jobs,
+pipelines, storage, and AI Search resources. Application resources are excluded
+from this data-plane deployment.
 
-Company profiles keep normalized research columns plus raw JSON provenance.
-News has a stable Massive article ID, ticker, narrative fields, publisher,
-published time, sentiment metadata, raw payload, and optional full text.
-Snapshots preserve OHLCV/VWAP and derived prior-session changes. Notes and
-reports are always tied to a user; reports can span several tickers.
+### Market workflow
 
-The Spark research pipeline owns one section-aware parent/child chunk contract.
-It persists contextual embedding text separately from faithful passage text. A
-small Spark publish job idempotently MERGEs those chunks into the CDF- and
-row-tracking-enabled `research_search_documents` Delta table supported by AI
-Search. A triggered Delta Sync index uses `databricks-qwen3-embedding-0-6b`,
-hybrid retrieval, metadata filters, and reranking. The compatibility-named
-embedding job requests an incremental managed-index sync; it does not load a
-local model or write pgvector rows. PostgreSQL full-text retrieval is not called
-semantic or promoted until the existing live evaluation thresholds pass.
+`market_daily_refresh` runs at 06:00 America/Los_Angeles on weekdays. It lands
+recent Massive grouped-daily data, refreshes the market Lakeflow pipeline,
+publishes the governed Delta serving table, and atomically updates the Lakebase
+market serving table.
+
+The accepted volume run reconciled 1,255,677 Bronze rows to 1,255,489 unique
+Silver `(ticker, trading_date)` rows plus 188 deterministic quarantines across
+81 manifest dates.
+
+### Research workflow
+
+`research_refresh` runs every six hours. It ingests SEC filings and Company
+Facts plus Massive articles, refreshes the research pipeline, publishes the
+canonical Delta search source, and triggers the AI Search index sync.
+
+The bounded accepted run produced 2 companies, 12 filings, 57,806 facts, 86
+articles, 549 article/ticker links, and 507 traceable research chunks. The
+canonical searchable serving corpus contains 393 rows. The 51-case AI Search
+evaluation passed Recall@5 1.0000, MRR 0.9902, nDCG@5 0.9928, with no provenance
+or filter violations.
+
+### Activity analytics workflow
+
+`activity_analytics_refresh` runs every 30 minutes. It processes synchronized
+Lakebase histories into pseudonymous Bronze and Silver activity records and the
+five Gold metric families consumed by the frontend. Analytics never stores
+tokens, API keys, connection URLs, direct email addresses, or authored note and
+report bodies.
+
+### API quota coordination
+
+Databricks jobs and the Render MCP service share a fail-closed Lakebase rolling
+window ledger for Massive API calls. The deployed cross-host acceptance test
+recorded exactly five physical attempts, limited the rolling count to four, and
+delayed the fifth attempt by 60.225 seconds.
 
 ## Repository layout
 
 ```text
-mcp_server/   FastMCP app, Massive client, adapter, Lakebase helper, DDL
-jobs/         ingestion, certification, and managed-index synchronization jobs
-agent/        system prompt, external-MCP config, evaluation scenarios
-dashboard/    independent Flask Databricks App
-ingestion/    market-wide landing job entry points
-pipelines/    Lakeflow Spark Declarative Pipeline definitions
-shared/       versioned contracts and runtime configuration
-resources/    Databricks bundle resource definitions
-tests/        cross-component characterization and contract tests
-tools/        feasibility and repository-safety tooling
-sql/          SQL setup guidance
+agent/        Agent Bricks configuration, prompt, and evaluation fixtures
+dashboard/    Flask frontend deployed to Render
+docs/         Architecture decisions, runbooks, evidence, and release records
+ingestion/    Massive, SEC, and article landing entry points
+jobs/         Certification, publishing, and search synchronization jobs
+mcp_server/   FastMCP service, adapters, authentication, Lakebase access, migrations
+pipelines/    Market, research, and activity Lakeflow pipeline definitions
+resources/    Databricks bundle job, pipeline, storage, and AI Search resources
+shared/       Versioned contracts and runtime configuration
+submission/   Capstone evidence report, screenshots, demo script, and upload package
+tests/        Cross-component contract, security, deployment, and workflow tests
+tools/        Acceptance, evaluation, safety, and reproducibility utilities
 ```
 
-## End-to-end setup
+## Local development and validation
 
-### 1. Configure local authentication
-
-Install and authenticate the Databricks CLI/SDK, then run:
+Python 3.11 through 3.14 and `uv` are supported. Install all application and
+development dependencies, then run the local quality gates:
 
 ```bash
-python setup_secrets.py --profile '<selected-profile>'
+uv sync --extra mcp --extra dashboard --dev
+uv run pytest -m "not integration and not e2e"
+uv run ruff check .
 ```
 
-Paste a Massive API key and a standard Lakebase PostgreSQL URL. Grant the MCP
-and dashboard App service principals `READ` on the required secret scopes. For
-local-only execution, copy `mcp_server/.env.example` to `.env` and set
-`MASSIVE_API_KEY` and `LAKEBASE_URL`; never commit that file.
-
-### 2. Create the schema
-
-Launch the MCP app once or run the Phase 4 migration preflight—its entry point
-calls `lakebase.migrate()` idempotently. Versioned migrations create only
-allowlisted `_srini` tables in the shared schema. The legacy pgvector table is
-retained for migration compatibility but is not used by Phase 5 search.
-
-### 3. Deploy the two application services on Render
-
-The root `render.yaml` defines separate Flask and FastMCP Python web services.
-All governed data and processing remain in `dataexpertio_srini`. MCP moves in
-stages to a dedicated native Lakebase runtime role and no workspace credential;
-frontend Gold analytics remains separately authenticated. The browser uses
-OIDC, and MCP accepts only short-lived signed frontend assertions or the
-separate Supervisor machine credential. Follow
-`docs/LAKEBASE_ONLY_MCP_SERVING_PLAN.md` and
-`docs/RENDER_DEPLOYMENT_RUNBOOK.md`; historical Databricks `app.yaml` files are
-retained only for compatibility/reference.
-
-### 4. Sync research data
-
-Call `get_company_research` and `get_stock_performance` through an MCP inspector
-or the agent for the tickers you want. These calls upsert profiles, news, and
-daily price snapshots into Lakebase. Optional filing excerpts and earnings-call
-summaries can be loaded into their columns by your approved filing/transcript
-pipeline; the embedding job automatically includes them.
-
-### 5. Synchronize governed research and Lakebase serving
-
-Deploy and run the serving-table publisher after the research pipeline has
-created `silver_research_chunks`; then deploy the Vector Search endpoint/index
-and run the synchronization job. The two-stage bootstrap is required because an
-index source table must exist before the index resource can be created:
+Validate the two Render service builds, exact start commands, and health routes
+in isolated environments:
 
 ```bash
-databricks bundle deploy -t dev -p dataexpertio_srini --select jobs.research_search_publish
-databricks bundle run research_search_publish -t dev -p dataexpertio_srini
-databricks bundle deploy -t dev -p dataexpertio_srini --select vector_search_endpoints.research_search --select vector_search_indexes.research_chunks --select jobs.research_embeddings
-databricks bundle run research_embeddings -t dev -p dataexpertio_srini
+uv run python tools/check_render_reproducibility.py --clean-install --process-smoke
 ```
 
-The `research_refresh` orchestration publishes the Delta serving table and then
-requests the triggered index sync after a successful pipeline update.
+Integration and end-to-end tests require explicitly configured external
+services and are excluded from the default test command.
 
-For the planned MCP runtime cutover, keep that accepted AI Search path intact
-and follow the independently gated Lakebase sequence in
-`docs/LAKEBASE_ONLY_MCP_SERVING_PLAN.md`. It publishes a narrow market serving
-table, atomically publishes to the shared `bootcamp_students` PostgreSQL schema
-using only `_srini` serving tables, proves market known-answer
-parity, and promotes a research backend only after the committed 51-case quality
-suite passes. The first live step requires reauthenticating the explicitly
-selected `dataexpertio_srini` profile.
+## Databricks deployment
 
-### 6. Register and test the Agent Bricks agent
-
-In Agent Bricks:
-
-1. Add an **External MCP server** using the MCP App `/mcp` URL and
-   Streamable HTTP transport.
-2. Select the nine tools listed in `agent/agent_bricks_config.yaml`.
-3. Paste `agent/system_prompt.md` as the system instruction.
-4. Replace the placeholder endpoint in `agent_bricks_config.yaml`.
-5. Run every evaluation question and inspect the tool trace before accepting
-   the answer. Confirm ticker, lookback and as-of date alignment.
-
-### 7. Deploy the dashboard independently
-
-Create a second Databricks App from `dashboard/`, grant only the Lakebase
-secret permission, and deploy its included `app.yaml`. Databricks forwards the
-signed-in user email; local development falls back to `demo@example.com`:
+Always select the intended Databricks CLI profile explicitly. Validate before
+deploying:
 
 ```bash
-cd dashboard
-pip install -r requirements.txt
-LAKEBASE_URL='postgresql://...' python app.py
+databricks bundle validate --strict --target dev --profile '<selected-profile>'
+databricks bundle deploy --target dev --profile '<selected-profile>'
 ```
 
-## Validation
+The active bundle deploys only the data plane. See
+`docs/IMPLEMENTATION_STATUS.md` for current workspace acceptance evidence and
+`docs/release/REQUIREMENTS_TRACEABILITY.md` for the rubric-to-evidence map.
 
-From the repository root:
+## Render deployment
 
-```bash
-python -m compileall mcp_server jobs dashboard
-pytest -q mcp_server/tests
-```
+The root `render.yaml` is the production Blueprint and defines exactly two
+Python web services:
 
-For deployment acceptance, demonstrate price research, multi-ticker
-comparison, semantic thesis retrieval, watchlist mutation, saved research,
-notable updates, and a clean invalid-ticker/entitlement failure.
+- `signal-desk-mcp`, with public health endpoint `/health` and authenticated MCP
+  endpoint `/mcp`;
+- `signal-desk-frontend`, with public health endpoint `/healthz` and Google OIDC
+  callback `/oidc/callback`.
 
-## Limitations and improvements
+Both services use hash-pinned Python 3.11 dependency locks. Values marked
+`sync: false` in `render.yaml` must be entered through protected Render
+configuration and must never be committed. Follow
+`docs/RENDER_DEPLOYMENT_RUNBOOK.md` for the deployment and acceptance procedure.
 
-- Data latency, history, news, and financial statements vary by Massive plan.
-- The tool requests Massive's current single-ticker snapshot, but fields and
-  latency depend on plan entitlements; it falls back explicitly to the latest
-  eligible daily aggregate. WebSockets would improve continuous intraday use.
-- Massive company overview is not a full SEC filing/transcript feed. The schema
-  deliberately accepts approved filing excerpts and earnings summaries, but a
-  production system should add SEC EDGAR/transcript ingestion with source URLs,
-  filing dates, and licensing controls.
-- The job re-embeds candidate text each run before deterministic upsert. At
-  scale, filter by content hash first and use a managed job schedule.
-- A 5% notable-move threshold is intentionally simple. Production alerting
-  should adjust for volatility, corporate actions, market sessions, and user
-  preferences.
-- The assistant supports research, not trade execution or personalized advice.
-  Add formal evaluation, role-based access, retention policies, and human review
-  before regulated use.
+Both deployed services currently use Render Free instances. Pre-warm the MCP
+service first and the frontend second before a live demonstration because an
+idle service can require a cold start.
+
+## Security boundaries
+
+- Browser identity comes from Google OIDC and an explicit allowed-user list.
+- The frontend creates one short-lived, request-bound RS256 assertion per MCP
+  session; forged forwarded identity headers are ignored on Render.
+- The Supervisor uses a separate fixed machine identity.
+- User-owned Lakebase queries include ownership predicates.
+- Write tools require both explicit confirmation and idempotency.
+- External API rate-limit state fails closed if coordination is unavailable.
+- Application responses use bounded inputs, safe error messages, request IDs,
+  TLS-only external calls, and restrictive browser security headers.
+
+## Known constraints
+
+- Render Free instances can sleep and must be warmed before a timed demo.
+- Market, news, and fundamentals availability depends on Massive subscription
+  entitlements; unavailable values are reported as unavailable rather than zero.
+- Lakebase full-text research retrieval did not meet the promotion threshold,
+  so production semantic research correctly remains on Databricks AI Search.
+- The shared classroom Lakebase role is broader than a production-specific
+  runtime role. Application allowlists, ownership predicates, confirmation, and
+  idempotency define the accepted capstone boundary.
+
+## Documentation and evidence
+
+- `docs/IMPLEMENTATION_STATUS.md` — chronological implementation and acceptance record
+- `docs/release/REQUIREMENTS_TRACEABILITY.md` — capstone requirement evidence
+- `docs/release/DEMO_CHECKLIST.md` — accepted demo and negative-test checklist
+- `docs/release/DATA_DICTIONARY.md` — governed data and Lakebase table definitions
+- `docs/release/TOOL_API_REFERENCE.md` — MCP and external API contract
+- `docs/RENDER_DEPLOYMENT_RUNBOOK.md` — current split-host deployment procedure
+- `submission/Signal_Desk_Capstone_Evidence.pdf` — grader-facing evidence report
