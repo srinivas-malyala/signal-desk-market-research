@@ -1,12 +1,13 @@
 # Signal Desk Codex Handoff
 
-Updated: 2026-09-30 (America/Los_Angeles)
+Updated: 2026-10-07 (America/Los_Angeles)
 
 This is the compact resume document for new Codex chats. Read it before broad
 repository discovery. Treat `docs/IMPLEMENTATION_STATUS.md` as the detailed
 living tracker and this file as the current-state index. Historical phase files
-may contain superseded "deployment pending" language; prefer the newest dated
-evidence in the tracker when they disagree.
+may preserve superseded chronological evidence; the current architecture,
+resources, and priority queue in this file are reconciled to the final deployed
+state. Prefer the newest dated evidence in the tracker when history disagrees.
 
 ## Resume instructions
 
@@ -111,7 +112,7 @@ dataexpertio_srini workspace
   -> Jobs and Lakeflow pipelines
   -> Unity Catalog sources and analytics
   -> AI Search index
-  -> Supervisor processing (pending live connection/evaluation)
+  -> Supervisor processing (READY; deployed evaluation 10/10)
   -> atomic manual publisher -> Lakebase serving tables
 
 Lakebase -> Lakehouse Sync -> UC CDC histories -> activity pipeline -> Gold metrics
@@ -389,7 +390,7 @@ python3 tools/phase7_agent_eval.py \
 
 Release validation passes on the deployed free-tier services: both public
 health probes returned 200, the Supervisor remains READY with 10/10 evaluation,
-strict `dev` bundle validation passes, and the full local suite passes 266
+strict `dev` bundle validation passes, and the full local suite passes 285
 tests, Ruff, Render reproducibility, and the credential scan. Sanitized evidence
 is retained at `build/acceptance/p6-release-readiness-2026-10-01.json`.
 

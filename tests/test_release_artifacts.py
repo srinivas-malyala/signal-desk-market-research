@@ -103,14 +103,15 @@ def test_submission_artifacts_use_the_final_shared_service_principal_decision() 
     assert "Separate least-privilege OAuth M2M readers" not in diagram
 
 
-def test_render_plan_preserves_data_plane_and_identity_boundaries() -> None:
+def test_render_plan_preserves_deployed_data_plane_and_identity_boundaries() -> None:
     plan = RENDER_PLAN.read_text(encoding="utf-8")
     for required in (
         "dataexpertio_srini",
         "two separate Render Python web services",
         "short-lived asymmetric JWT",
-        "No workspace principal after cutover",
-        "51-case quality evaluation",
+        "owner-approved shared `dbx-ai-de-aug26` workspace identity",
+        "AI Search remains deployed",
+        "51-case Lakebase FTS evaluation",
         "render.yaml",
         "currently deferred",
         "codex/render-app-deployment",

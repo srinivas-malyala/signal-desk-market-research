@@ -1,6 +1,6 @@
 # Render OIDC and application-credential preparation
 
-Updated: 2026-10-01
+Updated: 2026-10-07
 
 ## Accepted identity contract
 
@@ -23,9 +23,11 @@ together.
 
 ## Google Cloud registration — completed
 
-The OAuth 2.0 Web application client now contains the assigned Render origin
-and exact callback below. Client credentials still belong only in the Render
-frontend environment; live browser-login acceptance remains pending deployment.
+The OAuth 2.0 Web application client contains the assigned Render origin and
+exact callback below. Client credentials belong only in the Render frontend
+environment. Live browser login, verified-email allowlisting, logout/session
+handling, CSRF, assertion rejection cases, and two-real-principal isolation have
+all passed deployed acceptance.
 
 The completed provider-side configuration is:
 
@@ -82,35 +84,37 @@ committed `.env` files, build arguments, or screenshots.
 
 ### `signal-desk-mcp`
 
-- [ ] `LAKEBASE_URL` — administrator-provided SSL connection URL.
-- [ ] `MASSIVE_API_KEY` — existing free-plan key.
+- [x] `LAKEBASE_URL` — administrator-provided SSL connection URL.
+- [x] `MASSIVE_API_KEY` — existing free-plan key.
 - [x] `DATA_WORKSPACE_CLIENT_ID` — owner-approved shared M2M client ID.
 - [x] `DATA_WORKSPACE_CLIENT_SECRET` — owner-approved shared M2M secret.
-- [ ] `FRONTEND_ASSERTION_PUBLIC_KEY` — complete public PEM file.
-- [ ] `MCP_SUPERVISOR_TOKEN` — complete generated token.
-- [ ] `MCP_SUPERVISOR_SUBJECT` — non-secret fixed label, for example
+- [x] `FRONTEND_ASSERTION_PUBLIC_KEY` — complete public PEM file.
+- [x] `MCP_SUPERVISOR_TOKEN` — complete generated token.
+- [x] `MCP_SUPERVISOR_SUBJECT` — non-secret fixed label, for example
   `signal-desk-supervisor`.
 
 ### `signal-desk-frontend`
 
-- [ ] `LAKEBASE_URL` — same database endpoint, ownership still enforced by user.
+- [x] `LAKEBASE_URL` — same database endpoint, ownership still enforced by user.
 - [x] `DATA_WORKSPACE_CLIENT_ID` — same owner-approved shared M2M client ID.
 - [x] `DATA_WORKSPACE_CLIENT_SECRET` — same owner-approved shared M2M secret.
-- [ ] `MCP_SERVER_URL` — final HTTPS URL for `signal-desk-mcp`.
-- [ ] `OIDC_CLIENT_ID` — Google Web application client ID.
-- [ ] `OIDC_CLIENT_SECRET` — Google client secret.
-- [ ] `FLASK_SESSION_SECRET` — complete generated session secret.
-- [ ] `FRONTEND_ASSERTION_PRIVATE_KEY` — complete private PEM file.
-- [ ] `ALLOWED_USER_EMAILS` — comma-separated bounded demo accounts.
+- [x] `MCP_SERVER_URL` — final HTTPS URL for `signal-desk-mcp`.
+- [x] `OIDC_CLIENT_ID` — Google Web application client ID.
+- [x] `OIDC_CLIENT_SECRET` — Google client secret.
+- [x] `FLASK_SESSION_SECRET` — complete generated session secret.
+- [x] `FRONTEND_ASSERTION_PRIVATE_KEY` — complete private PEM file.
+- [x] `ALLOWED_USER_EMAILS` — comma-separated bounded demo accounts.
 
-Public OIDC values are committed in the Blueprint:
+Deployed acceptance confirms the checklist through observed behavior; secret
+values were not read or copied into evidence. Public OIDC values are committed
+in the Blueprint:
 `OIDC_ISSUER_URL=https://accounts.google.com` and the exact callback above.
 
 ## Rotation and acceptance
 
-After entering secrets, compare the assertion public-key fingerprint against
-`manifest.json`, deploy MCP first, then frontend, and verify missing, expired,
-tampered, replayed, wrong-audience, and wrong-issuer assertions fail closed.
-Rotate the assertion pair, session secret, and Supervisor token after the final
-demo or immediately after suspected disclosure. Revoke the Google client secret
-when the deployment is retired.
+For any rotation, compare the assertion public-key fingerprint against
+`manifest.json`, deploy MCP first, then frontend, and reverify that missing,
+expired, tampered, replayed, wrong-audience, and wrong-issuer assertions fail
+closed. Rotate the assertion pair, session secret, and Supervisor token after
+the final demo or immediately after suspected disclosure. Revoke the Google
+client secret when the deployment is retired.

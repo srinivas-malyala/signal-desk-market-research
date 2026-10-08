@@ -1,12 +1,13 @@
 # Phase 5 Workspace Acceptance Findings
 
-Updated: 2026-09-11 Pacific (2026-09-12 UTC)
+Updated: 2026-10-07 Pacific
 
 ## Purpose
 
 This report records the Phase 5 workspace acceptance work for the Signal Desk
 capstone. It preserves the verified results, the workspace-specific problems
-encountered, the changes made in response, and the remaining acceptance gates.
+encountered, and the changes made in response. Historical workspace findings
+are retained below, followed by reconciliation to the final Render deployment.
 
 The tests used Databricks profile `dataexpertio_srini`, Unity Catalog namespace
 `bootcamp_students.student_sri`, SQL warehouse `b15d3d6f837ba428`, and the
@@ -21,10 +22,11 @@ retrieval evaluation have passed their workspace checks. The live index contains
 393 rows, and the 51-case retrieval suite passed every configured threshold with
 complete provenance and no filter violations.
 
-Phase 5 remains **workspace acceptance in progress** because the MCP application
-still needs deployment-level health, action, idempotency, and trace tests. The
-final authorization test also requires two real authenticated account principals;
-only one principal was available during this acceptance session.
+Phase 5 is complete for the capstone deployment. The originally outstanding MCP
+health, action, idempotency, trace, and authorization gates later passed on
+Render, including isolation and cleanup with two real authenticated principals.
+Market reads are Lakebase-primary; research remains on the accepted Databricks
+AI Search v2 index because Lakebase FTS did not meet its Recall@5 threshold.
 
 ## Accepted components and evidence
 
@@ -33,17 +35,18 @@ only one principal was available during this acceptance session.
 | Authentication and bundle validation | Passed | OAuth identity `malyalasrinivas@gmail.com`; strict development bundle validation passes |
 | Canonical Spark corpus | Passed | 393 complete chunks from 98 sources: 86 articles and 12 SEC filings |
 | Corpus integrity | Passed | Zero incomplete rows, duplicate chunk IDs, duplicate `(source_type, source_id, chunk_index)` keys, or untraceable chunks |
-| Lakebase migration | Passed | Migration `0004` applied once; immediate second run applied nothing |
-| Lakebase namespace | Passed | All 15 expected `_srini` tables exist in shared schema `bootcamp_students` and are owned by the connected role |
-| CDC readiness | Passed | Five operational action/event tables use `REPLICA IDENTITY FULL` |
+| Lakebase migration | Passed | Checksum-protected migrations `0001` through `0005` are applied; repeat runs apply nothing |
+| Lakebase namespace | Passed | All 16 expected `_srini` tables exist in shared schema `bootcamp_students` and are owned by the connected role |
+| CDC readiness | Passed | Six selected action/event or bridge tables use `REPLICA IDENTITY FULL` |
 | Owner isolation | Passed | Correct-owner update affected one row; wrong-owner update affected zero; disposable records were fully removed |
 | Search serving table | Passed | Publisher run `255439151353917` reconciled 393 canonical source rows to 393 regular Delta target rows with zero duplicate chunk IDs |
 | Managed AI Search | Passed | Standard endpoint and triggered Delta Sync hybrid index are ready with 393 indexed rows |
 | Index synchronization | Passed | Job `430452316532258`, run `52577799192254`, completed successfully |
 | Live retrieval evaluation | Passed | 51 cases; Recall@5 1.0000, MRR 0.9902, nDCG@5 0.9928, zero provenance failures, zero filter violations |
 | Governed market retrieval | Passed | 9 AAPL rows reconciled independently; 0.24% known-answer return; 2-day freshness; safe snapshot entitlement fallback; 1 Massive attempt |
-| Deployment acceptance harness | Locally verified | Discovers all nine tools; tests governed and semantic retrieval; opt-in writes prove replay/conflict/cleanup; reconciles bounded traces and events |
-| Full local regression | Passed | 157 non-integration tests and whole-repository Ruff checks pass |
+| Deployment acceptance harness | Deployed accepted | Nine-tool discovery, governed and semantic retrieval, opt-in writes, replay/conflict/cleanup, and bounded traces/events passed |
+| Final identity and agent acceptance | Passed | Two real principals proved isolation and cleanup; governed Supervisor evaluation passed 10/10 |
+| Full local regression | Passed | 285 tests pass on 2026-10-07; release evidence also records Ruff and credential-scan acceptance |
 
 The corpus refresh completed through research-pipeline validation update
 `ca094e65-f38e-4ebe-b121-0b1faeea946d` and refresh update
@@ -55,11 +58,10 @@ belongs to job `873159231343771`.
 | Resource | Identifier |
 |---|---|
 | Vector Search endpoint | `signal-desk-research-dev` |
-| Endpoint ID | `0f391010-a035-465f-a78e-0aeb39661485` |
-| Delta Sync index | `bootcamp_students.student_sri.signal_desk_research_chunks_index` |
+| Endpoint ID | `4f1e61a9-cf40-4a57-9d7d-7419ffd8fe26` |
+| Delta Sync index | `bootcamp_students.student_sri.signal_desk_research_chunks_index_v2` |
 | Embedding model | `databricks-qwen3-embedding-0-6b` |
 | Delta source table | `bootcamp_students.student_sri.research_search_documents` |
-| Managed pipeline ID | `334dd82b-2b7f-48df-814e-f59a1e4614e4` |
 
 The index uses a standard endpoint, triggered Delta Sync, hybrid retrieval, and
 Databricks reranking. Retrieval applies metadata filters, reranks the faithful
@@ -97,10 +99,9 @@ run completed successfully.
 
 The workspace-local `users` group is not an account-level Unity Catalog
 principal, so a broad index grant failed. The invalid grant was removed. The
-resource owner retains access, and the MCP application declares the index as a
-`uc_securable` resource so the Databricks App service principal can receive the
-required access during deployment. This follows the
-[Databricks Apps Vector Search resource pattern](https://docs.databricks.com/gcp/en/dev-tools/databricks-apps/vector-search).
+original Databricks Apps design proposed a `uc_securable` resource, but that
+deployment path was superseded by Render. The deployed MCP reaches AI Search
+with the owner-approved shared `dbx-ai-de-aug26` OAuth M2M identity.
 
 Cross-user testing must use real account-level principals rather than a
 workspace-local group or caller-supplied identity headers.
@@ -186,27 +187,23 @@ are committed.
 - No token, Massive API key, SEC identifying contact, or Lakebase connection URL
   is committed to the repository.
 
-## Remaining acceptance gates
+## Final deployment reconciliation
 
-1. Have a workspace administrator grant the deploying principal the ability to
-   manage and attach the `massive` and `database` secret resources, or have the
-   administrator perform an equivalent managed-resource binding. The first
-   selective deployment was rejected before app creation on the
-   `massive-api-key` binding, and no partial app remains.
-2. Deploy the `stock_research_mcp` Databricks App with its SQL warehouse,
-   Lakebase, Massive secret, and managed-index resource bindings.
-3. Verify the deployed health route and inspect startup/runtime logs.
-4. Exercise a retrieval tool and at least one confirmed write action through the
-   deployed MCP interface.
-5. Repeat the same idempotency key and prove one logical write; retry it with a
-   different payload and prove rejection.
-6. Confirm successful and failed tool calls create bounded Lakebase session/event
-   records without sensitive content.
-7. Use two real authenticated account principals to prove owner isolation and
-   identity propagation end to end.
+The original Databricks App gates were superseded by the two-service Render
+deployment and are not remaining work. The final accepted outcome is:
 
-The two-principal gate is externally blocked until a second account principal or
-credential is available. It must not be simulated by forging request headers.
+1. Both Render services are live and their public health probes return 200.
+2. Lakebase is primary for market and operational state; Databricks AI Search v2
+   remains the accepted research backend.
+3. Retrieval and confirmed write actions passed exact replay,
+   changed-payload rejection, cleanup, and bounded trace/event reconciliation.
+4. Two real authenticated principals proved end-to-end ownership isolation.
+5. The shared cross-host Massive quota coordinator passed simultaneous Job/MCP
+   acceptance and failed closed at the configured rolling limit.
+6. The governed Supervisor endpoint is READY and its deployed evaluation passed
+   10/10.
+7. Lakebase FTS remains unpromoted: its 51-case Recall@5 was 0.7843 versus the
+   committed 0.85 minimum, with zero provenance and filter violations.
 
 ## Reproduction references
 

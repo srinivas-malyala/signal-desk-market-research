@@ -1,13 +1,15 @@
 # Signal Desk Tool and API Reference
 
-Updated: 2026-09-21  
+Updated: 2026-10-07
 MCP contract version: `1.0`
 
-The FastMCP service exposes streamable HTTP at `/mcp` and an unauthenticated
-health probe at `GET /health`. Tool requests obtain identity and the user OAuth
-token only from the Databricks request context. `user_email` is never a tool
-argument. Each tool response includes `contract_version` and `correlation_id`;
-errors use `status: error`, a bounded `error_code`, and a safe `message`.
+The Render FastMCP service exposes streamable HTTP at `/mcp` and an
+unauthenticated health probe at `GET /health`. Browser requests carry a
+request-bound RS256 assertion minted by the Google-OIDC-authenticated frontend;
+Supervisor requests map a separate machine credential to one fixed server-side
+subject. `user_email` is never a tool argument or trusted identity source. Each
+tool response includes `contract_version` and `correlation_id`; errors use
+`status: error`, a bounded `error_code`, and a safe `message`.
 
 ## Retrieval tools
 
@@ -15,8 +17,9 @@ errors use `status: error`, a bounded `error_code`, and a safe `message`.
 
 - Inputs: `ticker: str`; `lookback_days: int = 30` (2–365 calendar days).
 - Returns: bounded governed daily bars, latest OHLCV, period return/high/low,
-  source and `as_of`. Governed Lakehouse history is preferred; the shared
-  rate-limited Massive daily-aggregate path is the explicit fallback.
+  source and `as_of`. The Lakebase `market_history_serving_srini` table is the
+  primary deployed source; the shared rate-limited Massive daily-aggregate path
+  is the explicit fallback.
 - No user row is created by a read.
 
 ### `get_company_research`
@@ -43,8 +46,10 @@ errors use `status: error`, a bounded `error_code`, and a safe `message`.
 
 - Inputs: `query: str`; `top_k: int = 5` (1–5); optional `tickers`,
   `source_types` (`filing`/`article`), inclusive `start_date`, and `end_date`.
-- Returns: parent-deduplicated, attributable SEC/news passages from the managed
-  hybrid Delta Sync index, including source type/ID/URL/date, ticker and score.
+- Returns: parent-deduplicated, attributable SEC/news passages from the accepted
+  Databricks AI Search hybrid v2 Delta Sync index, including source
+  type/ID/URL/date, ticker and score. Lakebase full-text search was evaluated but
+  was not promoted because it missed the committed Recall@5 threshold.
 - Semantic text is supporting context, not proof of an exact financial value.
 
 ### `get_notable_updates`
@@ -85,10 +90,9 @@ audited. The same idempotency key may be reused only for an exact retry.
 
 | Provider | Implemented use | Identification/authentication | Safety and budget |
 |---|---|---|---|
-| Massive Stocks REST | Grouped daily market summary, ticker details, daily aggregates, news, and plan-dependent financial/reference endpoints | Bearer key from `massive/api-key`; never placed in URL or logs | Every physical attempt, including retry, passes a rolling limiter. Deployed paths use the fail-closed Lakebase coordinator capped at four attempts per 60 seconds across hosts. |
+| Massive Stocks REST | Grouped daily market summary, ticker details, daily aggregates, news, and plan-dependent financial/reference endpoints | Databricks jobs read `massive/api-key`; Render MCP receives protected `MASSIVE_API_KEY`. The key is never placed in URLs or logs. | Every physical attempt, including retry, passes a rolling limiter. Deployed paths use the fail-closed Lakebase coordinator capped at four attempts per 60 seconds across hosts. |
 | SEC EDGAR/data.sec.gov | Submissions, Company Facts, and filing documents | Required identifying `User-Agent` from `sec/user-agent`; configured contact is `malyala.de@gmail.com` | Bounded company/form/document scope, cached immutable landing, retries and checksums; no scraping without identification. |
 
 Raw source payloads land immutably before Spark normalization. Credentials,
 OAuth tokens, request authorization headers, Lakebase URLs, and user-authored
 research bodies are excluded from logs and analytics events.
-

@@ -1,13 +1,15 @@
 # Configuration Contract
 
+Updated: 2026-10-07
+
 Configuration names are stable contracts. Credentials and sensitive resource identifiers must not be committed; approved non-secret development namespaces are recorded explicitly.
 
 ## Deployment topology
 
 As of 2026-10-01, `dataexpertio_srini` remains the data workspace for all jobs,
 pipelines, Unity Catalog data, SQL Warehouse queries, AI Search, Lakehouse Sync,
-analytics, and Supervisor processing. Only the FastMCP and Flask runtimes will
-be deployed as two separate Render web services.
+analytics, and Supervisor processing. Only the FastMCP and Flask runtimes are
+deployed as two separate Render web services.
 
 The Render split is deployed. Browser users authenticate
 to Flask through generic OIDC. Flask sends MCP a short-lived asymmetric signed
@@ -50,16 +52,16 @@ OAuth M2M credentials supplied only through Render secret environment values.
 | `DATABRICKS_CATALOG` | MCP retrieval | Governed market tables | Non-secret environment value; `bootcamp_students` |
 | `DATABRICKS_SCHEMA` | MCP retrieval | Governed market tables | Non-secret environment value; `student_sri` |
 | `SIGNAL_DESK_VECTOR_SEARCH_INDEX` | MCP retrieval/index sync | Managed research index | Non-secret full name; `bootcamp_students.student_sri.signal_desk_research_chunks_index_v2` |
-| `PGHOST`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, `PGPORT` | MCP operational store | Future migration to an attached Lakebase Autoscaling resource | Not used by the current shared classroom URL; never logged |
-| `LAKEBASE_URL` | MCP/frontend local override | Explicit local-only connection override | Runtime environment only; PostgreSQL URL with `sslmode=require` |
-| `LAKEBASE_SECRET_SCOPE` | MCP/frontend | Deployed Lakebase connection | Defaults to admin-managed scope `database` |
-| `LAKEBASE_SECRET_KEY` | MCP/frontend | Deployed Lakebase connection | Defaults to admin-managed key `lakebase-url` |
+| `PGHOST`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, `PGPORT` | MCP operational store | Optional discrete-component connection form | Current deployment uses `LAKEBASE_URL`; these values are not used or logged |
+| `LAKEBASE_URL` | MCP/frontend | Deployed or local direct Lakebase connection | Protected runtime environment only; PostgreSQL URL with `sslmode=require` |
+| `LAKEBASE_SECRET_SCOPE` | Databricks jobs/local workspace execution | Lakebase connection when `LAKEBASE_URL` is absent | Defaults to admin-managed scope `database`; Render does not use ambient secret-scope access |
+| `LAKEBASE_SECRET_KEY` | Databricks jobs/local workspace execution | Lakebase connection when `LAKEBASE_URL` is absent | Defaults to admin-managed key `lakebase-url`; Render does not use ambient secret-scope access |
 | `SIGNAL_DESK_SCHEMA` | MCP/frontend | Lakebase operational schema | Non-secret environment value; `bootcamp_students` |
 | `SIGNAL_DESK_TABLE_SUFFIX` | MCP/frontend/migrations | Per-student Lakebase table namespace | Non-secret lowercase identifier; `srini` |
 | `SIGNAL_DESK_GRAPH_SCHEMA` | MCP/frontend/CDF reads | Lakebase schema containing replicated graph tables | Non-secret environment value; `bootcamp_cdc` |
 | `lakebase_table_suffix` | Activity analytics bundle | Resolves Lakehouse Sync history names for shared-schema source tables | Bundle variable; development value `srini` |
 | `cdc_source_catalog`, `cdc_source_schema` | Activity analytics bundle | Lakehouse Sync history-table namespace, independent of the pipeline output namespace | Development values `bootcamp_students`, `bootcamp_cdc` |
-| `MCP_SERVER_URL` | frontend write service | Watchlist and later research/action tool calls | Render MCP HTTPS URL; deployed binding remains a Phase 8 gate |
+| `MCP_SERVER_URL` | frontend write service | Watchlist and research/action tool calls | Deployed Render MCP HTTPS URL: `https://signal-desk-mcp.onrender.com` |
 | `MCP_TIMEOUT_SECONDS` | frontend write service | Optional MCP timeout override | Integer 1–60; defaults to 20 seconds |
 | `SIGNAL_DESK_HOSTING` | MCP/frontend | Select deployed host behavior | Literal `render` in both Render services |
 | `SIGNAL_DESK_IDENTITY_MODE` | MCP/frontend | Select deployed identity provider | `oidc_session` for frontend; `signed_assertion` for MCP |
@@ -71,7 +73,7 @@ OAuth M2M credentials supplied only through Render secret environment values.
 | `MCP_SUPERVISOR_SUBJECT` | MCP | Fixed audit identity for Supervisor actions | Non-secret allowlisted subject; never accepted from tool arguments |
 | `RAW_VOLUME_PATH` | ingestion/pipeline | Raw file landing | Bundle-derived `/Volumes/...` path |
 
-## Planned Render environment contract
+## Deployed Render environment contract
 
 | Service | Secret/value | Purpose | Permission intent |
 |---|---|---|---|
@@ -89,13 +91,13 @@ Blueprint, repository, build output, or logs. The Render services must not
 assume Databricks app resources or ambient `Config()` credentials. Paid SQL,
 Unity Catalog, and AI Search resources remain governed in
 `dataexpertio_srini` and are reached through the owner-approved shared M2M
-identity after bounded deployed acceptance.
+identity; bounded deployed acceptance is complete.
 
 The complete PostgreSQL URL remains protected. Jobs in Databricks continue to
 retrieve it from the administrator-owned `database/lakebase-url` secret;
 Render receives the same connection URL through a protected service-specific
-secret value without displaying, committing, logging, or persisting it. Direct
-access is conditional on the Render-to-Lakebase TLS connectivity spike.
+secret value without displaying, committing, logging, or persisting it. The
+Render-to-Lakebase TLS connectivity spike passed and the path is deployed.
 
 Connections must validate that both shared schemas exist, but must not create, drop, or claim ownership of either schema. Every operational table reference is fully qualified as `bootcamp_students.<base_table>_srini`; setting only a search path is insufficient because it does not enforce the required suffix. Replicated graph objects are referenced as `bootcamp_cdc.<base_table>_srini`. Dynamic schema, base-table, and suffix components must be allowlisted and identifier-validated before SQL composition.
 

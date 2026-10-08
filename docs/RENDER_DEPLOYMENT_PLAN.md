@@ -1,30 +1,30 @@
 # Render deployment implementation plan
 
-Updated: 2026-10-01
+Updated: 2026-10-07
 
-> **Current direction:** ADR 0007 supersedes the MCP OAuth M2M serving portion
-> of this plan. The MCP will move incrementally to Lakebase-only runtime reads
-> using `docs/LAKEBASE_ONLY_MCP_SERVING_PLAN.md`. Existing SQL and AI Search
-> resources remain rollback paths until parity is proved. Frontend Gold
-> analytics remains a separate follow-on concern.
+> **Final deployed outcome:** ADR 0007 moved operational state and market reads
+> to Lakebase, but the evaluated Lakebase research FTS path was not promoted
+> because Recall@5 was 0.7843 against the 0.85 minimum. Research therefore
+> remains on the accepted Databricks AI Search v2 index, and both Render services
+> retain the owner-approved shared `dbx-ai-de-aug26` workspace identity. The
+> Lakebase-only plan is retained as evaluation history, not the current runtime.
 
 ## Implementation status
 
-Units 1–4 are implemented and locally accepted on
-`codex/render-app-deployment`: two-service packaging, `$PORT`/health behavior,
-data-bundle separation, the now-superseded Databricks OAuth M2M clients, generic OIDC,
+Units 1–7 are implemented and accepted on the deployed two-service Render
+architecture: `$PORT`/health behavior, data-bundle separation, generic OIDC,
 secure sessions/CSRF, signed frontend identity, fixed Supervisor identity,
-Linux/Python 3.11 hash-pinned service locks, clean-install checks, exact-command
-health smoke tests, and static deployment checks. The full suite passes 234
-tests and Ruff. The final Render/data-plane architecture diagram has been
-exported and visually verified.
+Lakebase serving, AI Search research retrieval, Gold analytics, and confirmed
+actions. The current local suite passes 285 tests; the release evidence also
+records Ruff, reproducibility, credential-scan, public-health, two-principal,
+cross-host quota, and Supervisor 10/10 acceptance.
 
 Strict post-change validation of the data-only bundle passed on 2026-09-24 with
 explicit profile `dataexpertio_srini`, authenticated as
-`malyalasrinivas@gmail.com`. The later deployed MCP credential failed as
-`invalid_client`; on 2026-09-29 the selected profile also reported invalid
-cached authentication. Lakebase serving discovery therefore starts with
-reauthentication. Continue with `docs/RENDER_DEPLOYMENT_RUNBOOK.md`.
+`malyalasrinivas@gmail.com`. An `invalid_client` failure encountered during the
+initial cutover was historical and has been resolved; the final Render services
+use the owner-approved shared M2M identity. Operational procedures remain in
+`docs/RENDER_DEPLOYMENT_RUNBOOK.md`.
 
 ## Decision
 
@@ -49,9 +49,10 @@ late deployment phase. It costs one additional small Render service during the
 final month, but substantially reduces implementation and regression risk.
 
 Render Free is acceptable for development, but both services can sleep after
-inactivity and share the workspace's free instance-hour allowance. Upgrade both
-before final acceptance so frontend-to-MCP calls do not encounter sequential
-cold starts. Downgrade or suspend them after the capstone demonstration.
+inactivity and share the workspace's free instance-hour allowance. The owner
+deferred a paid upgrade after final acceptance; pre-warm MCP and then frontend
+before a live demonstration. Suspend them after the capstone demonstration when
+they are no longer needed.
 
 ## Target architecture
 
@@ -63,8 +64,9 @@ Browser
        -> Render FastMCP service
             -> Lakebase (_srini operational state, audit, idempotency, quota)
             -> Massive API after Lakebase quota acquisition
-            -> Lakebase serving tables for bounded market and research reads
-       -> paid Databricks Gold analytics via frontend OAuth M2M identity
+            -> Lakebase serving tables for bounded market reads
+            -> Databricks AI Search v2 for accepted research retrieval
+       -> paid Databricks Gold analytics via the shared OAuth M2M identity
 
 Paid Databricks workspace (dataexpertio_srini)
   -> Jobs, pipelines, UC, SQL Warehouse, AI Search, Lakehouse Sync, analytics
@@ -121,22 +123,24 @@ the credential after acceptance. If UC HTTP connections support a compatible
 OAuth flow for the deployed endpoint, prefer OAuth M2M over the static bearer
 credential.
 
-### Render MCP to Lakebase and frontend to paid Databricks
+### Render services to Lakebase and paid Databricks
 
-After the staged cutover, MCP uses a dedicated least-privilege native
-PostgreSQL role through `LAKEBASE_URL`; it has no workspace runtime principal.
-The interactive `dataexpertio_srini` identity deploys and validates the manual
-atomic publisher but is not stored by MCP. Existing Databricks backends
-remain behind explicit feature flags during the rollback observation window.
+Both Render services use `LAKEBASE_URL` for bounded operational or serving
+access. Market retrieval is Lakebase-primary. Research remains on Databricks AI
+Search because the Lakebase FTS candidate failed its promotion threshold, so
+the MCP retains workspace credentials. The frontend uses the same workspace
+identity for the five bounded Gold analytics reads.
 
-Frontend Gold analytics remains a separate dependency. Do not share its
-workspace credential with MCP. A later change can sync the five Gold views to
-Lakebase, but that is outside the MCP cutover.
+The owner approved shared use of the `dbx-ai-de-aug26` OAuth M2M identity by MCP
+and frontend for this capstone. The current classroom Lakebase `student` role is
+broader than the production ideal; allowlisted identifiers, `_srini` ownership
+predicates, and bounded queries are the accepted capstone boundary. A dedicated
+least-privilege native database role remains production hardening.
 
 | Principal | Minimum access |
 |---|---|
-| MCP runtime | No workspace principal after cutover; `CONNECT`, operational DML, shared-schema `USAGE`, and `SELECT` only on owned `_srini` serving tables through a native Lakebase role |
-| Frontend analytics bridge | `CAN_USE` on the warehouse; `USE CATALOG`, `USE SCHEMA`, and `SELECT` only on the five Phase 6 Gold usage tables |
+| MCP runtime | Shared `dbx-ai-de-aug26` workspace identity for AI Search plus bounded Lakebase access to owned `_srini` operational and market-serving tables |
+| Frontend analytics bridge | Shared `dbx-ai-de-aug26` identity with `CAN_USE` on the warehouse and bounded reads of the five Phase 6 Gold usage objects; Lakebase access for user-owned history |
 
 Source, logs, traces, and browser responses must never contain the Lakebase URL,
 native password, frontend OAuth credential, or generated tokens.
@@ -151,11 +155,10 @@ Add a root `render.yaml` Blueprint containing two Python web services.
 - Build: install the locked MCP requirements.
 - Start: production ASGI command bound to `0.0.0.0:$PORT`.
 - Health check: `/health`.
-- Secrets: Lakebase URL, Massive key, frontend assertion public key, and
-  Supervisor machine credential.
-- Non-secrets: serving backend flags, identity mode, contract version, and
-  rate-limit requester. Workspace host, warehouse ID, and AI Search index remain
-  only during the rollback observation window.
+- Secrets: Lakebase URL, Massive key, shared workspace M2M credentials,
+  frontend assertion public key, and Supervisor machine credential.
+- Non-secrets: serving backend flags, identity mode, contract version,
+  rate-limit requester, workspace host, and accepted AI Search v2 index.
 
 ### Frontend service
 
@@ -247,9 +250,10 @@ cleanly; build contexts contain no repository metadata or credentials.
 5. Add positive, missing-secret, wrong-role, timeout, staleness, injection, and
    redaction tests.
 
-Acceptance: bounded market parity succeeds without workspace OAuth; serving
-copies reconcile to Delta; forbidden PostgreSQL writes fail. Research cutover
-additionally requires the complete 51-case quality evaluation.
+Acceptance result: bounded market parity succeeded without workspace OAuth,
+serving copies reconciled to Delta, and forbidden PostgreSQL writes failed.
+Research did not cut over because the complete 51-case Lakebase FTS evaluation
+missed the Recall@5 promotion threshold; AI Search remains deployed.
 
 ### Unit 3 — Render identity and request security
 
@@ -282,7 +286,7 @@ Deploy MCP first on Render Free and test only sanitized outcomes for:
 - dependency installation/build behavior.
 
 Acceptance: every required outbound path succeeds, no secret appears in logs or
-responses, and the Lakebase request path makes no workspace OAuth call. If
+responses, and the Lakebase market request path makes no workspace OAuth call. If
 Lakebase requires an allowlist, use Render's documented regional outbound
 ranges.
 
@@ -335,11 +339,12 @@ deployed commits; any paid-tier evidence remains explicitly deferred.
 | Optional owner-authorized paid window | Two smallest paid web services | Approximately $14 total at current $7/service pricing; currently deferred |
 | After demo | Suspend/downgrade/delete | Return to $0 when services are no longer needed |
 
-Lakebase-only MCP serving removes request-time SQL Warehouse and AI Search
-consumption after cutover, but pipelines and triggered syncs still consume
-Databricks resources. Use bounded PostgreSQL reads, triggered rather than
-continuous synchronization initially, hard limits, short timeouts, and explicit
-freshness checks.
+Lakebase market serving removes request-time SQL Warehouse consumption from the
+market path. Research continues to consume Databricks AI Search because the FTS
+candidate did not meet the quality gate; pipelines and triggered syncs also
+continue to consume Databricks resources. Use bounded PostgreSQL reads,
+triggered synchronization, hard limits, short timeouts, and explicit freshness
+checks.
 
 ## Risk register
 
@@ -347,11 +352,11 @@ freshness checks.
 |---|---|---|
 | Render Free double cold start breaks acceptance timeouts | High | Warm MCP first and frontend second before the demo; upgrade only with separate owner authorization. |
 | Replacing Databricks proxy identity introduces impersonation risk | Critical | OIDC plus short-lived asymmetric assertions; ignore all model/body/header identity claims; negative tests. |
-| Public MCP endpoint is abused | High | Mandatory auth except health, bounded payloads, rate limits, no CORS, safe errors, Render/UC credentials separated. |
-| Lakebase runtime role is overprivileged | High | Dedicated native role, explicit grants, negative permission tests, TLS, and credential rotation after demo. |
-| PostgreSQL retrieval is weaker than accepted AI Search | High | Keep AI Search as rollback and prohibit cutover until the 51-case suite passes. |
+| Public MCP endpoint is abused | High | Mandatory auth except health, bounded payloads, rate limits, no CORS, safe errors, and separate browser/Supervisor trust paths. |
+| Lakebase runtime role is broader than the production ideal | High | Accepted for the classroom capstone with allowlists and ownership predicates; create a dedicated native role before production use. |
+| PostgreSQL retrieval is weaker than accepted AI Search | High | Keep AI Search as the deployed research backend; Lakebase FTS remains unpromoted after the failed 51-case quality gate. |
 | Managed synced-table setup needs a missing grant | Medium | Use the verified shared-schema PostgreSQL path and atomic direct publisher; do not broaden project permissions. |
-| Lakebase is exposed to broad Render egress ranges | High | Require TLS, least-privilege database role, existing ownership predicates, bounded pools; use allowlisting where practical. |
+| Lakebase is exposed to broad Render egress ranges | High | Require TLS, existing ownership predicates, bounded pools, and identifier allowlists; add a least-privilege database role before production and use network allowlisting where practical. |
 | 512 MB service memory is insufficient | Medium | Measure peak memory during the Free spike; upgrade compute only if evidence requires it. |
 | Two-service cost persists after demo | Medium | Add dated teardown/rotation checklist and suspend immediately after final evidence capture. |
 | Data bundle still contains active Databricks App resources | High | Exclude app YAML from active includes and test the resolved deployment plan. |
