@@ -4,6 +4,11 @@ resources:
       name: signal-desk-research-refresh-${bundle.target}
       description: Orchestrates SEC filings, research articles, and the unified Spark research pipeline
       max_concurrent_runs: 1
+      trigger:
+        pause_status: UNPAUSED
+        periodic:
+          interval: 6
+          unit: HOURS
       parameters:
         - name: catalog
           default: ${var.catalog}

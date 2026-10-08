@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from jobs.publish_lakebase_serving import research_source_sql, serving_tables
+from jobs.publish_lakebase_serving import research_source_sql, run, serving_tables
 
 
 def test_shared_lakebase_targets_follow_student_suffix() -> None:
@@ -23,3 +23,16 @@ def test_research_projection_flattens_tickers_without_json_extensions() -> None:
 def test_publisher_rejects_unsafe_identifiers() -> None:
     with pytest.raises(ValueError, match="lowercase SQL identifier"):
         serving_tables("srini;drop")
+
+
+def test_publisher_rejects_unknown_dataset_before_opening_dependencies() -> None:
+    with pytest.raises(ValueError, match="dataset must be market, research, or both"):
+        run(
+            catalog="bootcamp_students",
+            schema="student_sri",
+            pg_schema="bootcamp_students",
+            suffix="srini",
+            secret_scope="database",
+            secret_key="lakebase-url",
+            dataset="unknown",
+        )

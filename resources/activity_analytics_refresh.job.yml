@@ -1,0 +1,18 @@
+resources:
+  jobs:
+    activity_analytics_refresh:
+      name: signal-desk-activity-analytics-refresh-${bundle.target}
+      description: Refresh frontend usage analytics from Lakebase Lakehouse Sync histories
+      max_concurrent_runs: 1
+      schedule:
+        quartz_cron_expression: "0 0/30 * * * ?"
+        timezone_id: UTC
+        pause_status: UNPAUSED
+      tasks:
+        - task_key: refresh_activity_analytics
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.activity_analytics_pipeline.id}
+            full_refresh: false
+      permissions:
+        - level: CAN_VIEW
+          group_name: users

@@ -13,6 +13,8 @@ resources:
           default: bootcamp_students
         - name: suffix
           default: ${var.lakebase_table_suffix}
+        - name: dataset
+          default: both
       environments:
         - environment_key: default
           spec:
@@ -34,6 +36,8 @@ resources:
               - "{{job.parameters.pg_schema}}"
               - --suffix
               - "{{job.parameters.suffix}}"
+              - --dataset
+              - "{{job.parameters.dataset}}"
           timeout_seconds: 7200
           max_retries: 0
       permissions:

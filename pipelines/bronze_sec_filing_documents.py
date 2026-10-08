@@ -1,9 +1,15 @@
 """Incrementally parse immutable SEC filing HTML into normalized text."""
 
-from document_text import normalized_filing
+import document_text
+from pyspark import cloudpickle
 from pyspark import pipelines as dp
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
+
+# Pipeline source files are available to the driver, but sibling modules are not
+# automatically installed on Python workers. Embed this local helper module in
+# serialized UDFs so executors do not need to import ``document_text``.
+cloudpickle.register_pickle_by_value(document_text)
 
 PARSED_DOCUMENT_SCHEMA = T.StructType(
     [
@@ -11,7 +17,7 @@ PARSED_DOCUMENT_SCHEMA = T.StructType(
         T.StructField("selected_sections", T.ArrayType(T.StringType())),
     ]
 )
-parse_document = F.udf(normalized_filing, PARSED_DOCUMENT_SCHEMA)
+parse_document = F.udf(document_text.normalized_filing, PARSED_DOCUMENT_SCHEMA)
 
 
 @dp.table(

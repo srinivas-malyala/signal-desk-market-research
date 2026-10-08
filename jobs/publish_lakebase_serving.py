@@ -140,13 +140,16 @@ def run(
     suffix: str,
     secret_scope: str,
     secret_key: str,
+    dataset: str = "both",
     spark_session: Any | None = None,
     workspace_client: Any | None = None,
 ) -> dict[str, Any]:
-    """Stream both serving datasets into session-local staging and commit atomically."""
+    """Stream selected serving datasets into session-local staging and commit atomically."""
 
     clean_pg_schema = _identifier(pg_schema, "pg_schema")
     market_table, research_table = serving_tables(suffix)
+    if dataset not in {"market", "research", "both"}:
+        raise ValueError("dataset must be market, research, or both")
     for value, label in ((catalog, "catalog"), (schema, "schema")):
         _identifier(value, label)
     if spark_session is None:
@@ -157,59 +160,67 @@ def run(
     secret = workspace_client.secrets.get_secret(scope=secret_scope, key=secret_key)
     dsn = base64.b64decode(secret.value).decode("utf-8")
 
-    market_source = f"`{catalog}`.`{schema}`.`market_history_serving`"
-    market_frame = spark_session.table(market_source).select(*MARKET_COLUMNS)
-    research_frame = spark_session.sql(research_source_sql(catalog, schema)).select(*RESEARCH_COLUMNS)
-
     connection = connect(dsn, connect_timeout=15, application_name="signal-desk-serving-publisher")
+    published: dict[str, int] = {}
     try:
         with connection.cursor() as cursor:
             cursor.execute("SET LOCAL statement_timeout = '60min'")
-            temp_market = f"market_history_load_{suffix}"
-            temp_research = f"research_documents_load_{suffix}"
-            cursor.execute(
-                sql.SQL("CREATE TEMP TABLE {} (LIKE {}.{} INCLUDING DEFAULTS) ON COMMIT DROP").format(
-                    sql.Identifier(temp_market),
-                    sql.Identifier(clean_pg_schema),
-                    sql.Identifier(market_table),
+            if dataset in {"market", "both"}:
+                market_source = f"`{catalog}`.`{schema}`.`market_history_serving`"
+                market_frame = spark_session.table(market_source).select(*MARKET_COLUMNS)
+                temp_market = f"market_history_load_{suffix}"
+                cursor.execute(
+                    sql.SQL("CREATE TEMP TABLE {} (LIKE {}.{} INCLUDING DEFAULTS) ON COMMIT DROP").format(
+                        sql.Identifier(temp_market),
+                        sql.Identifier(clean_pg_schema),
+                        sql.Identifier(market_table),
+                    )
                 )
-            )
-            cursor.execute(
-                sql.SQL("CREATE TEMP TABLE {} (LIKE {}.{} INCLUDING DEFAULTS) ON COMMIT DROP").format(
-                    sql.Identifier(temp_research),
-                    sql.Identifier(clean_pg_schema),
-                    sql.Identifier(research_table),
+                market_count = _load_temp_table(
+                    cursor, temp_market, MARKET_COLUMNS, market_frame.toLocalIterator()
                 )
-            )
-            market_count = _load_temp_table(
-                cursor, temp_market, MARKET_COLUMNS, market_frame.toLocalIterator()
-            )
-            research_count = _load_temp_table(
-                cursor, temp_research, RESEARCH_COLUMNS, research_frame.toLocalIterator()
-            )
-            _replace_from_temp(
-                cursor,
-                clean_pg_schema,
-                market_table,
-                temp_market,
-                MARKET_COLUMNS,
-                ("ticker", "trading_date"),
-                market_count,
-            )
-            _replace_from_temp(
-                cursor,
-                clean_pg_schema,
-                research_table,
-                temp_research,
-                RESEARCH_COLUMNS,
-                ("chunk_id",),
-                research_count,
-            )
+                _replace_from_temp(
+                    cursor,
+                    clean_pg_schema,
+                    market_table,
+                    temp_market,
+                    MARKET_COLUMNS,
+                    ("ticker", "trading_date"),
+                    market_count,
+                )
+                published[market_table] = market_count
+
+            if dataset in {"research", "both"}:
+                research_frame = spark_session.sql(research_source_sql(catalog, schema)).select(
+                    *RESEARCH_COLUMNS
+                )
+                temp_research = f"research_documents_load_{suffix}"
+                cursor.execute(
+                    sql.SQL("CREATE TEMP TABLE {} (LIKE {}.{} INCLUDING DEFAULTS) ON COMMIT DROP").format(
+                        sql.Identifier(temp_research),
+                        sql.Identifier(clean_pg_schema),
+                        sql.Identifier(research_table),
+                    )
+                )
+                research_count = _load_temp_table(
+                    cursor, temp_research, RESEARCH_COLUMNS, research_frame.toLocalIterator()
+                )
+                _replace_from_temp(
+                    cursor,
+                    clean_pg_schema,
+                    research_table,
+                    temp_research,
+                    RESEARCH_COLUMNS,
+                    ("chunk_id",),
+                    research_count,
+                )
+                published[research_table] = research_count
         connection.commit()
         return {
             "source_catalog_schema": f"{catalog}.{schema}",
             "target_schema": clean_pg_schema,
-            "tables": {market_table: market_count, research_table: research_count},
+            "dataset": dataset,
+            "tables": published,
             "publish_mode": "atomic_temp_stage_replace",
         }
     except Exception:
@@ -227,6 +238,7 @@ def main() -> int:
     parser.add_argument("--suffix", default="srini")
     parser.add_argument("--secret-scope", default="database")
     parser.add_argument("--secret-key", default="lakebase-url")
+    parser.add_argument("--dataset", choices=("market", "research", "both"), default="both")
     args = parser.parse_args()
     print(json.dumps(run(**vars(args)), sort_keys=True))
     return 0

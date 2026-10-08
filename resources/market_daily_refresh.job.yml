@@ -1,0 +1,61 @@
+resources:
+  jobs:
+    market_daily_refresh:
+      name: signal-desk-market-daily-refresh-${bundle.target}
+      description: Refresh daily market data and publish the frontend Lakebase serving table
+      max_concurrent_runs: 1
+      schedule:
+        quartz_cron_expression: "0 0 6 ? * MON-FRI"
+        timezone_id: America/Los_Angeles
+        pause_status: UNPAUSED
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: volume
+          default: ${var.raw_volume}
+        - name: max_dates
+          default: "10"
+        - name: pg_schema
+          default: bootcamp_students
+        - name: suffix
+          default: ${var.lakebase_table_suffix}
+      tasks:
+        - task_key: land_recent_market_data
+          run_job_task:
+            job_id: ${resources.jobs.market_ingestion.id}
+            job_parameters:
+              catalog: "{{job.parameters.catalog}}"
+              schema: "{{job.parameters.schema}}"
+              volume: "{{job.parameters.volume}}"
+              max_dates: "{{job.parameters.max_dates}}"
+              stop_after_row_estimate: "0"
+        - task_key: refresh_market_pipeline
+          depends_on:
+            - task_key: land_recent_market_data
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.market_pipeline.id}
+            full_refresh: false
+        - task_key: publish_market_delta_serving
+          depends_on:
+            - task_key: refresh_market_pipeline
+          run_job_task:
+            job_id: ${resources.jobs.market_serving_publish.id}
+            job_parameters:
+              catalog: "{{job.parameters.catalog}}"
+              schema: "{{job.parameters.schema}}"
+        - task_key: publish_market_lakebase_serving
+          depends_on:
+            - task_key: publish_market_delta_serving
+          run_job_task:
+            job_id: ${resources.jobs.lakebase_serving_publish.id}
+            job_parameters:
+              catalog: "{{job.parameters.catalog}}"
+              schema: "{{job.parameters.schema}}"
+              pg_schema: "{{job.parameters.pg_schema}}"
+              suffix: "{{job.parameters.suffix}}"
+              dataset: market
+      permissions:
+        - level: CAN_VIEW
+          group_name: users

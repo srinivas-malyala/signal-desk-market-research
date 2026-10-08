@@ -1,9 +1,15 @@
 """Create deterministic, overlapping filing and article retrieval chunks."""
 
-from document_text import build_research_chunks
+import document_text
+from pyspark import cloudpickle
 from pyspark import pipelines as dp
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
+
+# Pipeline source files are available to the driver, but sibling modules are not
+# automatically installed on Python workers. Embed this local helper module in
+# serialized UDFs so executors do not need to import ``document_text``.
+cloudpickle.register_pickle_by_value(document_text)
 
 CHUNK_SCHEMA = T.ArrayType(
     T.StructType(
@@ -24,7 +30,7 @@ CHUNK_SCHEMA = T.ArrayType(
     )
 )
 chunk_document = F.udf(
-    lambda source_type, source_id, text, title, ticker, source_date, document_kind: build_research_chunks(
+    lambda source_type, source_id, text, title, ticker, source_date, document_kind: document_text.build_research_chunks(
         source_type,
         source_id,
         text,

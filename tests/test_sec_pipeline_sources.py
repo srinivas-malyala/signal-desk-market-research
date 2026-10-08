@@ -65,6 +65,8 @@ def test_document_pipeline_uses_binary_autoloader_and_traceable_chunks() -> None
     reconciliation = source("research_chunk_reconciliation.py")
     assert 'cloudFiles.format", "binaryFile"' in bronze
     assert '"_metadata.file_path"' in bronze
+    assert "cloudpickle.register_pickle_by_value(document_text)" in bronze
+    assert "cloudpickle.register_pickle_by_value(document_text)" in chunks
     assert "F.explode(" in chunks and "chunk_document(" in chunks
     assert 'F.lit("filing").alias("source_type")' in chunks
     assert 'F.lit("article").alias("source_type")' in chunks
