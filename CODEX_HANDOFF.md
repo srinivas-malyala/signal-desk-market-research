@@ -131,7 +131,7 @@ and Supervisor processing.
 | Workspace host | `https://dbc-7b106152-caf3.cloud.databricks.com` |
 | SQL warehouse | `b15d3d6f837ba428` |
 | Development UC namespace | `bootcamp_students.student_sri` |
-| AI Search index | `bootcamp_students.student_sri.signal_desk_research_chunks_index_v2` |
+| AI Search index | `bootcamp_students.student_sri.signal_desk_research_chunks_index_v4` |
 | Shared Lakebase project | `summer-bootcamp-2026-v2` |
 | Lakebase branch / endpoint / database | `production` / `primary` / `databricks_postgres` |
 | MCP service | `https://signal-desk-mcp.onrender.com` |

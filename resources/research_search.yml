@@ -1,16 +1,9 @@
 resources:
-  vector_search_endpoints:
-    research_search:
-      name: signal-desk-research-${bundle.target}
-      endpoint_type: STANDARD
-      permissions:
-        - level: CAN_USE
-          group_name: users
-
   vector_search_indexes:
     research_chunks:
-      name: ${var.catalog}.${var.schema}.signal_desk_research_chunks_index_v2
-      endpoint_name: ${resources.vector_search_endpoints.research_search.name}
+      name: ${var.catalog}.${var.schema}.signal_desk_research_chunks_index_v4
+      # This shared, admin-owned endpoint is intentionally not bundle-managed.
+      endpoint_name: zachy_vs
       index_type: DELTA_SYNC
       index_subtype: HYBRID
       primary_key: chunk_id

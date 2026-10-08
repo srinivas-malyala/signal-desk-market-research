@@ -5,7 +5,9 @@ resources:
       description: Orchestrates SEC filings, research articles, and the unified Spark research pipeline
       max_concurrent_runs: 1
       trigger:
-        pause_status: UNPAUSED
+        # Keep this manual after the one-time index sync.
+        # Re-enable only when recurring research refreshes are required.
+        pause_status: PAUSED
         periodic:
           interval: 6
           unit: HOURS

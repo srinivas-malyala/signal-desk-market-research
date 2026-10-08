@@ -51,7 +51,7 @@ OAuth M2M credentials supplied only through Render secret environment values.
 | `DATABRICKS_WAREHOUSE_ID` | jobs/local acceptance | Same-workspace Delta SQL access | Existing paid-workspace runtime or explicit local environment; not a Render resource |
 | `DATABRICKS_CATALOG` | MCP retrieval | Governed market tables | Non-secret environment value; `bootcamp_students` |
 | `DATABRICKS_SCHEMA` | MCP retrieval | Governed market tables | Non-secret environment value; `student_sri` |
-| `SIGNAL_DESK_VECTOR_SEARCH_INDEX` | MCP retrieval/index sync | Managed research index | Non-secret full name; `bootcamp_students.student_sri.signal_desk_research_chunks_index_v2` |
+| `SIGNAL_DESK_VECTOR_SEARCH_INDEX` | MCP retrieval/index sync | Managed research index | Non-secret full name; `bootcamp_students.student_sri.signal_desk_research_chunks_index_v4` |
 | `PGHOST`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, `PGPORT` | MCP operational store | Optional discrete-component connection form | Current deployment uses `LAKEBASE_URL`; these values are not used or logged |
 | `LAKEBASE_URL` | MCP/frontend | Deployed or local direct Lakebase connection | Protected runtime environment only; PostgreSQL URL with `sslmode=require` |
 | `LAKEBASE_SECRET_SCOPE` | Databricks jobs/local workspace execution | Lakebase connection when `LAKEBASE_URL` is absent | Defaults to admin-managed scope `database`; Render does not use ambient secret-scope access |
