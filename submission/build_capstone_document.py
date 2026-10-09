@@ -132,7 +132,9 @@ def add_picture(doc: Document, path: Path, width: float, alt: str, caption: str)
 
 def add_link(paragraph, text: str, url: str) -> None:
     part = paragraph.part
-    rel_id = part.relate_to(url, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink", is_external=True)
+    rel_id = part.relate_to(
+        url, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink", is_external=True
+    )
     hyperlink = OxmlElement("w:hyperlink")
     hyperlink.set(qn("r:id"), rel_id)
     run = OxmlElement("w:r")
@@ -263,7 +265,7 @@ def add_cover(doc: Document) -> None:
         ("Application", "Signal Desk AI Stock Market Research Assistant"),
         ("Verified user", "malyalasrinivas@gmail.com"),
         ("Live application", "signal-desk-frontend-s88i.onrender.com"),
-        ("Evidence date", "October 3, 2026"),
+        ("Evidence date", "October 7, 2026"),
     ]
     for i, (label, value) in enumerate(meta_data):
         meta.cell(i, 0).text = label
@@ -310,7 +312,7 @@ def add_overview(doc: Document) -> None:
         ("Variety", "Structured, semi-structured, and unstructured data", "OHLCV, XBRL, JSON, filings, and news"),
         ("Agent", "Six retrieval and three confirmed write tools", "MCP contracts and 10 of 10 Supervisor evaluation"),
         ("Analytics", "Five Gold metric families", "Lakebase history through Bronze and Silver to Gold"),
-        ("Quality", "285 tests and Ruff pass", "Local verification on October 3, 2026"),
+        ("Quality", "281 tests and Ruff pass", "Local verification on October 7, 2026"),
         ("Deployment", "Frontend and MCP live on Render", "Live application and Render deployment evidence"),
     ]
     for values in rows:
@@ -322,7 +324,7 @@ def add_overview(doc: Document) -> None:
     doc.add_page_break()
     doc.add_heading("Architecture", level=1)
     doc.add_paragraph(
-        "Render hosts the Flask frontend and FastMCP application tier. Databricks owns the Spark pipelines, Delta tables, SQL analytics, AI Search, and Agent Bricks Supervisor. Lakebase provides operational storage and serving copies. Short-lived signed assertions carry the authenticated browser identity to MCP, while separate machine credentials protect platform-to-platform calls."
+        "Render hosts the Flask frontend and FastMCP application tier. Databricks owns the Spark pipelines, Delta tables, SQL analytics, AI Search, and Agent Bricks Supervisor. Lakebase provides operational storage and market-serving data. Short-lived signed assertions carry authenticated browser identity to MCP; a fixed Supervisor credential protects agent calls, and the owner-approved shared workspace identity supports bounded AI Search and Gold reads."
     )
     add_picture(
         doc,
@@ -344,14 +346,54 @@ def add_score_map(doc: Document) -> None:
     for i, value in enumerate(headers):
         table.cell(0, i).text = value
     evidence = [
-        ("Spark data pipeline", "15", "Reusable Spark ingestion, validation, enrichment, quarantine, and Gold outputs", "pipelines and resources"),
-        ("Third-party API", "10", "Massive and SEC integrations with secrets, retries, caching, validation, and shared quota controls", "clients, ingestion, migration 0005"),
-        ("Lakebase model", "15", "Normalized operational model with keys, constraints, indexes, ownership, audit fields, and idempotency", "migrations and lakebase modules"),
-        ("Action-taking agent", "20", "Grounded retrieval plus three protected writes; deployed Supervisor passes 10 of 10 cases", "MCP server, prompt, evaluations"),
-        ("Analytics pipeline", "10", "Incremental history processing into privacy-safe Silver and five useful Gold metric families", "analytics pipeline and acceptance tool"),
-        ("Frontend workflow", "10", "Authenticated end-to-end research, watchlist, memory, evidence links, errors, and analytics", "live screenshots and dashboard code"),
-        ("Deployed application", "5", "Live Render frontend and MCP with OIDC, health checks, Blueprint configuration, and runbook", "live URL, render.yaml, runbook"),
-        ("Two Big Data Vs", "15", "Volume above one million rows and meaningful unstructured document processing", "coverage results and research index"),
+        (
+            "Spark data pipeline",
+            "15",
+            "Reusable Spark ingestion, validation, enrichment, quarantine, and Gold outputs",
+            "pipelines and resources",
+        ),
+        (
+            "Third-party API",
+            "10",
+            "Massive and SEC integrations with secrets, retries, caching, validation, and shared quota controls",
+            "clients, ingestion, migration 0005",
+        ),
+        (
+            "Lakebase model",
+            "15",
+            "Normalized operational model with keys, constraints, indexes, ownership, audit fields, and idempotency",
+            "migrations and lakebase modules",
+        ),
+        (
+            "Action-taking agent",
+            "20",
+            "Grounded retrieval plus three protected writes; deployed Supervisor passes 10 of 10 cases",
+            "MCP server, prompt, evaluations",
+        ),
+        (
+            "Analytics pipeline",
+            "10",
+            "Incremental history processing into privacy-safe Silver and five useful Gold metric families",
+            "analytics pipeline and acceptance tool",
+        ),
+        (
+            "Frontend workflow",
+            "10",
+            "Authenticated end-to-end research, watchlist, memory, evidence links, errors, and analytics",
+            "live screenshots and dashboard code",
+        ),
+        (
+            "Deployed application",
+            "5",
+            "Live Render frontend and MCP with OIDC, health checks, Blueprint configuration, and runbook",
+            "live URL, render.yaml, runbook",
+        ),
+        (
+            "Two Big Data Vs",
+            "15",
+            "Volume above one million rows and meaningful unstructured document processing",
+            "coverage results and research index",
+        ),
     ]
     for values in evidence:
         cells = table.add_row().cells
@@ -488,7 +530,7 @@ def add_detailed_evidence(doc: Document) -> None:
         [
             "render.yaml defines both Python services and contains no Databricks data resources.",
             "docs/RENDER_DEPLOYMENT_RUNBOOK.md and docs/RENDER_OIDC_PREPARATION.md document setup, configuration, secret entry, validation, and recovery.",
-            "docs/SPLIT_WORKSPACE_APP_DEPLOYMENT_PLAN.md records the boundary between Render and Databricks.",
+            "docs/RENDER_DEPLOYMENT_PLAN.md records the boundary between Render and Databricks.",
         ],
         [
             "The frontend was accessible at the submitted URL under the verified Google account.",
@@ -519,7 +561,7 @@ def add_live_screenshots(doc: Document) -> None:
     doc.add_page_break()
     doc.add_heading("Live Application Evidence", level=1)
     doc.add_paragraph(
-        "The screenshots in this section were captured from the deployed application and Render dashboard on October 3 and 4, 2026. They contain no credentials, access tokens, connection strings, or private research bodies."
+        "The screenshots in this section were captured from the deployed application and Render dashboard on October 3 and 4, 2026, and the evidence package was revalidated on October 7, 2026. They contain no credentials, access tokens, connection strings, or private research bodies."
     )
     add_picture(
         doc,
@@ -573,10 +615,18 @@ def add_quality_and_demo(doc: Document) -> None:
     for i, text in enumerate(("Check", "Result", "Meaning")):
         table.cell(0, i).text = text
     checks = [
-        ("Automated tests", "285 passed", "Unit, contract, route, safety, pipeline-source, deployment, and acceptance behavior"),
+        (
+            "Automated tests",
+            "281 passed",
+            "Unit, contract, route, safety, pipeline-source, deployment, and acceptance behavior",
+        ),
         ("Static analysis", "Ruff passed", "Repository-wide Python lint checks"),
         ("Supervisor evaluation", "10 of 10 passed", "Deployed action-taking agent and tool selection"),
-        ("Retrieval evaluation", "51 cases accepted", "High recall, ranking quality, provenance, and metadata filtering"),
+        (
+            "Retrieval evaluation",
+            "51 cases accepted",
+            "High recall, ranking quality, provenance, and metadata filtering",
+        ),
         ("Credential scan", "Accepted release checkpoint", "No secrets in tracked source or sanitized evidence"),
         ("Live app inspection", "Verified", "Authenticated research, state, and analytics views loaded"),
     ]
@@ -593,24 +643,40 @@ def add_quality_and_demo(doc: Document) -> None:
         "Run ticker performance and a two-company comparison on a shared window.",
         "Demonstrate a confirmed, disposable watchlist write and explain idempotent replay protection.",
         "Show research memory and the usage analytics metrics derived from Lakebase changes.",
-        "Finish with the architecture diagram, the Volume and Variety counts, the Live Render deployment, and the 285-test result.",
+        "Finish with the architecture diagram, the Volume and Variety counts, the Live Render deployment, and the 281-test result.",
     ]
     for step in steps:
         add_number(doc, step)
 
     doc.add_page_break()
     doc.add_heading("Operational Constraints", level=1)
-    add_bullet(doc, "Render Free instances can sleep after inactivity. Pre-warm MCP first and frontend second before a live demo.")
-    add_bullet(doc, "Analytics may lag current UI actions. The interface labels stale data and shows the latest processed result.")
-    add_bullet(doc, "Massive plan entitlements can limit snapshots or fundamentals. The application labels unavailable data and falls back only through documented paths.")
-    add_bullet(doc, "The application supports research and evidence inspection, not trade execution or personalized investment advice.")
+    add_bullet(
+        doc,
+        "Render Free instances can sleep after inactivity. Pre-warm MCP first and frontend second before a live demo.",
+    )
+    add_bullet(
+        doc,
+        "Analytics may lag current UI actions. The interface labels stale data and shows the latest processed result.",
+    )
+    add_bullet(
+        doc,
+        "Massive plan entitlements can limit snapshots or fundamentals. The application labels unavailable data and falls back only through documented paths.",
+    )
+    add_bullet(
+        doc,
+        "The application supports research and evidence inspection, not trade execution or personalized investment advice.",
+    )
 
     doc.add_heading("Submission Checklist", level=1)
     add_bullet(doc, "Upload Signal_Desk_Capstone_Submission.zip when submitting the complete evidence package.")
-    add_bullet(doc, "Upload Signal_Desk_Capstone_Evidence.pdf instead when the grader prefers one directly viewable file.")
+    add_bullet(
+        doc, "Upload Signal_Desk_Capstone_Evidence.pdf instead when the grader prefers one directly viewable file."
+    )
     add_bullet(doc, "Confirm the live application URL opens and the approved Google account can authenticate.")
     add_bullet(doc, "Pre-warm the MCP and frontend Render services before recording or presenting the demo.")
-    add_bullet(doc, "Keep the five-minute demo script open and remove any disposable write created during the presentation.")
+    add_bullet(
+        doc, "Keep the five-minute demo script open and remove any disposable write created during the presentation."
+    )
 
 
 def add_index(doc: Document) -> None:

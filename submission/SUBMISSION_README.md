@@ -23,8 +23,8 @@ The live application requires an approved Google account. The verified demonstra
 
 - Live Render frontend and MCP services
 - Authenticated research, watchlist, saved research, and usage analytics views
-- 285 automated tests passing on October 3, 2026
-- Repository-wide Ruff checks passing on October 3, 2026
+- 281 automated tests passing on October 7, 2026
+- Repository-wide Ruff checks passing on October 7, 2026
 - Latest observed MCP Render deployment status shown as Live
 
 Render uses Free instances, so the first request after inactivity may take about 50 seconds or more. Open the MCP service first, then the frontend before a live demonstration.

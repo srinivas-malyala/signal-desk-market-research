@@ -68,6 +68,6 @@ Mention that the Spark pipelines are declared under `pipelines/` and deployed th
 
 Show the Render deployment screenshot and the live application.
 
-Say: “Render reports the MCP service as Live and Blueprint managed. Secrets stay in Render or Databricks secret storage. The current repository passes 285 automated tests and repository-wide Ruff checks. The deployed Supervisor passed all 10 evaluation cases.”
+Say: “Render reports the MCP service as Live and Blueprint managed. Secrets stay in Render or Databricks secret storage. The current repository passes 281 automated tests and repository-wide Ruff checks. The deployed Supervisor passed all 10 evaluation cases.”
 
 Close with the application URL and the evidence PDF.

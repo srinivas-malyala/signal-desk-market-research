@@ -29,10 +29,10 @@
 
 ## Current deterministic verification
 
-Executed locally on October 3, 2026:
+Executed locally on October 7, 2026:
 
 ```text
-285 passed, 2 dependency deprecation warnings
+281 passed, 2 dependency deprecation warnings
 Ruff: All checks passed
 ```
 
