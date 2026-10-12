@@ -1,5 +1,23 @@
 # Signal Desk Codex Handoff
 
+## Embedded assistant workstream — 2026-10-12
+
+M1 local implementation now passes 27 restricted-surface tests, changed-file
+Ruff, and Render service process smoke. See docs/assistant/M1_FINDINGS.md.
+The embedded surface is default-off; separate Supervisor provisioning requires
+deployment/access and is not completed. No migrations, grants, or live writes.
+Full fast suite has one pre-existing paused-schedule expectation mismatch.
+
+Read root AGENTS.md, GOALS.md, PLANS.md, and docs/assistant/M0_FINDINGS.md for
+this new feature. M0 local HTTP restriction prototype and live standalone
+protocol baseline are verified; embedded proposal/citation gates remain pending
+M1 provisioning. User selected dataexpertio_srini for this workstream.
+Tools/tests added: tools/assistant_m0_probe.py and tests/test_assistant_m0.py.
+18 targeted tests, changed-file lint, and secret scan pass. No deployment,
+database migration, grant, production route, or business write was performed.
+Existing Supervisor streams use a finalized assistant item followed by DONE;
+bare EOF must remain interrupted. Preserve existing standalone behavior.
+
 Updated: 2026-10-07 (America/Los_Angeles)
 
 This is the compact resume document for new Codex chats. Read it before broad

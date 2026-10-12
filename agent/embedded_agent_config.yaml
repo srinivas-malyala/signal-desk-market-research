@@ -1,0 +1,36 @@
+# Deployment specification, not an already deployed resource or a DAB resource.
+name: signal-desk-embedded-research
+contract_version: "1"
+description: Browser research orchestration with non-executing action candidates.
+supervisor:
+  display_name: Signal Desk Embedded Research
+  instructions_file: embedded_system_prompt.md
+external_mcp_connection:
+  connection_name: bootcamp_students.student_sri.signal_desk_embedded_mcp_connection
+  mcp_service_name: bootcamp_students.student_sri.signal_desk_embedded_mcp
+  endpoint: https://signal-desk-mcp.onrender.com/embedded/mcp
+  transport: streamable-http
+  credential_environment: MCP_EMBEDDED_TOKEN
+  secret_reference_required: true
+  tools:
+    - get_stock_performance
+    - get_company_research
+    - compare_stocks
+    - semantic_research
+    - propose_watchlist_add
+    - propose_watchlist_remove
+    - propose_research_note
+    - propose_analysis_report
+  forbidden_tools:
+    - get_watchlist
+    - get_notable_updates
+    - update_watchlist
+    - save_research_note
+    - save_analysis_report
+evaluation:
+  fixture_file: embedded_evaluations.json
+deployment:
+  status: not_provisioned
+  supervisor_resource: null
+  serving_endpoint: null
+  frontend_permission_required: CAN_QUERY

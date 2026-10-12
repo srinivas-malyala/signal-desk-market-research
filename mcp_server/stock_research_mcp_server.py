@@ -9,6 +9,7 @@ import os
 import re
 import time
 import uuid
+from contextlib import AsyncExitStack, asynccontextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime
 from functools import wraps
@@ -17,15 +18,38 @@ import lakebase
 import research_broker as broker
 from audit import bounded_value, pseudonymous_subject, result_summary, safe_parameters, trusted_email
 from fastmcp import FastMCP
-from identity import IdentityError, bind_assertion_session, identity_mode, reserve_assertion_session
+from identity import (
+    IdentityError,
+    bind_assertion_session,
+    embedded_enabled,
+    identity_mode,
+    reserve_assertion_session,
+    trusted_embedded_identity,
+    validate_embedded_configuration,
+)
 from identity import trusted_identity as request_identity
 from psycopg2.extras import Json
+from starlette.applications import Starlette
 from starlette.middleware import Middleware as ASGIMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+from starlette.routing import Mount
+
+from shared.contracts.assistant import (
+    NoteArguments,
+    NoteProposal,
+    ReportArguments,
+    ReportProposal,
+    WatchlistArguments,
+    WatchlistProposal,
+)
 
 mcp = FastMCP("stock-market-research")
+embedded_mcp = FastMCP("stock-market-research-embedded")
+EMBEDDED_RESEARCH_TOOLS = frozenset({
+    "get_stock_performance", "get_company_research", "compare_stocks", "semantic_research",
+})
 _identity: ContextVar[dict | None] = ContextVar("identity", default=None)
 _session: ContextVar[str] = ContextVar("session", default="")
 _correlation: ContextVar[str] = ContextVar("correlation", default="")
@@ -91,11 +115,15 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         correlation_id = (
             requested_correlation if CORRELATION_ID.fullmatch(requested_correlation) else str(uuid.uuid4())
         )
+        embedded_surface = request.url.path == "/embedded" or request.url.path.startswith("/embedded/")
         try:
-            request_user = request_identity(request.headers, correlation_id)
+            request_user = (
+                trusted_embedded_identity(request.headers) if embedded_surface
+                else request_identity(request.headers, correlation_id)
+            )
             reserve_assertion_session(request_user, request.headers.get("mcp-session-id"))
         except IdentityError:
-            if identity_mode() == "signed_assertion" and request.url.path != "/health":
+            if (embedded_surface or identity_mode() == "signed_assertion" or request.headers.get("authorization")) and request.url.path != "/health":
                 return JSONResponse(
                     {"status": "error", "error_code": "authentication_required", "message": "Trusted identity is required."},
                     status_code=401,
@@ -186,6 +214,8 @@ def traced(function):
         bound = inspect.signature(function).bind(*args, **kwargs)
         bound.apply_defaults()
         try:
+            if (_identity.get() or {}).get("kind") == "embedded_supervisor" and function.__name__ not in EMBEDDED_RESEARCH_TOOLS:
+                raise ValueError("The embedded identity cannot invoke this tool.")
             result = function(*args, **kwargs)
         except Exception as error:
             result = broker._error(error)
@@ -212,6 +242,7 @@ def traced(function):
     return wrapper
 
 
+@embedded_mcp.add_tool
 @mcp.tool
 @traced
 def get_stock_performance(ticker: str, lookback_days: int = 30) -> dict:
@@ -226,6 +257,7 @@ def get_stock_performance(ticker: str, lookback_days: int = 30) -> dict:
     return broker.get_stock_performance(ticker, lookback_days, (_identity.get() or {}).get("access_token"))
 
 
+@embedded_mcp.add_tool
 @mcp.tool
 @traced
 def get_company_research(ticker: str, news_limit: int = 10, include_fundamentals: bool = True) -> dict:
@@ -242,6 +274,7 @@ def get_company_research(ticker: str, news_limit: int = 10, include_fundamentals
     return broker.get_company_research(ticker, news_limit, include_fundamentals)
 
 
+@embedded_mcp.add_tool
 @mcp.tool
 @traced
 def compare_stocks(tickers: list[str], lookback_days: int = 30) -> dict:
@@ -366,6 +399,7 @@ def save_analysis_report(
     )
 
 
+@embedded_mcp.add_tool
 @mcp.tool
 @traced
 def semantic_research(
@@ -419,7 +453,65 @@ def _run_startup_migrations() -> bool:
     return value == "true"
 
 
+def _proposal_candidate(proposal) -> dict:
+    # Pure formatting: no database, audit write, owner, confirmation, or retry key.
+    return {"status": "proposal", "executed": False, "proposal": proposal.model_dump(mode="json")}
+
+
+@embedded_mcp.tool
+def propose_watchlist_add(ticker: str) -> dict:
+    """Prepare an add-to-Primary candidate for browser review. Never executes or saves."""
+    return _proposal_candidate(WatchlistProposal(type="watchlist_add", arguments=WatchlistArguments(ticker=ticker)))
+
+
+@embedded_mcp.tool
+def propose_watchlist_remove(ticker: str) -> dict:
+    """Prepare a remove-from-Primary candidate for browser review. Never executes or saves."""
+    return _proposal_candidate(WatchlistProposal(type="watchlist_remove", arguments=WatchlistArguments(ticker=ticker)))
+
+
+@embedded_mcp.tool
+def propose_research_note(ticker: str, title: str, note_text: str, thesis_tags: tuple[str, ...] = ()) -> dict:
+    """Prepare the exact requested note draft for browser review, without saving it."""
+    return _proposal_candidate(NoteProposal(arguments=NoteArguments(
+        ticker=ticker, title=title, note_text=note_text, thesis_tags=list(thesis_tags),
+    )))
+
+
+@embedded_mcp.tool
+def propose_analysis_report(title: str, tickers: list[str], report_text: str, thesis: str = "") -> dict:
+    """Prepare an exact report draft for browser review. Provenance is attached by Flask, not supplied here."""
+    return _proposal_candidate(ReportProposal(arguments=ReportArguments(
+        title=title, tickers=tickers, report_text=report_text, thesis=thesis,
+    )))
+
+
+def create_http_app(*, json_response: bool = False) -> Starlette:
+    """Preserve stateful /mcp and isolate stateless /embedded/mcp under one process."""
+    enabled = embedded_enabled()
+    if enabled:
+        validate_embedded_configuration()
+    legacy = mcp.http_app(stateless_http=False, json_response=json_response)
+    children = [legacy]
+    routes = []
+    if enabled:
+        restricted = embedded_mcp.http_app(path="/mcp", stateless_http=True, json_response=json_response)
+        children.append(restricted)
+        routes.append(Mount("/embedded", app=restricted))
+    routes.append(Mount("/", app=legacy))
+
+    @asynccontextmanager
+    async def lifespan(_app):
+        async with AsyncExitStack() as stack:
+            for child in children:
+                await stack.enter_async_context(child.router.lifespan_context(child))
+            yield
+
+    return Starlette(routes=routes, lifespan=lifespan, middleware=[ASGIMiddleware(RequestContextMiddleware)])
+
+
 if __name__ == "__main__":
+    application = create_http_app()
     if _run_startup_migrations():
         lakebase.migrate()
     try:
@@ -428,9 +520,6 @@ if __name__ == "__main__":
         raise RuntimeError("PORT must be an integer.") from error
     if not 1 <= port <= 65_535:
         raise RuntimeError("PORT must be between 1 and 65535.")
-    mcp.run(
-        transport="http",
-        host="0.0.0.0",
-        port=port,
-        middleware=[ASGIMiddleware(RequestContextMiddleware)],
-    )
+    import uvicorn
+
+    uvicorn.run(application, host="0.0.0.0", port=port)

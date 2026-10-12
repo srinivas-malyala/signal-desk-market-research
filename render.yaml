@@ -64,6 +64,12 @@ services:
         sync: false
       - key: MCP_SUPERVISOR_SUBJECT
         sync: false
+      - key: MCP_EMBEDDED_ENABLED
+        value: "false"
+      - key: MCP_EMBEDDED_TOKEN
+        sync: false
+      - key: MCP_EMBEDDED_SUBJECT
+        value: signal-desk-embedded
 
   - type: web
     name: signal-desk-frontend

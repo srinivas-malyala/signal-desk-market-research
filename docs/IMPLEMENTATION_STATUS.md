@@ -1,5 +1,22 @@
 # Capstone Implementation Status
 
+## New embedded assistant — 2026-10-12
+
+M1 restricted MCP surface and pure candidate tools are implemented and locally
+verified (27 tests, Ruff, service startup smoke). Default-off Render settings,
+separate embedded prompt/spec, and adversarial evaluation examples are prepared.
+Deployment and separate Supervisor provisioning remain pending Render access.
+See docs/assistant/M1_FINDINGS.md. No live changes or chat UI are claimed.
+
+M0 is partially verified: isolated FastMCP 2.14.7 HTTP mounts and forbidden
+direct-call rejection pass locally; existing standalone Supervisor readiness,
+full-history input, text deltas, tool events, and DONE terminal markers were
+observed with user-selected profile dataexpertio_srini. Strict JSON formatting
+was unreliable. Live typed proposal/citation proof needs the M1 restricted
+connection. 18 targeted tests and changed-file Ruff pass; secret scan passes.
+No production feature, migration, permission change, or deployment is claimed.
+Detailed evidence: docs/assistant/M0_FINDINGS.md; tracker: PLANS.md.
+
 Updated: 2026-10-01 UTC
 
 This is the living tracker for implementation progress and external gates. A unit is complete only when its code and deterministic tests pass; workspace-dependent proof is listed separately.

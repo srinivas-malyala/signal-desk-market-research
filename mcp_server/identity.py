@@ -30,9 +30,47 @@ def identity_mode() -> str:
 def _bearer(headers: Mapping[str, str]) -> str:
     authorization = str(headers.get("authorization") or "")
     scheme, separator, credential = authorization.partition(" ")
-    if separator != " " or scheme.casefold() != "bearer" or not credential or any(c.isspace() for c in credential):
+    if separator != " " or scheme.casefold() != "bearer" or not credential or not credential.isascii() or any(c.isspace() for c in credential):
         raise IdentityError("A bearer credential is required.")
     return credential
+
+
+def embedded_enabled() -> bool:
+    value = os.getenv("MCP_EMBEDDED_ENABLED", "false").strip().lower()
+    if value not in {"true", "false"}:
+        raise IdentityError("MCP_EMBEDDED_ENABLED must be true or false.")
+    return value == "true"
+
+
+def validate_embedded_configuration() -> None:
+    token = os.getenv("MCP_EMBEDDED_TOKEN", "").strip()
+    subject = os.getenv("MCP_EMBEDDED_SUBJECT", "signal-desk-embedded").strip()
+    legacy_token = os.getenv("MCP_SUPERVISOR_TOKEN", "").strip()
+    legacy_subject = os.getenv("MCP_SUPERVISOR_SUBJECT", "signal-desk-supervisor").strip()
+    if identity_mode() != "signed_assertion":
+        raise IdentityError("Embedded MCP requires signed_assertion identity mode.")
+    if not 32 <= len(token) <= 4096 or not token.isascii() or any(c.isspace() for c in token):
+        raise IdentityError("The embedded credential must be a distinct high-entropy token.")
+    if legacy_token and hmac.compare_digest(token, legacy_token):
+        raise IdentityError("Embedded and standalone credentials must differ.")
+    if not SUBJECT.fullmatch(subject) or subject.casefold() == legacy_subject.casefold():
+        raise IdentityError("Embedded and standalone subjects must be valid and distinct.")
+
+
+def _is_embedded_token(token: str) -> bool:
+    expected = os.getenv("MCP_EMBEDDED_TOKEN", "").strip()
+    return bool(expected and expected.isascii() and hmac.compare_digest(token, expected))
+
+
+def trusted_embedded_identity(headers: Mapping[str, str]) -> dict:
+    if not embedded_enabled():
+        raise IdentityError("Embedded MCP is disabled.")
+    validate_embedded_configuration()
+    if not _is_embedded_token(_bearer(headers)):
+        raise IdentityError("The embedded credential is required.")
+    subject = os.getenv("MCP_EMBEDDED_SUBJECT", "signal-desk-embedded").strip()
+    return {"email": f"{subject}@service.signal-desk.invalid", "subject": subject,
+            "access_token": None, "kind": "embedded_supervisor"}
 
 
 def _supervisor_identity(token: str) -> dict | None:
@@ -90,6 +128,10 @@ def _frontend_identity(token: str, request_id: str) -> dict:
 
 
 def trusted_identity(headers: Mapping[str, str], request_id: str) -> dict:
+    # Reject embedded credentials even on the legacy forwarded-identity path.
+    authorization = str(headers.get("authorization") or "")
+    if authorization.lower().startswith("bearer ") and _is_embedded_token(_bearer(headers)):
+        raise IdentityError("Embedded credentials cannot access the legacy MCP surface.")
     if identity_mode() == "databricks_forwarded":
         return {
             "email": headers.get("x-forwarded-email") or headers.get("x-forwarded-user"),
