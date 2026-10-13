@@ -48,6 +48,9 @@ def database(monkeypatch):
         sql = render_migration((Path(__file__).parents[1] / "mcp_server/migrations/0007_assistant_retention.sql").read_text())
         cur.execute(sql)
         cur.execute(sql)
+        sql = render_migration((Path(__file__).parents[1] / "mcp_server/migrations/0008_assistant_proposals.sql").read_text())
+        cur.execute(sql)
+        cur.execute(sql)
 
     @contextmanager
     def connection():
@@ -342,3 +345,57 @@ def test_lost_commit_acknowledgement_returns_error_but_duplicate_finds_saved_run
     saved, created = repo.start(1, conversation, submission, "Question")
     assert not created and saved["state"] == "completed"
     assert repo.turns(1, conversation)[0]["assistant_text"] == "Answer"
+
+
+def test_proposal_revision_dismissal_expiry_and_completed_origin(database):
+    from dashboard.assistant_proposals import ProposalRepository
+
+    repo, connection = database
+    proposals = ProposalRepository(connection)
+    conversation = repo.create(1)["id"]
+    run, _ = repo.start(1, conversation, uuid4(), "Draft only")
+    payload = {"schema_version":"1", "type":"watchlist_add", "arguments":{"ticker":"AAPL"}}
+    with pytest.raises(AssistantNotFound):
+        proposals.create(1, run["id"], payload)
+    repo.finish(1, run["id"], run["lease_token"], state="completed", text="Draft prepared")
+    draft = proposals.create(1, run["id"], payload)
+    assert proposals.create(1, run["id"], payload)["id"] == draft["id"]
+    with pytest.raises(AssistantNotFound):
+        proposals.review(2, draft["id"], draft["payload_hash"])
+    revised = proposals.revise(1, draft["id"], draft["payload_hash"], {"ticker":"MSFT"})
+    assert revised["idempotency_key"] != draft["idempotency_key"] and revised["revision"] == 2
+    with pytest.raises(AssistantConflict):
+        proposals.review(1, draft["id"], draft["payload_hash"])
+    reverted = proposals.revise(1, revised["id"], revised["payload_hash"], {"ticker":"AAPL"})
+    assert reverted["idempotency_key"] != draft["idempotency_key"]
+    assert proposals.dismiss(1, reverted["id"], reverted["payload_hash"])["state"] == "dismissed"
+    another = proposals.create(1, run["id"], {**payload, "arguments":{"ticker":"NVDA"}})
+    with connection() as conn, conn.cursor() as cur:
+        cur.execute(f"UPDATE {proposals.table} SET expires_at=clock_timestamp()-interval '1 second' WHERE id=%s", (another["id"],))
+        conn.commit()
+    assert any(row["state"] == "expired" for row in proposals.list(1, conversation))
+    with pytest.raises(AssistantConflict):
+        proposals.review(1, another["id"], another["payload_hash"])
+
+
+def test_concurrent_proposal_claims_once_without_changing_key(database):
+    from dashboard.assistant_proposals import ProposalRepository
+
+    repo, connection = database
+    proposals = ProposalRepository(connection)
+    run, _ = repo.start(1, repo.create(1)["id"], uuid4(), "Draft")
+    repo.finish(1, run["id"], run["lease_token"], state="completed", text="Draft ready")
+    draft = proposals.create(1, run["id"], {"type":"watchlist_add", "arguments":{"ticker":"AAPL"}})
+    barrier = Barrier(2)
+
+    def claim():
+        barrier.wait(timeout=5)
+        try:
+            return proposals.claim(1, draft["id"], draft["payload_hash"])
+        except AssistantConflict:
+            return None
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda _: claim(), range(2)))
+    claimed = [row for row in results if row]
+    assert len(claimed) == 1 and claimed[0]["idempotency_key"] == draft["idempotency_key"]

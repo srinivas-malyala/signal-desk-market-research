@@ -163,3 +163,30 @@ def test_second_browser_identity_cannot_load_first_owners_conversation(chat):
     assert other.get(f"/api/assistant/conversations/{conversation}", base_url=BASE_URL).status_code == 404
     assert repo.turns.call_args.args[0] == 34
     client.stream.assert_not_called()
+
+
+def test_proposal_routes_remain_default_off_and_confirmation_never_executes(chat):
+    module, browser, repo, client, conversation, _ = chat
+    proposal = str(uuid4())
+    url = f"/api/assistant/proposals/{proposal}/confirm"
+    options = {"base_url":BASE_URL, "headers":{"X-CSRF-Token":"a"*32},
+               "json":{"confirmed":True, "payload_hash":"a"*64}}
+    assert browser.post(url, **options).status_code == 404
+    drafts = Mock()
+    module.app.config.update(ASSISTANT_PROPOSALS_ENABLED=True, ASSISTANT_PROPOSALS_SCHEMA_READY=True,
+                             ASSISTANT_PROPOSAL_REPOSITORY_FACTORY=lambda: drafts)
+    response = browser.post(url, **options)
+    assert response.status_code == 501 and response.json["error_code"] == "execution_not_available"
+    drafts.review.assert_called_once_with(7, proposal, "a"*64)
+    client.stream.assert_not_called()
+
+
+def test_revision_does_not_accept_replacement_owner_or_type(chat):
+    module, browser, *_ = chat
+    drafts = Mock()
+    module.app.config.update(ASSISTANT_PROPOSALS_ENABLED=True, ASSISTANT_PROPOSALS_SCHEMA_READY=True,
+                             ASSISTANT_PROPOSAL_REPOSITORY_FACTORY=lambda: drafts)
+    response = browser.post(f"/api/assistant/proposals/{uuid4()}/revise", base_url=BASE_URL,
+        headers={"X-CSRF-Token":"a"*32}, json={"payload_hash":"a"*64, "arguments":{}, "owner":34})
+    assert response.status_code == 400
+    drafts.revise.assert_not_called()

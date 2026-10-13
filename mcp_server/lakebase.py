@@ -24,6 +24,7 @@ TABLE_BASES = frozenset(
     {
         "analysis_reports",
         "assistant_conversations",
+        "assistant_action_proposals",
         "assistant_messages",
         "assistant_runs",
         "agent_sessions",
@@ -49,6 +50,8 @@ INDEX_BASES = frozenset(
         "idx_assistant_conversations_owner",
         "idx_assistant_runs_active",
         "idx_assistant_runs_owner_active",
+        "idx_assistant_message_origin",
+        "idx_assistant_proposal_initial",
         "idx_massive_attempts_time",
         "idx_news_ticker_time",
         "idx_news_article_tickers_ticker",

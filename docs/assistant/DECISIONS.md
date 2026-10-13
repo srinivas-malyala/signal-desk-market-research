@@ -19,6 +19,8 @@ Status: proposed implementation design, 2026-10-12. No platform deployment claim
 | D13 | Research-only M3 renders plain text; no unverified source links or action controls | Prevent HTML execution and fabricated citation authority while AI Search evidence is deferred |
 | D14 | Bounded threaded SSE delivery with heartbeats and local cancellation | Producer owns generator/network lifecycle; captured owner only, no Flask globals in worker |
 | D15 | Duplicate message replies with existing_run JSON; history reload is authoritative | No stream-replay promise, stable submission IDs survive interrupted delivery |
+| D16 | M4 confirmation is explicitly unavailable until M5 | Disabled UI and HTTP 501 prevent review from being mistaken for execution |
+| D17 | Deduplicate only root proposals, not revisions | Editing back to earlier content still creates a fresh immutable revision/key |
 
 ## Questions to resolve before dependent implementation
 

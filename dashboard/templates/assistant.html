@@ -19,6 +19,7 @@
         <small id="assistant-help">Up to 4,000 characters. Ctrl/⌘ + Enter sends. Stopping ends local delivery; remote research may continue.</small>
         <div class="assistant-controls"><button id="assistant-send" type="submit">Send</button><button id="assistant-stop" type="button" disabled>Stop</button><button id="assistant-retry" type="button" hidden>Check / retry last request</button></div>
       </form>
+      {% if assistant_proposals_enabled %}<section id="assistant-proposals" aria-label="Proposed drafts"><h3>Drafts for review</h3><p>Execution is not available yet. Reviewing a draft does not save business data.</p><div id="assistant-proposal-list"></div></section>{% endif %}
       <p class="disclaimer">Conversation text is prepared for 30-day retention after each run finishes; automatic redaction is not yet enabled. No verified citation links are available in this pilot.</p>
     </div>
   </div>

@@ -85,7 +85,7 @@ class PublicStream:
                     continue
                 if event is None:
                     return
-                if event.get("type") not in {"status", "text_delta", "complete", "error"}:
+                if event.get("type") not in {"status", "text_delta", "complete", "error", "proposal"}:
                     continue
                 self.sequence += 1
                 payload = {**event, "run_id": self.run_id, "schema_version": 1, "request_id": self.request_id,

@@ -18,6 +18,7 @@ TABLE_BASES = frozenset(
     {
         "analysis_reports",
         "assistant_conversations",
+        "assistant_action_proposals",
         "assistant_messages",
         "assistant_runs",
         "companies",

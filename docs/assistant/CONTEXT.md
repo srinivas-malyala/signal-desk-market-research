@@ -67,6 +67,11 @@ Select the smallest modules that keep protocol, ownership, and execution clear.
 
 ## Context recovery
 
+M4 adds assistant_proposals.py and assistant_proposals.js with migration 0008,
+typed candidate capture, owner/hash-bound previews, revisions, expiry/dismissal
+and non-executing confirmation. Default-off; see M4_STATUS.md for pending live
+serialization validation and the M5 execution boundary.
+
 Resume from root PLANS.md and the last milestone handoff, then read only the
 required modules. Existing handoff records a historical Databricks profile;
 obtain profile selection for live work under current instructions. Never include

@@ -9,6 +9,10 @@ from __future__ import annotations
 import json
 from collections.abc import Iterable
 
+from pydantic import TypeAdapter
+
+from shared.contracts.assistant import Proposal
+
 MAX_STREAM_BYTES = 2_000_000
 MAX_FRAME_BYTES = 256_000
 MAX_TEXT_BYTES = 100_000
@@ -92,6 +96,8 @@ class ResponseState:
         self.terminal = False
         self.finalized = False
         self.seen = set()
+        self.proposal_calls = {}
+        self.proposal_candidates = []
 
     def accept(self, event: dict) -> str | None:
         if not isinstance(event, dict):
@@ -111,12 +117,33 @@ class ResponseState:
             item = event.get("item") or {}
             if not isinstance(item, dict):
                 raise ProtocolError("invalid_item")
-            identity = (item.get("type"), item.get("id"))
+            identity = (item.get("type"), item.get("id") or item.get("call_id"))
             if not all(value is None or isinstance(value, str) for value in identity):
                 raise ProtocolError("invalid_item")
-            if identity in self.seen:
+            if identity[1] is not None and identity in self.seen:
                 return None
-            self.seen.add(identity)
+            if identity[1] is not None:
+                self.seen.add(identity)
+            call = item.get("call_id")
+            names = {"propose_watchlist_add":"watchlist_add", "propose_watchlist_remove":"watchlist_remove",
+                     "propose_research_note":"save_note", "propose_analysis_report":"save_report"}
+            if item.get("type") == "function_call" and isinstance(call, str) and len(call) <= 128:
+                name = item.get("name")
+                action = names.get(name.rsplit("__", 1)[-1]) if isinstance(name, str) else None
+                if action and len(self.proposal_calls) < 20:
+                    self.proposal_calls[call] = action
+            if item.get("type") == "function_call_output" and isinstance(call, str) and call in self.proposal_calls:
+                output = item.get("output")
+                if isinstance(output, str) and len(output.encode()) <= MAX_FRAME_BYTES:
+                    try:
+                        value = json.loads(output)
+                        if (isinstance(value, dict) and set(value) == {"status", "executed", "proposal"}
+                                and value["status"] == "proposal" and value["executed"] is False):
+                            candidate = TypeAdapter(Proposal).validate_python(value["proposal"]).model_dump(mode="json")
+                            if candidate["type"] == self.proposal_calls[call] and len(self.proposal_candidates) < 4:
+                                self.proposal_candidates.append(candidate)
+                    except (ValueError, TypeError):
+                        pass  # Reject candidate without converting prose into an action.
             if item.get("type") == "message" and item.get("role") == "assistant":
                 content = item.get("content", [])
                 if not isinstance(content, list) or any(not isinstance(part, dict) for part in content):

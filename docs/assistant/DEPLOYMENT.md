@@ -10,6 +10,8 @@ user-selected Databricks profile. AI Search recovery remains deferred.
 |---|---|
 | SIGNAL_DESK_SUPERVISOR_ENDPOINT | Required by client; embedded endpoint name, never browser input |
 | ASSISTANT_ENABLED | false; gates chat APIs and template/assets |
+| ASSISTANT_PROPOSALS_ENABLED | false; gates draft creation/review routes and UI |
+| ASSISTANT_PROPOSALS_SCHEMA_READY | false; requires migration 0008 after 0006/0007 |
 | FRONTEND_WORKER_TIMEOUT_SECONDS | 240; 240–600, validated at Gunicorn startup |
 | ASSISTANT_SCHEMA_READY | false; enable only after migrations 0006 and 0007 |
 | ASSISTANT_RECOVERY_ENABLED | false; starts post-fork startup/periodic recovery |

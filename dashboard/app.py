@@ -317,6 +317,7 @@ def index():
         csrf_token=csrf_token(),
         show_logout=hosting_mode() == "render",
         assistant_enabled=app.config["ASSISTANT_ENABLED"],
+        assistant_proposals_enabled=app.config["ASSISTANT_PROPOSALS_ENABLED"],
     )
 
 

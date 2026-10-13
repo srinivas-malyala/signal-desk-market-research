@@ -1,5 +1,13 @@
 # Signal Desk Data Dictionary
 
+## Proposal drafts (migration 0008; not deployed)
+
+`assistant_action_proposals` stores owner-bound normalized payloads, canonical
+hashes, originating completed runs/messages, immutable revision links, expiry,
+state and server-only idempotency keys. It is not synced to Gold. M4 exposes
+review/revise/dismiss only; no business action is executed. Proposal/receipt
+retention needs a separate decision from transcript redaction.
+
 ## Assistant storage (migration 0006; not yet deployed)
 
 `assistant_conversations`: UUID conversation, existing user owner, bounded title,

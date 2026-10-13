@@ -32,6 +32,7 @@
     cursor = result.next_cursor; $('more').hidden = !cursor; select.value = conversation;
   }
   async function history() {
+    window.loadAssistantProposals?.(conversation);
     if (!conversation) { transcript.replaceChildren(); message('Assistant','Ask a question to begin.'); return; }
     const result = await (await request(`/api/assistant/conversations/${encodeURIComponent(conversation)}`)).json();
     transcript.replaceChildren();
@@ -81,7 +82,7 @@
       if (answer) answer.detail.textContent = 'Delivery interrupted — reload to check saved state';
       status(error.name === 'AbortError' ? 'Stopped local delivery. Remote research may continue; reload to check its state.' : error.message);
       $('retry').hidden = !pending;
-    } finally { controller = null; busy(false); question.focus(); }
+    } finally { controller = null; busy(false); question.focus(); window.loadAssistantProposals?.(conversation); }
   }
   $('form').addEventListener('submit',send);
   question.addEventListener('keydown',event => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); $('form').requestSubmit(); } });

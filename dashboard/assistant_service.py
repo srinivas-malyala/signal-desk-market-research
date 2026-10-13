@@ -7,10 +7,11 @@ from dashboard.supervisor_protocol import ResponseState
 
 
 class AssistantService:
-    def __init__(self, repository, client, *, context_provider=None):
+    def __init__(self, repository, client, *, context_provider=None, proposal_repository=None):
         self.repository = repository
         self.client = client
         self.context_provider = context_provider
+        self.proposal_repository = proposal_repository
 
     def generate(self, owner, conversation, submission, question, *, cancel_event=None):
         run, created = self.repository.start(owner, conversation, submission, question)
@@ -52,6 +53,14 @@ class AssistantService:
             if cancel_event is not None and cancel_event.is_set():
                 terminal, error = "interrupted", "disconnected"
             finalized = persist()
+            if terminal == "completed" and finalized and self.proposal_repository is not None:
+                for candidate in state.proposal_candidates:
+                    try:
+                        draft = self.proposal_repository.create(owner, run["id"], candidate)
+                        yield {"type":"proposal", "proposal_id":str(draft["id"])}
+                    except Exception:
+                        # The answer remains saved; no executable control for an unstored draft.
+                        yield {"type":"status", "run_id":str(run["id"]), "proposal_warning":"draft_unavailable"}
             yield {"type": "complete" if terminal == "completed" and finalized else "error",
                    "run_id": str(run["id"]), "state": terminal if finalized else "interrupted",
                    **({"text": state.final_text or state.text} if terminal == "completed" and finalized else {}),

@@ -96,6 +96,7 @@ def test_all_migrations_render_without_schema_ddl() -> None:
         "0005_massive_rate_limit.sql",
         "0006_assistant_conversations.sql",
         "0007_assistant_retention.sql",
+        "0008_assistant_proposals.sql",
     ]
     rendered = "\n".join(lakebase.render_migration(path.read_text()) for path in paths)
     assert "CREATE SCHEMA" not in rendered.upper()

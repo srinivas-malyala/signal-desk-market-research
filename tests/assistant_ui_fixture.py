@@ -1,17 +1,44 @@
 """Localhost-only synthetic browser fixture. Never import into production."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
 from flask import Flask, g, jsonify, render_template, request
 
+from dashboard.assistant_proposals import normalize
 from dashboard.assistant_routes import register_assistant
 from dashboard.supervisor_client import SupervisorError
 
 ROOT = Path(__file__).parents[1] / "dashboard"
 app = Flask(__name__, template_folder=str(ROOT / "templates"), static_folder=str(ROOT / "static"))
 conversations, runs = {}, {}
+drafts = {}
+
+
+class Proposals:
+    def create(self, owner, run, candidate):
+        payload, digest = normalize(candidate)
+        row = {"id":str(uuid4()), "payload":payload, "payload_hash":digest, "state":"pending", "revision":1,
+               "expires_at":datetime.now(UTC)+timedelta(minutes=30), "conversation":runs[run]["conversation_id"]}
+        drafts[row["id"]] = row
+        return row
+
+    def list(self, owner, conversation):
+        return [row for row in drafts.values() if row["conversation"] == conversation]
+
+    def revise(self, owner, proposal, digest, arguments):
+        previous = drafts[proposal]
+        previous["state"] = "superseded"
+        payload, new_digest = normalize({**previous["payload"], "arguments":arguments})
+        row = {**previous, "id":str(uuid4()), "payload":payload, "payload_hash":new_digest,
+               "state":"pending", "revision":previous["revision"]+1}
+        drafts[row["id"]] = row
+        return row
+
+    def dismiss(self, owner, proposal, digest):
+        drafts[proposal]["state"] = "dismissed"
+        return drafts[proposal]
 
 
 class Repository:
@@ -54,10 +81,13 @@ class Client:
             yield "Synthetic answer. "
         state.final_text = state.text + "<script>window.injected=true</script>"
         state.finalized = state.terminal = True
+        state.proposal_candidates.append({"schema_version":"1", "type":"watchlist_add", "arguments":{"ticker":"AAPL"}})
 
 
 app.config.update(ASSISTANT_ENABLED=True, ASSISTANT_SCHEMA_READY=True,
-                  ASSISTANT_REPOSITORY_FACTORY=Repository, ASSISTANT_CLIENT_FACTORY=Client)
+                  ASSISTANT_REPOSITORY_FACTORY=Repository, ASSISTANT_CLIENT_FACTORY=Client,
+                  ASSISTANT_PROPOSALS_ENABLED=True, ASSISTANT_PROPOSALS_SCHEMA_READY=True,
+                  ASSISTANT_PROPOSAL_REPOSITORY_FACTORY=Proposals)
 
 
 @app.before_request
@@ -73,7 +103,7 @@ register_assistant(app, lambda: 7)
 @app.get("/")
 def index():
     return render_template("index.html", assistant_enabled=True, csrf_token="fixture-csrf",
-                           user_email="Synthetic browser fixture", show_logout=False)
+                           user_email="Synthetic browser fixture", show_logout=False, assistant_proposals_enabled=True)
 
 
 @app.get("/api/overview")

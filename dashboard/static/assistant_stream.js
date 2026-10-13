@@ -13,7 +13,7 @@
         const data = frame.split('\n').filter(line => line.startsWith('data:')).map(line => line.slice(5).trimStart()).join('\n');
         if (!data) continue;
         const event = JSON.parse(data);
-        if (!event || event.schema_version !== 1 || !['status', 'text_delta', 'complete', 'error'].includes(event.type) ||
+        if (!event || event.schema_version !== 1 || !['status', 'text_delta', 'complete', 'error', 'proposal'].includes(event.type) ||
             !Number.isInteger(event.sequence) || event.sequence !== this.sequence + 1 || typeof event.run_id !== 'string' ||
             typeof event.request_id !== 'string') throw new Error('Invalid chat event.');
         if (this.requestId && (event.request_id !== this.requestId || event.run_id !== this.runId)) throw new Error('Chat stream identity changed.');
