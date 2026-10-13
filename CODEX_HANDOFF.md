@@ -2,6 +2,16 @@
 
 ## Embedded assistant workstream — 2026-10-12
 
+M3 local chat implemented in 2534c7e, not pushed/deployed. Default-off research
+blueprint/UI supports conversation selection, follow-ups, reload, streaming,
+heartbeat, safe duplicate checking and local Stop. Auth/CSRF and captured browser
+ownership are enforced; no business actions or unverified citation links exposed.
+404 fast tests, 11 PostgreSQL regressions, three Node framing tests and synthetic
+desktop/mobile browser smoke pass; lint/secret/startup checks pass. Temporary
+fixture server/container stopped/removed. M3_STATUS.md is current. Next is review
+and explicitly authorized read-only rollout; actual Render streaming/citation
+gates remain open. AI Search and schedules remain deferred/paused.
+
 M2 local completion: 115f985 checkpoints deadline/recovery; 34c31c0 adds default-off
 post-fork maintenance, prepared 30-day retention, migration 0007, worker timeout
 alignment and terminal-storage failure handling. 75 targeted and 11 PostgreSQL

@@ -2,6 +2,13 @@
 
 ## New embedded assistant — 2026-10-12
 
+M3 routes/UI locally implemented in 2534c7e, not pushed/deployed. Feature flag
+defaults false; research-only chat, owned histories, safe retries, heartbeat and
+local Stop verified. 404 fast tests, 11 PostgreSQL regressions, three Node tests,
+desktop/mobile synthetic browser smoke, lint/secret/startup checks pass. No live
+migrations, action controls or verified citation links. Actual Render streaming
+and deferred AI Search citation acceptance remain pending; see M3_STATUS.md.
+
 M2 locally complete in 115f985/34c31c0, not pushed/deployed. Default-off worker
 recovery and user-selected 30-day retention prepared; migration 0007 is additive.
 75 targeted/11 PostgreSQL tests, fresh locked installs/startup, Ruff and secret
