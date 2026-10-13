@@ -2,6 +2,22 @@
 
 ## New embedded assistant — 2026-10-12
 
+M2 locally complete in 115f985/34c31c0, not pushed/deployed. Default-off worker
+recovery and user-selected 30-day retention prepared; migration 0007 is additive.
+75 targeted/11 PostgreSQL tests, fresh locked installs/startup, Ruff and secret
+scan pass. Full fast suite: 380 passed, known index-dependent paused-schedule
+failure. M3 routes/UI and live migrations remain pending; AI Search deferred.
+See docs/assistant/M2_STATUS.md; older incremental notes below are historical.
+
+Latest M2 recovery: owner-local reload reconciliation and bounded internal
+maintenance implemented. 62 targeted and seven PostgreSQL tests pass.
+Operational rollout gates remain; no deletion policy or schedule enabled.
+
+Latest M2: bounded caller-side transport deadline and late-event isolation added;
+58 targeted tests plus six actual PostgreSQL tests pass (including owned snapshots).
+Full fast suite: 363 passed, existing paused-schedule assertion fails. M2 remains
+locally in progress, not deployed. AI Search stays deferred. See M2_STATUS.md.
+
 Latest: 52 targeted local tests and five prior actual PostgreSQL tests pass.
 Owner-scoped snapshot assembly is added. Strict deadline remains pending; M2
 is not complete or deployed. Earlier increment notes below are historical.

@@ -1,11 +1,11 @@
 # Embedded AI Research Assistant goals
 
 Updated: 2026-10-12, America/Los_Angeles.
-Status: M1 restricted MCP surface implemented and locally verified; live embedded
-Supervisor provisioning and application chat remain pending. See
-`docs/assistant/M1_FINDINGS.md` for evidence and external gates.
-The separate Supervisor now exists; tool attachment and live verification remain
-pending. See `docs/assistant/LIVE_STATUS.md` for actual IDs and the blocker.
+Status: M2 backend locally complete; chat UI/routes and full release remain
+pending. Separate Supervisor/tool attachment and research/proposal evidence are
+recorded in `docs/assistant/LIVE_STATUS.md`; AI Search citation/index recovery
+is deferred by user. No M2 live migration, deployment or retention activation.
+See `docs/assistant/M2_STATUS.md` and PLANS.md for current local acceptance.
 
 ## Outcome
 

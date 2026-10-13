@@ -2,6 +2,30 @@
 
 ## Embedded assistant workstream — 2026-10-12
 
+M2 local completion: 115f985 checkpoints deadline/recovery; 34c31c0 adds default-off
+post-fork maintenance, prepared 30-day retention, migration 0007, worker timeout
+alignment and terminal-storage failure handling. 75 targeted and 11 PostgreSQL
+tests pass; full fast suite 380 passed with known AI-Search-dependent paused
+schedule assertion failure. Fresh locked installs/startup, Ruff and secret scan
+pass. Disposable test schemas/container removed. Not pushed or deployed.
+Next is M3 research chat routes/UI. No live schema or flag change is authorized
+by this local milestone; migrations 0006/0007 precede schema readiness. Retention
+preparation was selected by user, but redaction enablement needs separate approval.
+AI Search and its refresh schedule remain deferred. M2_STATUS.md is current;
+earlier incremental notes below are historical.
+
+Latest recovery increment: owned reload expires dead-worker runs; bounded internal
+maintenance uses SKIP LOCKED and returns counts only. 62 targeted and seven
+PostgreSQL tests pass. Retention/scheduling/timeout rollout gates documented;
+no purge, schedule or live deployment enabled. AI Search remains deferred.
+
+Latest M2 increment: caller-side 180-second deadline with four bounded transport
+readers per process; abandoned readers retain capacity until exit. Late events
+cannot mutate response state. 58 targeted tests and six real PostgreSQL tests
+pass, including owned Primary snapshots. Full fast suite: 363 passed, existing
+paused-schedule assertion fails. No live deployment/migration; AI Search deferred.
+M2 operational acceptance remains; see docs/assistant/M2_STATUS.md.
+
 Latest M2 verification: five actual PostgreSQL 18 integration tests pass for
 ownership, duplicate/concurrent claims, lease recovery and composite FK denial.
 Disposable localhost Docker fixture cleaned up. No live Lakebase changes.

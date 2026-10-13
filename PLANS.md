@@ -3,9 +3,10 @@
 Updated: 2026-10-12, America/Los_Angeles.
 Current state: M0 local spike and standalone live protocol baseline verified.
 Active milestone: M2 locally verified; M1 citation/index recovery deferred by user.
-Live update: user deployed MCP and created the governed embedded service; separate
-Supervisor created, but attachment failed with "not an MCP connection". Resume
-from `docs/assistant/LIVE_STATUS.md`; do not create a duplicate Supervisor.
+Live update: user deployed MCP, created the governed embedded service and attached
+it to the separate Supervisor in the UI. Comparison and proposal tests succeeded;
+semantic search failed because its index is missing. See LIVE_STATUS.md; do not
+create a duplicate Supervisor or unpause the index-dependent refresh job.
 Selected live profile: `dataexpertio_srini` (user selected 2026-10-12).
 
 ## Working documents

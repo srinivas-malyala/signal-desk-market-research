@@ -43,8 +43,9 @@ the generic fast suite.
 
 ## Local commands
 
-For future implementation, install both runtime extras because the dashboard
-imports FastMCP. Do not claim the existing CI install already covers this.
+Install both runtime extras because the dashboard imports FastMCP. M2 updates
+CI to install both extras and adds a disposable PostgreSQL integration job;
+hosted CI execution remains unverified until the commits are pushed.
 
 ```sh
 uv sync --extra dashboard --extra mcp --dev
@@ -54,9 +55,9 @@ uv run python tools/check_no_secrets.py
 uv run python tools/check_render_reproducibility.py --clean-install --process-smoke
 ```
 
-Start with changed-feature tests, then the full fast suite at release. The current
-CI lint/coverage scope does not cover all proposed runtime modules; include changed
-modules explicitly and extend CI proportionally. Clean-install checks may download
+Start with changed-feature tests, then the full fast suite at release. M2 CI lint
+includes assistant, Supervisor and Gunicorn configuration modules; later runtime
+modules still need proportional coverage. Clean-install checks may download
 packages; process smoke and integration tests may require environment configuration.
 Record failures rather than asserting success from static inspection.
 
