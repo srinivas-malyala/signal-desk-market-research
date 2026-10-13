@@ -2,6 +2,29 @@
 
 ## Embedded assistant workstream — 2026-10-12
 
+Latest M2 verification: five actual PostgreSQL 18 integration tests pass for
+ownership, duplicate/concurrent claims, lease recovery and composite FK denial.
+Disposable localhost Docker fixture cleaned up. No live Lakebase changes.
+Trusted snapshot assembly now exists with 52 targeted local tests passing.
+Strict deadline remains pending; M2 not complete. Earlier increments below are
+historical; M2_STATUS.md and LIVE_STATUS.md contain the latest evidence.
+
+M2 persistence increment: migration 0006 and table registries, owner-scoped
+repository, deduplicated short-transaction run claims, fixed leases and internal
+generation service implemented. 41 targeted tests pass; database-backed proof
+and strict transport deadline remain pending. No live migration or activation.
+
+M2 started locally after user deferred missing AI Search index recovery. See
+docs/assistant/M2_STATUS.md: 17 history/parser/transport tests pass; persistence,
+leases and orchestration remain pending. Latest screenshots show Supervisor MCP
+attachment and proposal success; docs/assistant/LIVE_STATUS.md records evidence.
+
+Latest: Render deployment and two Playground tests reported by user; screenshot
+shows governed embedded MCP service with eight tools. Separate Supervisor created
+using dataexpertio_srini; attaching its auto-created connection was rejected as
+"not an MCP connection". Read docs/assistant/LIVE_STATUS.md for resource IDs and
+resume steps. Do not recreate it. Prior local verification remains valid.
+
 M1 local implementation now passes 27 restricted-surface tests, changed-file
 Ruff, and Render service process smoke. See docs/assistant/M1_FINDINGS.md.
 The embedded surface is default-off; separate Supervisor provisioning requires

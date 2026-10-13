@@ -4,6 +4,8 @@ Updated: 2026-10-12, America/Los_Angeles.
 Status: M1 restricted MCP surface implemented and locally verified; live embedded
 Supervisor provisioning and application chat remain pending. See
 `docs/assistant/M1_FINDINGS.md` for evidence and external gates.
+The separate Supervisor now exists; tool attachment and live verification remain
+pending. See `docs/assistant/LIVE_STATUS.md` for actual IDs and the blocker.
 
 ## Outcome
 

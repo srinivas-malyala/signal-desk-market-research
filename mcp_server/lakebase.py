@@ -23,6 +23,9 @@ MIGRATION_TOKEN = re.compile(r"\{\{(table|index):([a-z_][a-z0-9_]*)\}\}")
 TABLE_BASES = frozenset(
     {
         "analysis_reports",
+        "assistant_conversations",
+        "assistant_messages",
+        "assistant_runs",
         "agent_sessions",
         "agent_tool_events",
         "companies",
@@ -43,6 +46,9 @@ TABLE_BASES = frozenset(
 INDEX_BASES = frozenset(
     {
         "idx_agent_events_time",
+        "idx_assistant_conversations_owner",
+        "idx_assistant_runs_active",
+        "idx_assistant_runs_owner_active",
         "idx_massive_attempts_time",
         "idx_news_ticker_time",
         "idx_news_article_tickers_ticker",

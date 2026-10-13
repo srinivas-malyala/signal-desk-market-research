@@ -17,6 +17,9 @@ IDENTIFIER_PATTERN = re.compile(r"^[a-z_][a-z0-9_]*$")
 TABLE_BASES = frozenset(
     {
         "analysis_reports",
+        "assistant_conversations",
+        "assistant_messages",
+        "assistant_runs",
         "companies",
         "news_articles",
         "price_snapshots",

@@ -1,5 +1,9 @@
 # M1 — Restricted embedded research surface
 
+Latest live update: see [LIVE_STATUS.md](LIVE_STATUS.md). User deployed the MCP;
+the separate Supervisor was created, but governed connection attachment failed.
+Historical local verification and original rollout checklist below are retained.
+
 Verified locally on 2026-10-12. Status: implementation/local verification complete;
 live provisioning and acceptance pending. No production deployment or grant is claimed.
 

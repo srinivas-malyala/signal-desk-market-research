@@ -2,6 +2,25 @@
 
 ## New embedded assistant — 2026-10-12
 
+Latest: 52 targeted local tests and five prior actual PostgreSQL tests pass.
+Owner-scoped snapshot assembly is added. Strict deadline remains pending; M2
+is not complete or deployed. Earlier increment notes below are historical.
+
+M2 persistence increment now includes migration 0006, table registries,
+owner-scoped repository, shared claim/capacity logic, fixed leases, deduplication
+and internal generation orchestration. 41 targeted tests pass; repository tests
+are mocked. Live migrations, database concurrency proof and activation pending.
+
+M2 local foundations started; 17 unit tests pass for history, protocol and
+authenticated transport. Not complete or enabled: storage, coordination and
+orchestration remain pending. Index recovery deferred by user; citation gate open.
+See docs/assistant/M2_STATUS.md and latest LIVE_STATUS.md.
+
+Latest live state supersedes deployment-pending notes below: user reports Render
+deployment and two successful Playground tests; separate embedded Supervisor is
+created, but connection attachment failed. No endpoint readiness, grants, or live
+Supervisor acceptance claimed. See docs/assistant/LIVE_STATUS.md.
+
 M1 restricted MCP surface and pure candidate tools are implemented and locally
 verified (27 tests, Ruff, service startup smoke). Default-off Render settings,
 separate embedded prompt/spec, and adversarial evaluation examples are prepared.

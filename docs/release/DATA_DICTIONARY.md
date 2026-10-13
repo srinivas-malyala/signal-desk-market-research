@@ -1,5 +1,19 @@
 # Signal Desk Data Dictionary
 
+## Assistant storage (migration 0006; not yet deployed)
+
+`assistant_conversations`: UUID conversation, existing user owner, bounded title,
+creation timestamp; composite ID/owner key and owner pagination index.
+
+`assistant_runs`: conversation/owner foreign key, unique client submission UUID,
+payload SHA-256, running/completed/failed/interrupted state, fixed lease token and
+expiry, safe error category and timestamps. One running generation per owner.
+
+`assistant_messages`: user/assistant text linked by composite run/conversation/owner
+foreign key, at most one message per role per run, bounded UTF-8 content. All
+assistant tables use the configured student suffix; transcripts are not added
+to CDC/Gold analytics. Retention policy is pending before production.
+
 Updated: 2026-09-29
 
 This dictionary describes the implemented development model. Unity Catalog
