@@ -18,6 +18,34 @@ class ProtocolError(ValueError):
     """Safe protocol category; never includes upstream payloads."""
 
 
+def bounded_lines(chunks):
+    """Bound bytes before newline buffering; UTF-8 may span network chunks."""
+    buffer = b""
+    total = 0
+    for chunk in chunks:
+        if not isinstance(chunk, bytes):
+            raise ProtocolError("invalid_chunk")
+        total += len(chunk)
+        if total > MAX_STREAM_BYTES:
+            raise ProtocolError("stream_limit")
+        buffer += chunk
+        while b"\n" in buffer:
+            line, buffer = buffer.split(b"\n", 1)
+            if len(line) > MAX_FRAME_BYTES:
+                raise ProtocolError("event_limit")
+            try:
+                yield line.decode("utf-8").rstrip("\r")
+            except UnicodeDecodeError:
+                raise ProtocolError("invalid_encoding") from None
+        if len(buffer) > MAX_FRAME_BYTES:
+            raise ProtocolError("event_limit")
+    if buffer:
+        try:
+            yield buffer.decode("utf-8")
+        except UnicodeDecodeError:
+            raise ProtocolError("invalid_encoding") from None
+
+
 def decode_events(lines: Iterable[str]):
     total = 0
     frame = []

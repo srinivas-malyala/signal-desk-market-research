@@ -14,7 +14,7 @@ import time
 
 import requests
 
-from dashboard.supervisor_protocol import ProtocolError, ResponseState, decode_events
+from dashboard.supervisor_protocol import ProtocolError, ResponseState, bounded_lines, decode_events
 from shared.databricks_auth import databricks_config
 
 
@@ -40,13 +40,15 @@ class SupervisorClient:
             raise ValueError("invalid_deadline")
         self.deadline_seconds = deadline_seconds
 
-    def stream(self, history: list[dict], state: ResponseState):
+    def stream(self, history: list[dict], state: ResponseState, *, cancel_event=None):
         """Yield only visible text deltas; completion is inspected through state.
 
         Network I/O runs in a bounded daemon worker. The caller stops waiting at
         the deadline even during authentication, POST or slow-drip reads. Remote
         cancellation is not guaranteed; an abandoned reader retains its slot.
         """
+        if cancel_event is not None and cancel_event.is_set():
+            raise SupervisorError("generation_cancelled")
         started = self.clock()
         slots = _TRANSPORT_SLOTS
         if not slots.acquire(blocking=False):
@@ -88,13 +90,15 @@ class SupervisorClient:
             raise
         try:
             while True:
+                if cancel_event is not None and cancel_event.is_set():
+                    raise SupervisorError("generation_cancelled")
                 remaining = self.deadline_seconds - (self.clock() - started)
                 if remaining <= 0:
                     raise SupervisorError("deadline_exceeded")
                 try:
-                    kind, value = pending.get(timeout=remaining)
+                    kind, value = pending.get(timeout=min(remaining, 0.5))
                 except queue.Empty:
-                    raise SupervisorError("deadline_exceeded") from None
+                    continue
                 if self.clock() - started >= self.deadline_seconds:
                     raise SupervisorError("deadline_exceeded")
                 if kind == "end":
@@ -130,13 +134,13 @@ class SupervisorClient:
                 raise SupervisorError("invalid_stream")
             response.encoding = "utf-8"
 
-            def lines():
-                for line in response.iter_lines(chunk_size=1024, decode_unicode=True):
+            def chunks():
+                for chunk in response.iter_content(chunk_size=1024):
                     if self.clock() - started >= self.deadline_seconds:
                         raise SupervisorError("deadline_exceeded")
-                    yield line
+                    yield chunk
 
-            yield from decode_events(lines())
+            yield from decode_events(bounded_lines(chunks()))
         except requests.Timeout:
             raise SupervisorError("dependency_timeout") from None
         except requests.RequestException:

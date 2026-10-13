@@ -1,0 +1,25 @@
+<section id="assistant" class="card assistant-card" aria-labelledby="assistant-heading">
+  <div class="section-head"><div><span class="index">CHAT</span><h2 id="assistant-heading">Research assistant</h2></div><span class="label">RESEARCH ONLY</span></div>
+  <p class="section-copy">Ask follow-up questions about companies and comparisons. Your Primary watchlist is shared as a dated snapshot, never as permission to write.</p>
+  <p class="state warning">AI Search evidence is currently unavailable. Chat cannot save notes, reports, or watchlist changes. Verify dates and claims independently.</p>
+  <div class="assistant-layout">
+    <aside aria-label="Your conversations">
+      <button id="assistant-new" type="button">New conversation</button>
+      <label for="assistant-conversation">Conversation</label>
+      <select id="assistant-conversation"><option value="">New conversation</option></select>
+      <button id="assistant-more" type="button" hidden>Load more conversations</button>
+      <button id="assistant-reload" type="button">Reload history</button>
+    </aside>
+    <div>
+      <p id="assistant-status" role="status" aria-live="polite">Loading conversations…</p>
+      <div id="assistant-transcript" role="log" aria-live="off" aria-label="Conversation transcript" tabindex="0"><p>No messages yet. Try “Compare AAPL and MSFT over 30 days.”</p></div>
+      <form id="assistant-form">
+        <label for="assistant-question">Research question</label>
+        <textarea id="assistant-question" rows="3" maxlength="4000" required placeholder="Ask a company question or follow up…" aria-describedby="assistant-help"></textarea>
+        <small id="assistant-help">Up to 4,000 characters. Ctrl/⌘ + Enter sends. Stopping ends local delivery; remote research may continue.</small>
+        <div class="assistant-controls"><button id="assistant-send" type="submit">Send</button><button id="assistant-stop" type="button" disabled>Stop</button><button id="assistant-retry" type="button" hidden>Check / retry last request</button></div>
+      </form>
+      <p class="disclaimer">Conversation text is prepared for 30-day retention after each run finishes; automatic redaction is not yet enabled. No verified citation links are available in this pilot.</p>
+    </div>
+  </div>
+</section>

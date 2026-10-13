@@ -3,6 +3,14 @@
 Status: design baseline. Platform-specific event mapping must be proven in M0.
 Version: 1. Changes to these contracts require a decision-log update.
 
+M3 implemented increment: conversation create/list/history and message endpoints
+exist behind ASSISTANT_ENABLED and schema readiness. History returns the latest
+50 turns by default (bounded limit up to 100), not older-message cursors. List
+pagination uses the owned conversation cursor. A duplicate message returns JSON
+existing_run (HTTP 200), not a second stream or replay. Public complete includes
+persisted final text; proposals/citations are not yet exposed. No remote-cancel
+or full history replay guarantee. See M3_STATUS.md for local/live boundaries.
+
 ## HTTP interface
 
 All routes require existing OIDC authentication. Mutating routes require CSRF.

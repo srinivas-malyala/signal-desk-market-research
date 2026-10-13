@@ -9,7 +9,7 @@ import pytest
 from dashboard.assistant_context import watchlist_context
 from dashboard.assistant_history import build_history
 from dashboard.supervisor_client import SupervisorClient, SupervisorError
-from dashboard.supervisor_protocol import ProtocolError, ResponseState, decode_events
+from dashboard.supervisor_protocol import ProtocolError, ResponseState, bounded_lines, decode_events
 
 
 def final_event(text="Answer"):
@@ -77,7 +77,8 @@ def test_transport_auth_payload_and_cleanup():
     config = Mock(host="https://workspace.example.com")
     config.authenticate.return_value = {"Authorization": "Bearer test"}
     response = Mock(status_code=200, headers={"Content-Type": "text/event-stream"})
-    response.iter_lines.return_value = ["data: " + json.dumps(final_event()), "", "data: [DONE]", ""]
+    response.iter_content.return_value = [(line + "\n").encode() for line in
+                                         ["data: " + json.dumps(final_event()), "", "data: [DONE]", ""]]
     session = Mock()
     session.post.return_value = response
     state = ResponseState()
@@ -151,8 +152,8 @@ def test_deadline_bounds_blocking_transport_without_late_state_updates(blocked_s
         config.authenticate.side_effect = lambda: block({})
     elif blocked_stage == "post":
         session.post.side_effect = lambda *args, **kwargs: block(response)
-    response.iter_lines.side_effect = lambda **kwargs: block(
-        ["data: " + json.dumps(final_event()), "", "data: [DONE]", ""])
+    response.iter_content.side_effect = lambda **kwargs: block(
+        [(line + "\n").encode() for line in ["data: " + json.dumps(final_event()), "", "data: [DONE]", ""]])
     state = ResponseState()
     client = SupervisorClient(config=config, session=session, endpoint="embedded", deadline_seconds=0.05)
     started = time.monotonic()
@@ -187,9 +188,9 @@ def test_slow_drip_cannot_extend_total_deadline():
     def drip(**kwargs):
         for _ in range(100):
             time.sleep(0.01)
-            yield ": heartbeat"
+            yield b": heartbeat\n"
 
-    response.iter_lines.side_effect = drip
+    response.iter_content.side_effect = drip
     session = Mock()
     session.post.return_value = response
     started = time.monotonic()
@@ -225,3 +226,12 @@ def test_abandoned_reader_retains_capacity_until_real_exit(monkeypatch):
     finally:
         released.set()
         assert exited.wait(2)
+
+
+def test_chunk_decoder_handles_split_unicode_and_bounds_unterminated_lines():
+    encoded = "data: 😀\n\n".encode()
+    assert list(bounded_lines([encoded[:8], encoded[8:10], encoded[10:]])) == ["data: 😀", ""]
+    with pytest.raises(ProtocolError, match="event_limit"):
+        list(bounded_lines([b"x" * 256001]))
+    with pytest.raises(ProtocolError, match="invalid_encoding"):
+        list(bounded_lines([b"\xff\n"]))

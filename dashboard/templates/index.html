@@ -4,12 +4,14 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token }}">
   <title>Signal Desk · Evidence-grounded stock research</title><link rel="stylesheet" href="/static/styles.css">
+  {% if assistant_enabled %}<link rel="stylesheet" href="/static/assistant.css">{% endif %}
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 <header><div><span class="eyebrow">MASSIVE × LAKEHOUSE × LAKEBASE</span><h1>Signal <em>Desk</em></h1><p>Research public companies, inspect the evidence, and keep your work.</p></div><div class="identity" aria-label="Signed-in identity"><span>ACTIVE RESEARCHER</span><b>{{ user_email }}</b><small>Tool access runs as this authenticated user.</small>{% if show_logout %}<form method="post" action="/logout"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit">Sign out</button></form>{% endif %}</div></header>
-<nav aria-label="Primary navigation"><a href="#research">Research</a><a href="#watchlist-section">Watchlist</a><a href="#saved">Saved research</a><a href="#analytics">Usage analytics</a></nav>
+<nav aria-label="Primary navigation">{% if assistant_enabled %}<a href="#assistant">Research chat</a>{% endif %}<a href="#research">Research</a><a href="#watchlist-section">Watchlist</a><a href="#saved">Saved research</a><a href="#analytics">Usage analytics</a></nav>
 <main id="main">
+  {% if assistant_enabled %}{% include 'assistant.html' %}{% endif %}
   <div id="global-status" class="status hidden" role="status" aria-live="polite"></div>
   <section id="research" class="card research-card">
     <div class="section-head"><div><span class="index">01</span><h2>Research with evidence</h2></div><span class="label">AUTHENTICATED MCP</span></div>
@@ -34,4 +36,5 @@
     <div id="save-status" class="state hidden" role="status" aria-live="polite"></div><h3>Notes</h3><div id="notes"><div class="skeleton">Loading notes…</div></div><h3>Reports</h3><div id="reports"><div class="skeleton">Loading reports…</div></div></article></section>
   <section id="analytics" class="card"><div class="section-head"><div><span class="index">05</span><h2>Usage analytics</h2></div><button id="refresh-analytics" type="button">Refresh</button></div><p class="section-copy">Pseudonymous operational changes processed through Lakehouse Sync and Phase 6 Gold tables.</p><div id="analytics-state" class="state hidden" role="status" aria-live="polite"></div><div id="analytics-kpis" class="summary-grid"><div class="skeleton">Loading usage metrics…</div></div><h3>Tool usage and latency</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>Tool</th><th>Calls</th><th>Errors</th><th>P95 latency</th></tr></thead><tbody id="tool-usage"><tr><td colspan="5">Loading…</td></tr></tbody></table></div><p id="analytics-meta" class="disclaimer"></p><h3>Recent sanitized tool activity</h3><div id="activity" class="activity"><div class="skeleton">Loading activity…</div></div></section>
 </main><script src="/static/app.js"></script>
+{% if assistant_enabled %}<script src="/static/assistant_stream.js"></script><script src="/static/assistant.js"></script>{% endif %}
 </body></html>

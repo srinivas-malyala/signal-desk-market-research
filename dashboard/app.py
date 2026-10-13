@@ -29,6 +29,8 @@ from mcp_client import (
 )
 from werkzeug.exceptions import HTTPException
 
+from dashboard.assistant_routes import register_assistant
+
 APP_ROOT = Path(__file__).resolve().parent
 app = Flask(
     __name__,
@@ -163,6 +165,9 @@ def _user_subject() -> str:
 def _user_id() -> int | None:
     rows = lakebase.query(f"SELECT id FROM {_table('users')} WHERE email=%s", (_user_email(),))
     return int(rows[0]["id"]) if rows else None
+
+
+register_assistant(app, _user_id)
 
 
 def _watchlist_client() -> WatchlistClient:
@@ -311,6 +316,7 @@ def index():
         user_email=_user_email(),
         csrf_token=csrf_token(),
         show_logout=hosting_mode() == "render",
+        assistant_enabled=app.config["ASSISTANT_ENABLED"],
     )
 
 

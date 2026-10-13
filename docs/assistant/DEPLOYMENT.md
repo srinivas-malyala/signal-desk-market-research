@@ -9,6 +9,7 @@ user-selected Databricks profile. AI Search recovery remains deferred.
 | Setting | Default / bounds |
 |---|---|
 | SIGNAL_DESK_SUPERVISOR_ENDPOINT | Required by client; embedded endpoint name, never browser input |
+| ASSISTANT_ENABLED | false; gates chat APIs and template/assets |
 | FRONTEND_WORKER_TIMEOUT_SECONDS | 240; 240–600, validated at Gunicorn startup |
 | ASSISTANT_SCHEMA_READY | false; enable only after migrations 0006 and 0007 |
 | ASSISTANT_RECOVERY_ENABLED | false; starts post-fork startup/periodic recovery |
@@ -19,8 +20,9 @@ user-selected Databricks profile. AI Search recovery remains deferred.
 
 Model deadline 180 seconds, lease 210 seconds, 20 history messages, 4,000-character
 question and 24,000-byte assembled content are code bounds, not environment knobs.
-The proposed ASSISTANT_ENABLED/ACTIONS_ENABLED and proposal-TTL flags are later
-M3/M4 work; no chat routes or executable proposals are registered in M2.
+M3 implements ASSISTANT_ENABLED and chat routes/UI. ASSISTANT_ACTIONS_ENABLED and
+proposal-TTL settings remain M4 work; no executable proposals are registered.
+When enabled, API reads and writes also require ASSISTANT_SCHEMA_READY=true.
 
 Reuse DATA_WORKSPACE_HOST/CLIENT_ID/CLIENT_SECRET through shared auth. Frontend
 principal requires CAN_QUERY on the embedded endpoint. Keep embedded MCP bearer

@@ -16,6 +16,9 @@ Status: proposed implementation design, 2026-10-12. No platform deployment claim
 | D10 | Opt-in post-fork recovery per Gunicorn worker | No pre-fork threads/connections; bounded SKIP LOCKED batches coordinate through PostgreSQL |
 | D11 | Prepare 30-day transcript redaction, disabled by default | User selected 30 days; preserve IDs/hashes rather than cascading retry metadata away |
 | D12 | Do not retry uncertain terminal database commits | Safe persistence error; duplicate/reload reads durable state or lease recovers interruption |
+| D13 | Research-only M3 renders plain text; no unverified source links or action controls | Prevent HTML execution and fabricated citation authority while AI Search evidence is deferred |
+| D14 | Bounded threaded SSE delivery with heartbeats and local cancellation | Producer owns generator/network lifecycle; captured owner only, no Flask globals in worker |
+| D15 | Duplicate message replies with existing_run JSON; history reload is authoritative | No stream-replay promise, stable submission IDs survive interrupted delivery |
 
 ## Questions to resolve before dependent implementation
 

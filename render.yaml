@@ -81,6 +81,8 @@ services:
     envVars:
       - key: FRONTEND_WORKER_TIMEOUT_SECONDS
         value: "240"
+      - key: ASSISTANT_ENABLED
+        value: "false"
       - key: ASSISTANT_RECOVERY_ENABLED
         value: "false"
       - key: ASSISTANT_SCHEMA_READY

@@ -40,7 +40,9 @@ M2 backend modules now exist: assistant_repository/service/history/context,
 supervisor_client/protocol, assistant_runtime and gunicorn.conf.py. Migrations
 0006/0007 add conversation/run/message storage and retention markers. Default-off
 worker hooks provide generation recovery and optional 30-day transcript redaction.
-Local acceptance is recorded in M2_STATUS.md. Routes/UI remain M3 work.
+Local backend acceptance is recorded in M2_STATUS.md. M3 routes, bounded public
+streaming and responsive plain-text UI now exist, default-off. See M3_STATUS.md
+for local/browser evidence and the still-open live streaming/citation gates.
 
 M1 exception: `shared/contracts/assistant.py` now defines bounded candidate
 contracts; both embedded agent files and evaluation fixtures exist. Production

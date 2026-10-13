@@ -12,7 +12,7 @@ class AssistantService:
         self.client = client
         self.context_provider = context_provider
 
-    def generate(self, owner, conversation, submission, question):
+    def generate(self, owner, conversation, submission, question, *, cancel_event=None):
         run, created = self.repository.start(owner, conversation, submission, question)
         if not created:
             yield {"type": "existing_run", "run_id": str(run["id"]), "state": run["state"]}
@@ -39,21 +39,30 @@ class AssistantService:
             context = watchlist_context(self.context_provider(owner)) if self.context_provider else ""
             history, omitted = build_history(turns, question, context=context)
             yield {"type": "status", "run_id": str(run["id"]), "history_omitted": omitted}
+            if cancel_event is not None and cancel_event.is_set():
+                terminal, error = "interrupted", "disconnected"
+                persist()
+                return
             # Repository methods have released their pooled connections here.
-            stream = self.client.stream(history, state)
+            stream = self.client.stream(history, state, **({"cancel_event": cancel_event} if cancel_event else {}))
             for delta in stream:
                 yield {"type": "text_delta", "text": delta}
             terminal = state.status
             error = None if terminal == "completed" else "invalid_stream"
+            if cancel_event is not None and cancel_event.is_set():
+                terminal, error = "interrupted", "disconnected"
             finalized = persist()
             yield {"type": "complete" if terminal == "completed" and finalized else "error",
                    "run_id": str(run["id"]), "state": terminal if finalized else "interrupted",
+                   **({"text": state.final_text or state.text} if terminal == "completed" and finalized else {}),
                    **({"error_code": "storage_unavailable"} if finalized is None else {})}
         except SupervisorError:
             terminal, error = "failed", "dependency_error"
+            if cancel_event is not None and cancel_event.is_set():
+                terminal, error = "interrupted", "disconnected"
             finalized = persist()
             yield {"type": "error", "run_id": str(run["id"]),
-                   "state": "failed" if finalized else "interrupted",
+                   "state": terminal if finalized else "interrupted",
                    "error_code": "storage_unavailable" if finalized is None else error}
         except Exception:
             terminal, error = "failed", "dependency_error"

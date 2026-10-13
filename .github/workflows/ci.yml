@@ -22,6 +22,11 @@ jobs:
         run: uv run ruff check shared tools tests mcp_server/tests dashboard/assistant_*.py dashboard/supervisor_*.py dashboard/gunicorn.conf.py
       - name: Run unit and contract tests
         run: uv run pytest -m "not integration and not e2e"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify bounded browser SSE framing
+        run: node --test tests/assistant_frames.test.cjs
       - name: Scan tracked files for prohibited credential assignments
         run: uv run python tools/check_no_secrets.py
       - name: Verify Render Blueprint, locked installs, and service health
