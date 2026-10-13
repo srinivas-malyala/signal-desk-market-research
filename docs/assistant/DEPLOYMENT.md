@@ -12,6 +12,8 @@ user-selected Databricks profile. AI Search recovery remains deferred.
 | ASSISTANT_ENABLED | false; gates chat APIs and template/assets |
 | ASSISTANT_PROPOSALS_ENABLED | false; gates draft creation/review routes and UI |
 | ASSISTANT_PROPOSALS_SCHEMA_READY | false; requires migration 0008 after 0006/0007 |
+| ASSISTANT_ACTIONS_ENABLED | false; enables explicit user-bound confirmations |
+| ASSISTANT_EXECUTION_SCHEMA_READY | false; requires migration 0009 |
 | FRONTEND_WORKER_TIMEOUT_SECONDS | 240; 240–600, validated at Gunicorn startup |
 | ASSISTANT_SCHEMA_READY | false; enable only after migrations 0006 and 0007 |
 | ASSISTANT_RECOVERY_ENABLED | false; starts post-fork startup/periodic recovery |
@@ -22,8 +24,8 @@ user-selected Databricks profile. AI Search recovery remains deferred.
 
 Model deadline 180 seconds, lease 210 seconds, 20 history messages, 4,000-character
 question and 24,000-byte assembled content are code bounds, not environment knobs.
-M3 implements ASSISTANT_ENABLED and chat routes/UI. ASSISTANT_ACTIONS_ENABLED and
-proposal-TTL settings remain M4 work; no executable proposals are registered.
+M5 implements guarded confirmation execution, disabled by default. Proposal TTL
+remains a fixed 30-minute bound. No action flag or migration was enabled live.
 When enabled, API reads and writes also require ASSISTANT_SCHEMA_READY=true.
 
 Reuse DATA_WORKSPACE_HOST/CLIENT_ID/CLIENT_SECRET through shared auth. Frontend

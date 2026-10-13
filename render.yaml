@@ -87,6 +87,10 @@ services:
         value: "false"
       - key: ASSISTANT_PROPOSALS_SCHEMA_READY
         value: "false"
+      - key: ASSISTANT_ACTIONS_ENABLED
+        value: "false"
+      - key: ASSISTANT_EXECUTION_SCHEMA_READY
+        value: "false"
       - key: ASSISTANT_RECOVERY_ENABLED
         value: "false"
       - key: ASSISTANT_SCHEMA_READY

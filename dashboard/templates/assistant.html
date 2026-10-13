@@ -1,7 +1,7 @@
 <section id="assistant" class="card assistant-card" aria-labelledby="assistant-heading">
-  <div class="section-head"><div><span class="index">CHAT</span><h2 id="assistant-heading">Research assistant</h2></div><span class="label">RESEARCH ONLY</span></div>
+  <div class="section-head"><div><span class="index">CHAT</span><h2 id="assistant-heading">Research assistant</h2></div><span class="label">{% if assistant_actions_enabled %}CONFIRMED ACTIONS{% else %}RESEARCH ONLY{% endif %}</span></div>
   <p class="section-copy">Ask follow-up questions about companies and comparisons. Your Primary watchlist is shared as a dated snapshot, never as permission to write.</p>
-  <p class="state warning">AI Search evidence is currently unavailable. Chat cannot save notes, reports, or watchlist changes. Verify dates and claims independently.</p>
+  <p class="state warning">AI Search evidence is currently unavailable. {% if assistant_actions_enabled %}Actions require review of the exact stored draft and explicit confirmation.{% else %}Chat action execution is disabled.{% endif %} Verify dates and claims independently.</p>
   <div class="assistant-layout">
     <aside aria-label="Your conversations">
       <button id="assistant-new" type="button">New conversation</button>

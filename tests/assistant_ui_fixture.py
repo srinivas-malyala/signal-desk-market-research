@@ -1,5 +1,6 @@
 """Localhost-only synthetic browser fixture. Never import into production."""
 
+import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
@@ -9,11 +10,13 @@ from flask import Flask, g, jsonify, render_template, request
 from dashboard.assistant_proposals import normalize
 from dashboard.assistant_routes import register_assistant
 from dashboard.supervisor_client import SupervisorError
+from dashboard.user_writes import UserWrites
 
 ROOT = Path(__file__).parents[1] / "dashboard"
 app = Flask(__name__, template_folder=str(ROOT / "templates"), static_folder=str(ROOT / "static"))
 conversations, runs = {}, {}
 drafts = {}
+watchlist = set()
 
 
 class Proposals:
@@ -39,6 +42,22 @@ class Proposals:
     def dismiss(self, owner, proposal, digest):
         drafts[proposal]["state"] = "dismissed"
         return drafts[proposal]
+
+    def begin_execution(self, owner, proposal, digest):
+        row = drafts[proposal]
+        if row["payload_hash"] != digest:
+            raise ValueError("changed fixture draft")
+        if row["state"] == "succeeded":
+            return row, False
+        row.update(state="executing", lease_token=str(uuid4()), idempotency_key=row.get("idempotency_key",str(uuid4())))
+        return row, True
+
+    def finish_execution(self, owner, proposal, lease, *, state, receipt=None, error=None):
+        drafts[proposal].update(state=state,receipt=receipt)
+        return True
+
+    def receipt_context(self, owner, conversation):
+        return []
 
 
 class Repository:
@@ -72,6 +91,16 @@ class Repository:
 
 
 class Client:
+    def update_watchlist(self, *, ticker, action, **kwargs):
+        if action == "add":
+            watchlist.add(ticker)
+        else:
+            watchlist.discard(ticker)
+        return {"status":"success","ticker":ticker,"action":action}
+
+    def get_watchlist(self, **kwargs):
+        return {"status":"success","tickers":list(watchlist)}
+
     def stream(self, history, state, *, cancel_event):
         count = 40 if "slow" in history[-1]["content"].lower() else 3
         for _ in range(count):
@@ -88,6 +117,8 @@ app.config.update(ASSISTANT_ENABLED=True, ASSISTANT_SCHEMA_READY=True,
                   ASSISTANT_REPOSITORY_FACTORY=Repository, ASSISTANT_CLIENT_FACTORY=Client,
                   ASSISTANT_PROPOSALS_ENABLED=True, ASSISTANT_PROPOSALS_SCHEMA_READY=True,
                   ASSISTANT_PROPOSAL_REPOSITORY_FACTORY=Proposals)
+fixture_actions = os.getenv("ASSISTANT_FIXTURE_ACTIONS") == "true"
+app.config.update(ASSISTANT_ACTIONS_ENABLED=fixture_actions,ASSISTANT_EXECUTION_SCHEMA_READY=fixture_actions)
 
 
 @app.before_request
@@ -97,13 +128,14 @@ def fixture_identity():
         return jsonify(message="Fixture CSRF required"), 403
 
 
-register_assistant(app, lambda: 7)
+register_assistant(app, lambda: 7, lambda: UserWrites(Client(),lambda: "synthetic-user",g.request_id))
 
 
 @app.get("/")
 def index():
     return render_template("index.html", assistant_enabled=True, csrf_token="fixture-csrf",
-                           user_email="Synthetic browser fixture", show_logout=False, assistant_proposals_enabled=True)
+                           user_email="Synthetic browser fixture", show_logout=False, assistant_proposals_enabled=True,
+                           assistant_actions_enabled=fixture_actions)
 
 
 @app.get("/api/overview")

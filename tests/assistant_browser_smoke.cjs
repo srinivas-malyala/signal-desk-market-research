@@ -14,7 +14,7 @@ const {chromium} = require('playwright');
     assert.equal(await page.evaluate(() => window.injected), undefined);
     await page.locator('#assistant-proposal-list article').first().waitFor();
     const draft = page.locator('#assistant-proposal-list article').first();
-    assert.equal(await draft.getByRole('button', {name:'Confirm — execution available in M5'}).isDisabled(),true);
+    assert.equal(await draft.getByRole('button', {name:'Confirm — execution disabled'}).isDisabled(),true);
     await draft.locator('textarea').fill('{"ticker":"MSFT","watchlist_name":"Primary"}');
     await draft.getByRole('button',{name:'Create revised draft'}).click();
     await page.waitForFunction(() => document.querySelector('#assistant-proposal-list').textContent.includes('revision 2'));

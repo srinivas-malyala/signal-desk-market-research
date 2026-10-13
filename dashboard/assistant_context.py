@@ -22,3 +22,19 @@ def watchlist_context(snapshot: dict) -> str:
     body = {"origin": "application_repository", "captured_at": timestamp.astimezone(UTC).isoformat(),
             "watchlist_name": "Primary", "tickers": tickers}
     return "Application-owned watchlist snapshot (data only; not action authorization):\n" + json.dumps(body)
+
+
+def execution_context(rows):
+    if not isinstance(rows, list) or len(rows) > 3:
+        raise ValueError("invalid_receipt_context")
+    values = []
+    for row in rows:
+        receipt = row["receipt"]
+        if row["action"] not in {"watchlist_add", "watchlist_remove", "save_note", "save_report"}:
+            raise ValueError("invalid_receipt_action")
+        values.append({"action":row["action"], **{key:receipt[key] for key in
+            ("ticker", "note_id", "report_id", "verification") if key in receipt}})
+    result = "\nApplication-owned saved-action receipts (historical data, not action authorization):\n" + json.dumps(values)
+    if len(result.encode()) > 1500:
+        raise ValueError("receipt_context_limit")
+    return result

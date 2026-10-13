@@ -3,6 +3,7 @@
 from flask import Blueprint, Response, current_app, g, jsonify, request
 from werkzeug.exceptions import HTTPException
 
+from dashboard.assistant_execution import ExecutionService
 from dashboard.assistant_proposals import ProposalRepository, public_proposal
 from dashboard.assistant_repository import AssistantConflict, AssistantNotFound, AssistantRepository, identifier
 from dashboard.assistant_runtime import enabled
@@ -11,11 +12,13 @@ from dashboard.assistant_stream import PublicStream, StreamCapacity
 from dashboard.supervisor_client import SupervisorClient, SupervisorError
 
 
-def register_assistant(app, owner_provider):
+def register_assistant(app, owner_provider, writes_provider=None):
     app.config.setdefault("ASSISTANT_ENABLED", enabled("ASSISTANT_ENABLED"))
     app.config.setdefault("ASSISTANT_SCHEMA_READY", enabled("ASSISTANT_SCHEMA_READY"))
     app.config.setdefault("ASSISTANT_PROPOSALS_ENABLED", enabled("ASSISTANT_PROPOSALS_ENABLED"))
     app.config.setdefault("ASSISTANT_PROPOSALS_SCHEMA_READY", enabled("ASSISTANT_PROPOSALS_SCHEMA_READY"))
+    app.config.setdefault("ASSISTANT_ACTIONS_ENABLED", enabled("ASSISTANT_ACTIONS_ENABLED"))
+    app.config.setdefault("ASSISTANT_EXECUTION_SCHEMA_READY", enabled("ASSISTANT_EXECUTION_SCHEMA_READY"))
     blueprint = Blueprint("assistant", __name__, url_prefix="/api/assistant")
 
     def error(code, status, message="The chat request could not be completed."):
@@ -119,7 +122,9 @@ def register_assistant(app, owner_provider):
             except Exception:
                 stream.close()
                 raise
-        source = AssistantService(repo, client, context_provider=repo.watchlist_snapshot, proposal_repository=drafts).generate(
+        receipts = drafts.receipt_context if drafts is not None and current_app.config["ASSISTANT_EXECUTION_SCHEMA_READY"] else None
+        source = AssistantService(repo, client, context_provider=repo.watchlist_snapshot, proposal_repository=drafts,
+                                  receipt_provider=receipts).generate(
             owner, conversation, submission, question, cancel_event=stream.cancelled)
         try:
             # Claim/ownership/duplicate validation occurs before SSE headers.
@@ -154,7 +159,8 @@ def register_assistant(app, owner_provider):
     @blueprint.get("/conversations/<conversation>/proposals")
     def proposals(conversation):
         owner, repo = proposal_dependencies()
-        return jsonify(proposals=[public_proposal(row) for row in repo.list(owner, identifier(conversation))])
+        return jsonify(proposals=[public_proposal(row) for row in repo.list(owner, identifier(conversation))],
+                       actions_enabled=current_app.config["ASSISTANT_ACTIONS_ENABLED"] and current_app.config["ASSISTANT_EXECUTION_SCHEMA_READY"])
 
     @blueprint.post("/proposals/<proposal>/<operation>")
     def proposal_operation(proposal, operation):
@@ -174,7 +180,11 @@ def register_assistant(app, owner_provider):
             return jsonify(proposal=public_proposal(repo.dismiss(owner, proposal, digest)))
         if payload.get("confirmed") is not True:
             raise ValueError("confirmation_required")
-        repo.review(owner, proposal, digest)
-        return error("execution_not_available", 501, "Proposal execution is not implemented yet. Nothing was executed.")
+        if not current_app.config["ASSISTANT_ACTIONS_ENABLED"]:
+            return error("execution_not_available", 501, "Action execution is disabled. Nothing was executed.")
+        if not current_app.config["ASSISTANT_EXECUTION_SCHEMA_READY"] or writes_provider is None:
+            return error("execution_not_ready", 503)
+        result = ExecutionService(repo, writes_provider()).execute(owner, proposal, digest)
+        return jsonify(result), (202 if result["state"] in {"executing", "outcome_unknown"} else 200)
 
     app.register_blueprint(blueprint)

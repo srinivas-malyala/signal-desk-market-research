@@ -34,7 +34,7 @@ from re-enabling them.
 | M2 Persistence and backend | Locally complete; deployment not performed | M0 | Isolation, bounded history, run leases, deduplication, adapter tests pass | 75 targeted tests, 11 PostgreSQL tests, locked installs/startup verified; default-off recovery and 30-day retention prepared |
 | M3 Research chat | Local routes/UI verified; live/source gates pending | M1, M2 | Multi-turn streamed research works through deployed infrastructure | M3_STATUS.md: 22 feature tests, 3 Node tests, synthetic browser smoke and 11 storage regressions pass |
 | M4 Proposal lifecycle | Local review lifecycle implemented; live output gate pending | M2, M3 | Immutable previews, edits, expiry, dismissal, confirmation pass | M4_STATUS.md; confirmation execution intentionally unavailable until M5 |
-| M5 User-bound execution | Not started | M4 | Ownership, stable retry, ambiguous-outcome recovery, readback pass | Pending |
+| M5 User-bound execution | Locally implemented; live acceptance pending | M4 | Ownership, stable retry, ambiguous-outcome recovery, readback pass | M5_STATUS.md: local signed-identity, original-key recovery, readback and receipt tests pass |
 | M6 Acceptance and rollout | Not started | M1–M5 | G1–G8 and rollback gates pass | Pending |
 
 ## M0 — Verify contracts and implementation constraints

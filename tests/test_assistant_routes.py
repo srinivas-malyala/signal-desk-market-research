@@ -177,7 +177,7 @@ def test_proposal_routes_remain_default_off_and_confirmation_never_executes(chat
                              ASSISTANT_PROPOSAL_REPOSITORY_FACTORY=lambda: drafts)
     response = browser.post(url, **options)
     assert response.status_code == 501 and response.json["error_code"] == "execution_not_available"
-    drafts.review.assert_called_once_with(7, proposal, "a"*64)
+    drafts.begin_execution.assert_not_called()
     client.stream.assert_not_called()
 
 
@@ -190,3 +190,47 @@ def test_revision_does_not_accept_replacement_owner_or_type(chat):
         headers={"X-CSRF-Token":"a"*32}, json={"payload_hash":"a"*64, "arguments":{}, "owner":34})
     assert response.status_code == 400
     drafts.revise.assert_not_called()
+
+
+def test_action_flags_require_execution_schema_and_strict_confirmation(chat):
+    module, browser, *_ = chat
+    drafts = Mock()
+    module.app.config.update(ASSISTANT_PROPOSALS_ENABLED=True, ASSISTANT_PROPOSALS_SCHEMA_READY=True,
+                             ASSISTANT_ACTIONS_ENABLED=True, ASSISTANT_EXECUTION_SCHEMA_READY=False,
+                             ASSISTANT_PROPOSAL_REPOSITORY_FACTORY=lambda: drafts)
+    url = f"/api/assistant/proposals/{uuid4()}/confirm"
+    options = {"base_url":BASE_URL,"headers":{"X-CSRF-Token":"a"*32}, "json":{"confirmed":True,"payload_hash":"a"*64}}
+    assert browser.post(url, **options).status_code == 503
+    drafts.begin_execution.assert_not_called()
+    module.app.config["ASSISTANT_EXECUTION_SCHEMA_READY"] = True
+    options["json"]["confirmed"] = False
+    assert browser.post(url, **options).status_code == 400
+    options["json"] = {"confirmed":True,"payload_hash":"a"*64, "ticker":"OTHER"}
+    assert browser.post(url, **options).status_code == 400
+    drafts.begin_execution.assert_not_called()
+
+
+def test_confirm_binds_stored_payload_to_fresh_signed_browser_identity(chat):
+    import jwt
+
+    module, browser, *_ = chat
+    drafts = Mock()
+    proposal = str(uuid4())
+    drafts.begin_execution.return_value = ({"id":proposal,"lease_token":str(uuid4()),"idempotency_key":"immutable-original-key",
+        "payload":{"type":"watchlist_add","arguments":{"ticker":"AAPL","watchlist_name":"Primary"}}}, True)
+    drafts.finish_execution.return_value = True
+    module.test_mcp.update_watchlist.return_value = {"status":"success","ticker":"AAPL","action":"add"}
+    module.test_mcp.get_watchlist.return_value = {"status":"success","tickers":[{"ticker":"AAPL"}]}
+    module.app.config.update(ASSISTANT_PROPOSALS_ENABLED=True,ASSISTANT_PROPOSALS_SCHEMA_READY=True,
+        ASSISTANT_ACTIONS_ENABLED=True,ASSISTANT_EXECUTION_SCHEMA_READY=True,ASSISTANT_PROPOSAL_REPOSITORY_FACTORY=lambda:drafts)
+    response = browser.post(f"/api/assistant/proposals/{proposal}/confirm",base_url=BASE_URL,
+        headers={"X-CSRF-Token":"a"*32},json={"confirmed":True,"payload_hash":"a"*64})
+    assert response.status_code == 200 and response.json["state"] == "succeeded"
+    args = module.test_mcp.update_watchlist.call_args.kwargs
+    assert args["ticker"] == "AAPL" and args["idempotency_key"] == "immutable-original-key"
+    claims = jwt.decode(args["access_token"],module.test_public_key,algorithms=["RS256"],audience="signal-desk-mcp")
+    assert claims["email"] == "student@example.com"
+    assert claims["rid"] == response.headers["X-Request-ID"]
+    read_token = module.test_mcp.get_watchlist.call_args.kwargs["access_token"]
+    assert read_token != args["access_token"]
+    drafts.begin_execution.assert_called_once_with(7,proposal,"a"*64)

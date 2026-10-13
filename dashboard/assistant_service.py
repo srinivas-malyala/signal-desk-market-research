@@ -1,17 +1,18 @@
 """Backend generation lifecycle; no Flask route or confirmed-write execution."""
 
-from dashboard.assistant_context import watchlist_context
+from dashboard.assistant_context import execution_context, watchlist_context
 from dashboard.assistant_history import build_history
 from dashboard.supervisor_client import SupervisorError
 from dashboard.supervisor_protocol import ResponseState
 
 
 class AssistantService:
-    def __init__(self, repository, client, *, context_provider=None, proposal_repository=None):
+    def __init__(self, repository, client, *, context_provider=None, proposal_repository=None, receipt_provider=None):
         self.repository = repository
         self.client = client
         self.context_provider = context_provider
         self.proposal_repository = proposal_repository
+        self.receipt_provider = receipt_provider
 
     def generate(self, owner, conversation, submission, question, *, cancel_event=None):
         run, created = self.repository.start(owner, conversation, submission, question)
@@ -38,6 +39,8 @@ class AssistantService:
         try:
             turns = self.repository.turns(owner, conversation)
             context = watchlist_context(self.context_provider(owner)) if self.context_provider else ""
+            if self.receipt_provider is not None:
+                context += execution_context(self.receipt_provider(owner, conversation))
             history, omitted = build_history(turns, question, context=context)
             yield {"type": "status", "run_id": str(run["id"]), "history_omitted": omitted}
             if cancel_event is not None and cancel_event.is_set():

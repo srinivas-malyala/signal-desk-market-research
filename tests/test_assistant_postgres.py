@@ -51,6 +51,9 @@ def database(monkeypatch):
         sql = render_migration((Path(__file__).parents[1] / "mcp_server/migrations/0008_assistant_proposals.sql").read_text())
         cur.execute(sql)
         cur.execute(sql)
+        sql = render_migration((Path(__file__).parents[1] / "mcp_server/migrations/0009_assistant_execution.sql").read_text())
+        cur.execute(sql)
+        cur.execute(sql)
 
     @contextmanager
     def connection():
@@ -399,3 +402,77 @@ def test_concurrent_proposal_claims_once_without_changing_key(database):
         results = list(pool.map(lambda _: claim(), range(2)))
     claimed = [row for row in results if row]
     assert len(claimed) == 1 and claimed[0]["idempotency_key"] == draft["idempotency_key"]
+
+
+def test_execution_recovery_preserves_key_and_rejects_stale_owner(database):
+    from dashboard.assistant_proposals import ProposalRepository
+
+    repo, connection = database
+    proposals = ProposalRepository(connection)
+    run, _ = repo.start(1, repo.create(1)["id"], uuid4(), "Confirm draft")
+    repo.finish(1, run["id"], run["lease_token"], state="completed", text="Draft")
+    draft = proposals.create(1, run["id"], {"type":"watchlist_add", "arguments":{"ticker":"AAPL"}})
+    old, claimed = proposals.begin_execution(1, draft["id"], draft["payload_hash"])
+    assert claimed
+    assert proposals.begin_execution(1, draft["id"], draft["payload_hash"])[1] is False
+    with pytest.raises(AssistantNotFound):
+        proposals.begin_execution(2, draft["id"], draft["payload_hash"])
+    with pytest.raises(AssistantConflict):
+        proposals.begin_execution(1, draft["id"], "a"*64)
+    with connection() as conn, conn.cursor() as cur:
+        cur.execute(f"UPDATE {proposals.table} SET lease_until=clock_timestamp()-interval '1 second',"
+                    "expires_at=clock_timestamp()-interval '1 second' WHERE id=%s", (draft["id"],))
+        conn.commit()
+    recovered, claimed = proposals.begin_execution(1, draft["id"], draft["payload_hash"])
+    assert claimed and recovered["idempotency_key"] == old["idempotency_key"]
+    assert recovered["lease_token"] != old["lease_token"]
+    assert not proposals.finish_execution(1, old["id"], old["lease_token"], state="succeeded")
+    receipt = {"status":"success", "ticker":"AAPL", "verification":"verified"}
+    assert proposals.finish_execution(1, recovered["id"], recovered["lease_token"], state="succeeded", receipt=receipt)
+    saved, claimed = proposals.begin_execution(1, draft["id"], draft["payload_hash"])
+    assert not claimed and saved["receipt"] == receipt
+
+
+def test_lost_business_reply_recovers_one_note_with_owner_readback(database):
+    from psycopg2.extras import Json
+
+    from dashboard.assistant_execution import ExecutionService
+    from dashboard.assistant_proposals import ProposalRepository
+    from dashboard.user_writes import UserWrites
+
+    repo, connection = database
+    proposals = ProposalRepository(connection)
+    notes = os.environ["SIGNAL_DESK_SCHEMA"] + ".research_notes_test"
+    with connection() as conn, conn.cursor() as cur:
+        cur.execute(f"CREATE TABLE {notes}(id BIGINT PRIMARY KEY,user_id BIGINT,ticker TEXT,title TEXT,note_text TEXT,thesis_tags JSONB)")
+        conn.commit()
+    run, _ = repo.start(1, repo.create(1)["id"], uuid4(), "Save note")
+    repo.finish(1, run["id"], run["lease_token"], state="completed", text="Draft")
+    payload = {"type":"save_note", "arguments":{"ticker":"AAPL","title":"Thesis","note_text":"Exact body","thesis_tags":[]}}
+    draft = proposals.create(1, run["id"], payload)
+    committed = set()
+    tokens = []
+
+    class Client:
+        def save_research_note(self, **kwargs):
+            tokens.append(kwargs["access_token"])
+            key = kwargs["idempotency_key"]
+            if key not in committed:
+                with connection() as conn, conn.cursor() as cur:
+                    cur.execute(f"INSERT INTO {notes} VALUES(42,1,%s,%s,%s,%s)",
+                                (kwargs["ticker"],kwargs["title"],kwargs["note_text"],Json(kwargs["thesis_tags"])))
+                    conn.commit()
+                committed.add(key)
+                raise RuntimeError("reply lost after commit")
+            return {"status":"success", "note_id":42}
+
+    service = ExecutionService(proposals, UserWrites(Client(), lambda: str(uuid4()), "request"))
+    assert service.execute(1,draft["id"],draft["payload_hash"])["state"] == "outcome_unknown"
+    recovered = service.execute(1,draft["id"],draft["payload_hash"])
+    assert recovered["state"] == "succeeded" and recovered["receipt"]["verification"] == "verified"
+    assert len(committed) == 1 and len(tokens) == 2 and tokens[0] != tokens[1]
+    assert not proposals.readback_saved(2,draft["payload"],recovered["receipt"])
+    assert proposals.receipt_context(2,run["conversation_id"]) == []
+    assert proposals.receipt_context(1,run["conversation_id"])[0]["action"] == "save_note"
+    assert service.execute(1,draft["id"],draft["payload_hash"])["replayed"]
+    assert len(tokens) == 2  # Third confirmation reads the saved receipt only.

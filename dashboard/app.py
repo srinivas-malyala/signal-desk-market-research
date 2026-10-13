@@ -30,6 +30,7 @@ from mcp_client import (
 from werkzeug.exceptions import HTTPException
 
 from dashboard.assistant_routes import register_assistant
+from dashboard.user_writes import UserWrites
 
 APP_ROOT = Path(__file__).resolve().parent
 app = Flask(
@@ -167,7 +168,11 @@ def _user_id() -> int | None:
     return int(rows[0]["id"]) if rows else None
 
 
-register_assistant(app, _user_id)
+def _user_writes():
+    return UserWrites(_watchlist_client(), _fresh_mcp_access_token, g.request_id)
+
+
+register_assistant(app, _user_id, _user_writes)
 
 
 def _watchlist_client() -> WatchlistClient:
@@ -318,6 +323,8 @@ def index():
         show_logout=hosting_mode() == "render",
         assistant_enabled=app.config["ASSISTANT_ENABLED"],
         assistant_proposals_enabled=app.config["ASSISTANT_PROPOSALS_ENABLED"],
+        assistant_actions_enabled=app.config["ASSISTANT_ACTIONS_ENABLED"] and app.config["ASSISTANT_EXECUTION_SCHEMA_READY"]
+        and app.config["ASSISTANT_PROPOSALS_ENABLED"] and app.config["ASSISTANT_PROPOSALS_SCHEMA_READY"],
     )
 
 
@@ -382,13 +389,11 @@ def save_note():
             raise ValueError("Note title and body are required and must stay within allowed sizes.")
         if not isinstance(tags, list) or len(tags) > 20 or any(len(str(tag)) > 64 for tag in tags):
             raise ValueError("Use at most 20 thesis tags of 64 characters each.")
-        result = _watchlist_client().save_research_note(
+        result = _user_writes().invoke("save_research_note",
             ticker=_ticker(payload.get("ticker")),
             title=title,
             note_text=note_text,
             thesis_tags=[str(tag).strip() for tag in tags if str(tag).strip()],
-            access_token=g.mcp_access_token,
-            request_id=g.request_id,
             idempotency_key=_idempotency_key(),
         )
     except ValueError as exc:
@@ -410,14 +415,12 @@ def save_report():
             raise ValueError("Report title and body are required and must stay within allowed sizes.")
         if not isinstance(raw_tickers, list) or not 1 <= len(raw_tickers) <= 10:
             raise ValueError("Choose between 1 and 10 report tickers.")
-        result = _watchlist_client().save_analysis_report(
+        result = _user_writes().invoke("save_analysis_report",
             title=title,
             thesis=thesis,
             tickers=[_ticker(value) for value in raw_tickers],
             report_text=report_text,
             source_context=payload.get("source_context") if isinstance(payload.get("source_context"), dict) else {},
-            access_token=g.mcp_access_token,
-            request_id=g.request_id,
             idempotency_key=_idempotency_key(),
         )
     except ValueError as exc:
@@ -434,11 +437,9 @@ def add_ticker():
         return _error(str(exc), 400, "invalid_request")
     if not TICKER_PATTERN.fullmatch(ticker):
         return _error("Enter a valid U.S. ticker.", 400, "invalid_ticker")
-    result = _watchlist_client().update_watchlist(
+    result = _user_writes().invoke("update_watchlist",
         ticker=ticker,
         action="add",
-        access_token=g.mcp_access_token,
-        request_id=g.request_id,
         idempotency_key=idempotency_key,
     )
     return jsonify({**result, "request_id": g.request_id}), 201
@@ -453,11 +454,9 @@ def remove_ticker(ticker: str):
         idempotency_key = _idempotency_key()
     except ValueError as exc:
         return _error(str(exc), 400, "invalid_request")
-    result = _watchlist_client().update_watchlist(
+    result = _user_writes().invoke("update_watchlist",
         ticker=symbol,
         action="remove",
-        access_token=g.mcp_access_token,
-        request_id=g.request_id,
         idempotency_key=idempotency_key,
     )
     return jsonify({**result, "request_id": g.request_id})
