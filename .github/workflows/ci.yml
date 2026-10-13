@@ -19,7 +19,7 @@ jobs:
       - name: Install fast-test dependencies
         run: uv sync --extra dashboard --extra mcp --dev
       - name: Check formatting and static rules
-        run: uv run ruff check shared tools tests mcp_server/tests dashboard/assistant_*.py dashboard/supervisor_*.py dashboard/gunicorn.conf.py
+        run: uv run ruff check shared tools tests mcp_server/tests dashboard/assistant_*.py dashboard/supervisor_*.py dashboard/gunicorn.conf.py dashboard/user_writes.py
       - name: Run unit and contract tests
         run: uv run pytest -m "not integration and not e2e"
       - uses: actions/setup-node@v4

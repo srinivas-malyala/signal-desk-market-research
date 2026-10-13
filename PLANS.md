@@ -2,7 +2,8 @@
 
 Updated: 2026-10-12, America/Los_Angeles.
 Current state: M0 local spike and standalone live protocol baseline verified.
-Active milestone: M4 review lifecycle locally implemented; live tool-output gate pending.
+Active milestone: M5 execution locally implemented; M6 live acceptance pending.
+M4 live tool-output serialization validation remains pending.
 M3 deployed-streaming/citation gates remain open.
 M1 citation/index recovery remains deferred by user.
 Live update: user deployed MCP, created the governed embedded service and attached

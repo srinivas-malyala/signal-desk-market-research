@@ -2,6 +2,12 @@
 
 ## New embedded assistant — 2026-10-12
 
+M4 pushed through 51f36e5; M5 locally implemented in 83b196d, not pushed/deployed.
+Action flags remain false. 428 fast/15 PostgreSQL tests and synthetic explicit
+confirmation/receipt reload checks pass. Same-owner/original-key recovery only;
+no automatic business-write worker. Migration 0009 is unapplied live. M6 live
+acceptance, M4 serialization validation and deferred AI Search remain open.
+
 M3 pushed through a9410de. M4 review lifecycle locally implemented in 9394316,
 default-off and undeployed. 413 fast tests/13 PostgreSQL tests plus synthetic
 browser revision/dismissal and disabled-confirmation checks pass. No business

@@ -2,6 +2,15 @@
 
 ## Embedded assistant workstream — 2026-10-12
 
+M4 pushed through 51f36e5. M5 locally committed in 83b196d: migration 0009,
+shared fresh-user write dispatch, guarded confirm, same-key unknown recovery,
+lease CAS, sanitized receipts, owner readback and trusted receipt context.
+428 fast tests, 15 PostgreSQL tests and synthetic confirmation/unsaved-edit/reload
+browser checks pass, as do lint/secret/startup checks. Fixtures cleaned up.
+M5 flags default false; no M5 push, live migration or deployment. M6 actual
+two-user/reversible-write/rollback acceptance and M4 live output validation remain
+pending. AI Search and schedules stay deferred/paused. M5_STATUS.md is current.
+
 M3 pushed through a9410de as requested. M4 locally committed in 9394316: migration
 0008, guarded typed candidate capture, owned exact previews, immutable revisions,
 expiry/dismissal and internal atomic claim preparation. Confirmation is disabled

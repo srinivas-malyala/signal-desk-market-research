@@ -3,6 +3,14 @@
 Status: design baseline. Platform-specific event mapping must be proven in M0.
 Version: 1. Changes to these contracts require a decision-log update.
 
+M5 increment supersedes M4's temporary 501-only behavior when action/schema flags
+are enabled: confirmation executes stored owned payload only, returns saved
+receipt or execution/unknown state, and never accepts replacement arguments.
+Flags default off. A recovery request for an already-attempted unknown/expired
+execution can outlive the pending draft TTL, but requires fresh explicit consent
+from the same authenticated owner and original hash/key. Saved retries do not
+write again; verification-pending retries only read back. See M5_STATUS.md.
+
 M4 increment: proposal list/revise/dismiss routes are implemented behind separate
 default-off proposal and proposal-schema flags. Confirm validates explicit consent
 and the owned immutable hash but returns 501 execution_not_available until M5;

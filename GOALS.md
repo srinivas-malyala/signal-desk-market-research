@@ -2,7 +2,8 @@
 
 Updated: 2026-10-12, America/Los_Angeles.
 Status: M2 backend locally complete; M3 routes/UI pushed and locally verified.
-M4 review/revision lifecycle locally implemented, default-off and not deployed.
+M4 review/revision lifecycle pushed; M5 execution locally implemented, default-off.
+No live action rollout or migration performed; M6 acceptance remains pending.
 Live streaming/citation gates and full release remain pending.
 Separate Supervisor/tool attachment and research/proposal evidence are
 recorded in `docs/assistant/LIVE_STATUS.md`; AI Search citation/index recovery

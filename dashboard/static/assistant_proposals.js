@@ -32,7 +32,7 @@
         const updateConfirm=()=>{let dirty=true;try{dirty=JSON.stringify(JSON.parse(editor.value))!==JSON.stringify(draft.payload.arguments);}catch(error){}confirm.disabled=dirty||!result.actions_enabled||!check.checked||(!(draft.state==='pending'||recover||draft.state==='succeeded'||draft.state==='failed'))||(expired&&!recover&&draft.state!=='succeeded');};
         check.onchange=updateConfirm;editor.oninput=()=>{check.checked=false;updateConfirm();};
         confirm.onclick=async()=>{confirm.disabled=true;try{const value=await request(`/api/assistant/proposals/${encodeURIComponent(draft.id)}/confirm`,{confirmed:true,payload_hash:draft.payload_hash});status.textContent=value.state==='succeeded'?`Saved — ${value.receipt?.verification||'verification pending'}`:value.state==='outcome_unknown'?'Outcome unknown. Check/retry the same stored action; do not create a replacement.':value.state==='executing'?'Execution is still in progress. Check later.':'Action did not execute.';await window.loadAssistantProposals(conversation);}catch(error){status.textContent=error.message;}};
-        if(draft.receipt){const saved=document.createElement('p');saved.textContent=`Saved — ${draft.receipt.verification||'verification pending'}`;card.append(saved);}
+        if(draft.receipt){const saved=document.createElement('p');saved.textContent=draft.receipt.verification==='verified'?'Saved — verified':'Saved — verification pending';card.append(saved);}
         revise.onclick=()=>{try{mutate('revise',{arguments:JSON.parse(editor.value)});}catch(error){status.textContent='Arguments must be valid JSON.';}};
         dismiss.onclick=()=>mutate('dismiss');
         card.append(heading,preview,expiry,label,checkLabel,revise,dismiss,confirm,status);root.append(card);

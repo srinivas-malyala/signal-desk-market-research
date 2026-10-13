@@ -67,6 +67,12 @@ Select the smallest modules that keep protocol, ownership, and execution clear.
 
 ## Context recovery
 
+M5 adds shared user_writes.py and assistant_execution.py plus migration 0009.
+Confirm is implemented behind independent default-off flags, using fresh browser
+assertions, immutable original keys, owner-scoped readback and durable receipts.
+Unknown recovery requires renewed explicit user confirmation; no background
+worker executes business writes. See M5_STATUS.md for local/live boundaries.
+
 M4 adds assistant_proposals.py and assistant_proposals.js with migration 0008,
 typed candidate capture, owner/hash-bound previews, revisions, expiry/dismissal
 and non-executing confirmation. Default-off; see M4_STATUS.md for pending live
