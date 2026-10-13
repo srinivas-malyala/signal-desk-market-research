@@ -2,6 +2,12 @@
 
 ## New embedded assistant — 2026-10-12
 
+M3 pushed through a9410de. M4 review lifecycle locally implemented in 9394316,
+default-off and undeployed. 413 fast tests/13 PostgreSQL tests plus synthetic
+browser revision/dismissal and disabled-confirmation checks pass. No business
+writes: confirm returns 501 until M5. Live matched output validation remains
+pending. Migration 0008 is unapplied live; see docs/assistant/M4_STATUS.md.
+
 M3 routes/UI locally implemented in 2534c7e, not pushed/deployed. Feature flag
 defaults false; research-only chat, owned histories, safe retries, heartbeat and
 local Stop verified. 404 fast tests, 11 PostgreSQL regressions, three Node tests,

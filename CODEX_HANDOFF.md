@@ -2,6 +2,14 @@
 
 ## Embedded assistant workstream — 2026-10-12
 
+M3 pushed through a9410de as requested. M4 locally committed in 9394316: migration
+0008, guarded typed candidate capture, owned exact previews, immutable revisions,
+expiry/dismissal and internal atomic claim preparation. Confirmation is disabled
+and returns 501; no business action executed. 413 fast tests, 13 PostgreSQL tests,
+Node/parser/browser draft-review and startup checks pass. Fixtures cleaned up.
+M4 flags remain false; no live migration/deployment. Live output serialization
+and M5 user-bound writes/receipts/recovery remain pending. See M4_STATUS.md.
+
 M3 local chat implemented in 2534c7e, not pushed/deployed. Default-off research
 blueprint/UI supports conversation selection, follow-ups, reload, streaming,
 heartbeat, safe duplicate checking and local Stop. Auth/CSRF and captured browser
