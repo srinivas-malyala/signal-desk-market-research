@@ -210,6 +210,37 @@ def test_action_flags_require_execution_schema_and_strict_confirmation(chat):
     drafts.begin_execution.assert_not_called()
 
 
+def test_action_then_chat_flag_rollback_blocks_new_work_without_deleting_receipts(chat):
+    module, browser, repo, client, *_ = chat
+    drafts = Mock()
+    proposal = str(uuid4())
+    drafts.begin_execution.return_value = ({"id": proposal, "lease_token": str(uuid4()),
+        "idempotency_key": "rollback-original-key", "payload": {"type": "watchlist_add",
+        "arguments": {"ticker": "AAPL", "watchlist_name": "Primary"}}}, True)
+    drafts.finish_execution.return_value = True
+    module.test_mcp.update_watchlist.return_value = {"status": "success", "ticker": "AAPL", "action": "add"}
+    module.test_mcp.get_watchlist.return_value = {"status": "success", "tickers": [{"ticker": "AAPL"}]}
+    module.app.config.update(ASSISTANT_PROPOSALS_ENABLED=True, ASSISTANT_PROPOSALS_SCHEMA_READY=True,
+        ASSISTANT_ACTIONS_ENABLED=True, ASSISTANT_EXECUTION_SCHEMA_READY=True,
+        ASSISTANT_PROPOSAL_REPOSITORY_FACTORY=lambda: drafts)
+    url = f"/api/assistant/proposals/{proposal}/confirm"
+    options = {"base_url": BASE_URL, "headers": {"X-CSRF-Token": "a" * 32},
+               "json": {"confirmed": True, "payload_hash": "a" * 64}}
+    assert browser.post(url, **options).json["state"] == "succeeded"
+    module.app.config["ASSISTANT_ACTIONS_ENABLED"] = False
+    assert browser.post(url, **options).status_code == 501
+    drafts.begin_execution.assert_called_once()
+    drafts.finish_execution.assert_called_once()
+    module.test_mcp.update_watchlist.assert_called_once()
+    module.app.config["ASSISTANT_ENABLED"] = False
+    assert browser.post(url, **options).status_code == 404
+    assert post(chat).status_code == 404
+    repo.start.assert_not_called()
+    client.stream.assert_not_called()
+    drafts.delete.assert_not_called()
+    repo.delete.assert_not_called()
+
+
 def test_confirm_binds_stored_payload_to_fresh_signed_browser_identity(chat):
     import jwt
 

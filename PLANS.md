@@ -2,7 +2,7 @@
 
 Updated: 2026-10-12, America/Los_Angeles.
 Current state: M0 local spike and standalone live protocol baseline verified.
-Active milestone: M5 execution locally implemented; M6 live acceptance pending.
+Active milestone: M6 local acceptance preparation; live acceptance pending.
 M4 live tool-output serialization validation remains pending.
 M3 deployed-streaming/citation gates remain open.
 M1 citation/index recovery remains deferred by user.
@@ -36,7 +36,7 @@ from re-enabling them.
 | M3 Research chat | Local routes/UI verified; live/source gates pending | M1, M2 | Multi-turn streamed research works through deployed infrastructure | M3_STATUS.md: 22 feature tests, 3 Node tests, synthetic browser smoke and 11 storage regressions pass |
 | M4 Proposal lifecycle | Local review lifecycle implemented; live output gate pending | M2, M3 | Immutable previews, edits, expiry, dismissal, confirmation pass | M4_STATUS.md; confirmation execution intentionally unavailable until M5 |
 | M5 User-bound execution | Locally implemented; live acceptance pending | M4 | Ownership, stable retry, ambiguous-outcome recovery, readback pass | M5_STATUS.md: local signed-identity, original-key recovery, readback and receipt tests pass |
-| M6 Acceptance and rollout | Not started | M1–M5 | G1–G8 and rollback gates pass | Pending |
+| M6 Acceptance and rollout | Local preparation in progress | M1–M5 | G1–G8 and rollback gates pass | docs/assistant/M6_ACCEPTANCE.md; live gates pending |
 
 ## M0 — Verify contracts and implementation constraints
 
@@ -123,6 +123,11 @@ remain M5 work. AI Search and its paused refresh schedule remain deferred.
 - Keep confirmation payload and receipt separate from Supervisor-generated prose.
 
 ## M6 — Verify, stage, and release
+
+Acceptance matrix and staged checklist: `docs/assistant/M6_ACCEPTANCE.md`.
+Local action-off/chat-off rollback regression passes; no live rollout performed.
+AI Search and all three paused schedules remain deferred. Full release is not
+accepted while the retrieval/citation gate remains open.
 
 - Complete targeted tests, full fast suite, secret scan, changed-module lint, and
   locked service install/startup checks. Fix dependency-extra/CI scope gaps in scope.
