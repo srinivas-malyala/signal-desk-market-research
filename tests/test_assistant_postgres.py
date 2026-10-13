@@ -34,6 +34,11 @@ def database(monkeypatch):
         cur.execute(f"CREATE SCHEMA {schema}")
         cur.execute(f"CREATE TABLE {schema}.users_test(id BIGINT PRIMARY KEY)")
         cur.execute(f"INSERT INTO {schema}.users_test VALUES(1),(2),(3)")
+        # Minimal existing watchlist tables, matching their production keys.
+        cur.execute(f"CREATE TABLE {schema}.watchlists_test(id BIGINT PRIMARY KEY, "
+                    f"user_id BIGINT REFERENCES {schema}.users_test(id), name TEXT, UNIQUE(user_id,name))")
+        cur.execute(f"CREATE TABLE {schema}.watchlist_tickers_test(watchlist_id BIGINT "
+                    f"REFERENCES {schema}.watchlists_test(id), ticker TEXT, PRIMARY KEY(watchlist_id,ticker))")
         sql = render_migration((Path(__file__).parents[1] / "mcp_server/migrations/0006_assistant_conversations.sql").read_text())
         cur.execute(sql)
         cur.execute(sql)  # Repeatable additive DDL.
@@ -126,3 +131,41 @@ def test_composite_foreign_key_denies_cross_owner_message(database):
     with pytest.raises(psycopg2.IntegrityError), connection() as conn, conn.cursor() as cur:
         cur.execute(f"INSERT INTO {repo.messages}(id,run_id,conversation_id,user_id,role,content) "
                     "VALUES(%s,%s,%s,2,'assistant','Forged')", (str(uuid4()), run["id"], run["conversation_id"]))
+
+
+def test_watchlist_snapshot_is_owned_primary_dated_and_bounded(database):
+    repo, connection = database
+    schema = os.environ["SIGNAL_DESK_SCHEMA"]
+    with connection() as conn, conn.cursor() as cur:
+        cur.execute(f"INSERT INTO {schema}.watchlists_test VALUES(1,1,'Primary'),(2,2,'Primary'),(3,1,'Other')")
+        cur.execute(f"INSERT INTO {schema}.watchlist_tickers_test VALUES(1,'MSFT'),(1,'AAPL'),(2,'NVDA'),(3,'TSLA')")
+        conn.commit()
+    snapshot = repo.watchlist_snapshot(1)
+    assert snapshot["tickers"] == ["AAPL", "MSFT"]
+    assert snapshot["captured_at"].tzinfo is not None
+    assert repo.watchlist_snapshot(2)["tickers"] == ["NVDA"]
+    assert repo.watchlist_snapshot(3)["tickers"] == []
+    with connection() as conn, conn.cursor() as cur:
+        cur.execute(f"INSERT INTO {schema}.watchlist_tickers_test "
+                    "SELECT 1,'T'||n FROM generate_series(1,49) n")
+        conn.commit()
+    with pytest.raises(ValueError, match="context_capacity"):
+        repo.watchlist_snapshot(1)
+
+
+def test_reload_recovers_only_owned_expired_runs(database):
+    repo, connection = database
+    conversations = [repo.create(owner)["id"] for owner in (1, 2, 3)]
+    runs = [repo.start(owner, conversation, uuid4(), "Question")[0]
+            for owner, conversation in zip((1, 2, 3), conversations, strict=True)]
+    with connection() as conn, conn.cursor() as cur:
+        cur.execute(f"UPDATE {repo.runs} SET lease_until=clock_timestamp()-interval '1 second' WHERE user_id IN (1,2)")
+        conn.commit()
+    assert repo.turns(1, conversations[0])[0]["state"] == "interrupted"
+    with connection() as conn, conn.cursor() as cur:
+        cur.execute(f"SELECT state FROM {repo.runs} WHERE id=%s", (runs[1]["id"],))
+        assert cur.fetchone()["state"] == "running"
+    assert repo.reconcile_expired(limit=1) == 1
+    assert repo.reconcile_expired() == 0
+    assert repo.turns(3, conversations[2])[0]["state"] == "running"
+    assert not repo.finish(2, runs[1]["id"], runs[1]["lease_token"], state="completed", text="Late")

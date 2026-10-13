@@ -44,6 +44,25 @@ class AssistantRepository:
             conn.commit()
             return result
 
+    def reconcile_expired(self, *, limit=100) -> int:
+        """Internal maintenance: expire generation metadata, never execute writes.
+
+        No transcripts or ownership data are returned. Batches are bounded and
+        skip rows being finalized by another worker. Not a browser-facing API.
+        """
+        if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 1000:
+            raise ValueError("invalid_limit")
+        with self.connection() as conn, conn.cursor() as cur:
+            cur.execute(f"WITH expired AS (SELECT id FROM {self.runs} "
+                        "WHERE state='running' AND lease_until<=clock_timestamp() "
+                        "ORDER BY lease_until,id LIMIT %s FOR UPDATE SKIP LOCKED) "
+                        f"UPDATE {self.runs} r SET state='interrupted',finished_at=clock_timestamp(),"
+                        "error_code='lease_expired' FROM expired e WHERE r.id=e.id AND r.state='running'",
+                        (limit,))
+            count = cur.rowcount
+            conn.commit()
+            return count
+
     def watchlist_snapshot(self, owner: int) -> dict:
         watchlists = lakebase.table_name("watchlists")
         members = lakebase.table_name("watchlist_tickers")
@@ -79,6 +98,10 @@ class AssistantRepository:
             cur.execute(f"SELECT id FROM {self.conversations} WHERE id=%s AND user_id=%s", (conversation, owner))
             if not cur.fetchone():
                 raise AssistantNotFound()
+            # Reload must recover dead-worker state even without a new submission.
+            cur.execute(f"UPDATE {self.runs} SET state='interrupted',finished_at=clock_timestamp(),"
+                        "error_code='lease_expired' WHERE conversation_id=%s AND user_id=%s "
+                        "AND state='running' AND lease_until<=clock_timestamp()", (conversation, owner))
             cur.execute(f"SELECT r.id,r.state,r.created_at,u.content AS user_text,a.content AS assistant_text "
                         f"FROM {self.runs} r JOIN {self.messages} u ON u.run_id=r.id AND u.role='user' "
                         f"AND u.user_id=r.user_id LEFT JOIN {self.messages} a ON a.run_id=r.id "

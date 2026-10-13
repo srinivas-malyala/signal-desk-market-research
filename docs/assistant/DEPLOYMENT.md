@@ -49,6 +49,36 @@ general rollout. Do not silently switch paid plans or add infrastructure.
 
 ## Recovery and observability
 
+### Implemented M2 recovery and retention policy
+
+Owned conversation reload now reconciles expired generation leases for that
+conversation before reading turns. New submissions also reconcile expired runs.
+`AssistantRepository.reconcile_expired(limit=100)` is an internal, bounded,
+SKIP LOCKED maintenance primitive returning only a count. It changes expired
+generation metadata to interrupted; it never resumes model work or confirms
+business writes. No scheduled worker or public maintenance route is installed.
+M3 may invoke a bounded batch at application initialization after migrations;
+periodic scheduling must be explicitly configured before operational rollout.
+
+Transcript retention currently has no automatic deletion. Tables remain until
+an approved retention interval and deletion/recovery process are selected. Do
+not attach an automatic purge to startup or migrations. Future pruning must
+preserve active runs and all proposal/idempotency/receipt records needed for
+recovery; proposal retention cannot be chosen before M4/M5 storage exists.
+Restrict database access and keep transcripts out of ordinary logs. The lack
+of a scheduled sweep and an approved retention interval are rollout gates,
+not claims of completed operations.
+
+The client defaults to 180 seconds; generation leases are 210 seconds. Current
+Gunicorn timeout is 60 seconds and is intentionally unchanged while chat is
+unregistered. Before enabling M3 streaming, set and verify a worker timeout
+above the generation deadline plus terminal-persistence margin (initial proposed
+240 seconds), and measure Render/proxy buffering and disconnect behavior.
+Four transport slots are per process, not deployment-wide; repository run capacity
+is shared through PostgreSQL. Abandoned readers retain their process slots until
+real exit. Sustained capacity errors require investigation, not automatic retries
+or raising limits. Guaranteed remote cancellation remains out of scope.
+
 Record request/run/conversation IDs, pseudonymous owner, endpoint version,
 duration, safe error category, proposal ID/status, and replay/readback outcome.
 Keep full transcript logging off. Existing tool-event metrics do not automatically

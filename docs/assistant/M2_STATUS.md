@@ -1,5 +1,43 @@
 # M2 local implementation status
 
+## Recovery increment — latest
+
+Owned conversation reload now marks its expired runs interrupted without requiring
+a new submission. Internal `reconcile_expired(limit=100)` supports bounded
+SKIP LOCKED recovery batches, returns only a count and never executes writes.
+Seven PostgreSQL integration tests pass, including owner-local reload recovery,
+bounded maintenance, live-run preservation and stale finalization denial.
+62 targeted tests pass. Recovery/retention and timeout alignment are documented
+in DEPLOYMENT.md. No automatic deletion or scheduled maintenance is enabled;
+retention approval and operational scheduling remain rollout gates. M2 remains
+in progress; AI Search deferred. No live migrations or deployment.
+
+## Deadline and snapshot verification — latest
+
+Caller-side total deadline is now enforced independently of network progress.
+A bounded one-event queue connects the caller to a daemon transport reader;
+authentication, POST and socket reads cannot extend caller waiting beyond the
+180-second default. State parsing happens only on the caller, so late network
+events cannot change an expired run's response state. Four transport slots per
+process bound active and abandoned readers; a timed-out reader retains its slot
+until actual exit. Capacity exhaustion fails closed. Socket inactivity remains
+15 seconds. This is local cancellation, NOT guaranteed remote job cancellation
+or immediate termination of a blocked library call. Caller suspension/backpressure
+cannot be preempted by the generator; M3 must handle browser delivery separately.
+
+58 targeted backend/repository/schema tests pass, including blocked auth, POST,
+reads, slow-drip traffic, late-state denial and abandoned-reader capacity. Six
+real PostgreSQL 18 tests pass, now including Primary watchlist owner isolation,
+empty membership, timezone-aware database timestamp and the 50-ticker ceiling.
+The disposable localhost-only Docker database was removed after verification.
+Full fast suite: 363 passed, one pre-existing paused research-schedule assertion
+failure (expects UNPAUSED; configuration is PAUSED). Changed-file Ruff and secret
+scan pass. No dependencies, AI Search resources, live database or deployment changed.
+
+M2 remains in progress pending operational acceptance/recovery and retention
+configuration. M3 routes/UI and M5 execution receipts are not implemented here.
+All deadline/snapshot-pending notes below are historical and superseded.
+
 ## Trusted snapshot increment
 
 Added owner-scoped `watchlist_snapshot()` repository query for Primary, with a

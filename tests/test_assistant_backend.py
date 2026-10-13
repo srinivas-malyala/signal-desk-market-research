@@ -1,4 +1,6 @@
 import json
+import threading
+import time
 from datetime import UTC, datetime
 from unittest.mock import Mock
 
@@ -128,3 +130,98 @@ def test_context_rejects_unbounded_and_undated_snapshots():
         watchlist_context({"captured_at": datetime.now(UTC), "tickers": ["AAPL"] * 51})
     with pytest.raises(ValueError):
         build_history([], "Question", context="😀" * 1001)
+
+
+@pytest.mark.parametrize("blocked_stage", ["auth", "post", "read"])
+def test_deadline_bounds_blocking_transport_without_late_state_updates(blocked_stage):
+    released = threading.Event()
+    closed = threading.Event()
+    config = Mock(host="https://workspace.example.com")
+    config.authenticate.return_value = {}
+    response = Mock(status_code=200, headers={"Content-Type": "text/event-stream"})
+    response.close.side_effect = closed.set
+    session = Mock()
+    session.post.return_value = response
+
+    def block(result):
+        assert released.wait(2)
+        return result
+
+    if blocked_stage == "auth":
+        config.authenticate.side_effect = lambda: block({})
+    elif blocked_stage == "post":
+        session.post.side_effect = lambda *args, **kwargs: block(response)
+    response.iter_lines.side_effect = lambda **kwargs: block(
+        ["data: " + json.dumps(final_event()), "", "data: [DONE]", ""])
+    state = ResponseState()
+    client = SupervisorClient(config=config, session=session, endpoint="embedded", deadline_seconds=0.05)
+    started = time.monotonic()
+    try:
+        with pytest.raises(SupervisorError, match="deadline_exceeded"):
+            list(client.stream([], state))
+        assert time.monotonic() - started < 1
+        assert state.status == "interrupted" and not state.final_text
+    finally:
+        released.set()
+        assert closed.wait(2)
+    assert state.status == "interrupted" and not state.final_text
+
+
+def test_transport_capacity_fails_closed(monkeypatch):
+    import dashboard.supervisor_client as transport
+
+    slots = threading.BoundedSemaphore(1)
+    slots.acquire()
+    monkeypatch.setattr(transport, "_TRANSPORT_SLOTS", slots)
+    with pytest.raises(SupervisorError, match="dependency_capacity"):
+        list(SupervisorClient(endpoint="embedded").stream([], ResponseState()))
+
+
+def test_slow_drip_cannot_extend_total_deadline():
+    config = Mock(host="https://workspace.example.com")
+    config.authenticate.return_value = {}
+    response = Mock(status_code=200, headers={"Content-Type": "text/event-stream"})
+    closed = threading.Event()
+    response.close.side_effect = closed.set
+
+    def drip(**kwargs):
+        for _ in range(100):
+            time.sleep(0.01)
+            yield ": heartbeat"
+
+    response.iter_lines.side_effect = drip
+    session = Mock()
+    session.post.return_value = response
+    started = time.monotonic()
+    with pytest.raises(SupervisorError, match="deadline_exceeded"):
+        list(SupervisorClient(config=config, session=session, endpoint="embedded", deadline_seconds=0.05)
+             .stream([], ResponseState()))
+    assert time.monotonic() - started < 1
+    assert closed.wait(2)
+
+
+def test_abandoned_reader_retains_capacity_until_real_exit(monkeypatch):
+    import dashboard.supervisor_client as transport
+
+    slots = threading.BoundedSemaphore(1)
+    monkeypatch.setattr(transport, "_TRANSPORT_SLOTS", slots)
+    released = threading.Event()
+    exited = threading.Event()
+    client = SupervisorClient(endpoint="embedded", deadline_seconds=0.05)
+
+    def events(history, started):
+        try:
+            assert released.wait(2)
+            yield {"type": "transport.done"}
+        finally:
+            exited.set()
+
+    monkeypatch.setattr(client, "_events", events)
+    try:
+        with pytest.raises(SupervisorError, match="deadline_exceeded"):
+            list(client.stream([], ResponseState()))
+        with pytest.raises(SupervisorError, match="dependency_capacity"):
+            list(client.stream([], ResponseState()))
+    finally:
+        released.set()
+        assert exited.wait(2)

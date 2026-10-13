@@ -24,7 +24,7 @@ Selected live profile: `dataexpertio_srini` (user selected 2026-10-12).
 |---|---|---|---|---|
 | M0 Protocol/design spike | Partially verified | None | Embedded proposal/citation and permission proof still pending | `docs/assistant/M0_FINDINGS.md`; 18 targeted tests pass |
 | M1 Restricted embedded agent | Locally verified; live gate pending | M0 | Four research tools accessible; forbidden direct calls rejected | `docs/assistant/M1_FINDINGS.md`; 27 tests pass |
-| M2 Persistence and backend | In progress | M0 | Isolation, bounded history, run leases, deduplication, adapter tests pass | 52 targeted tests plus 5 prior PostgreSQL tests pass; snapshot assembly added; strict deadline pending |
+| M2 Persistence and backend | In progress; local backend verified | M0 | Isolation, bounded history, run leases, deduplication, adapter tests pass | 62 targeted tests and 7 PostgreSQL tests pass; reload/maintenance recovery added; operational rollout gates remain |
 | M3 Research chat | Not started | M1, M2 | Multi-turn streamed research works through deployed infrastructure | Pending |
 | M4 Proposal lifecycle | Not started | M2, M3 | Immutable previews, edits, expiry, dismissal, confirmation pass | Pending |
 | M5 User-bound execution | Not started | M4 | Ownership, stable retry, ambiguous-outcome recovery, readback pass | Pending |
@@ -63,19 +63,15 @@ No Render connection/CLI was available; no live provisioning is claimed.
 
 ## M2 — Conversation backend and Supervisor adapter
 
-Persistence increment implemented: migration 0006, owner-scoped repository,
-fixed generation leases, shared capacity/claims, submission deduplication,
-lease-expiry reconciliation and internal generation service. 41 targeted tests
-pass, including mocked repository/service paths and rendered migration checks.
-Real PostgreSQL concurrency/isolation remains unverified. See M2_STATUS.md;
-earlier remaining-work notes below are superseded by that status.
-
-Implemented local foundations: `dashboard/assistant_history.py`,
-`dashboard/supervisor_protocol.py`, and `dashboard/supervisor_client.py` with 17
-tests. No routes registered. No dependency changes or live calls. Remaining:
-additive migration, owned repository, leases/deduplication/reconciliation,
-orchestration, trusted snapshots/receipts, strict wall-clock deadline and database
-integration evidence. Do not mark M2 complete on these unit tests alone.
+Implemented migration 0006, owned repository, shared claims/capacity, fixed leases,
+deduplication, reconciliation, generation orchestration and trusted snapshots.
+Transport bounds caller waiting to 180 seconds, including blocked authentication,
+POST and slow-drip reads, using four bounded daemon readers per process. Timed-out
+readers retain slots until they really exit; remote cancellation is not guaranteed.
+58 targeted tests and six disposable PostgreSQL tests pass. No public routes,
+live migrations or deployment. Remaining operational acceptance: measured worker
+capacity, recovery/retention configuration and deployment timeout alignment.
+Trusted execution receipts remain M5 work. AI Search explicitly remains deferred.
 
 - Add a new migration after verifying the next unused sequence number; update
   frontend/MCP table registries and migration tests. Add owner/index/FK constraints.

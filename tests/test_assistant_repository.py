@@ -61,6 +61,14 @@ def test_stale_worker_cannot_finalize():
     assert args[3] == 7
 
 
+@pytest.mark.parametrize("limit", [0, 1001, True, "100"])
+def test_recovery_rejects_unbounded_batches(limit):
+    repo, cur, _ = repository([])
+    with pytest.raises(ValueError, match="invalid_limit"):
+        repo.reconcile_expired(limit=limit)
+    cur.execute.assert_not_called()
+
+
 def test_duplicate_generation_does_not_invoke_model():
     repo, client = Mock(), Mock()
     repo.start.return_value = ({"id": "run", "state": "completed"}, False)
