@@ -17,12 +17,38 @@ jobs:
           python-version: "3.11"
           enable-cache: true
       - name: Install fast-test dependencies
-        run: uv sync --extra dashboard --dev
+        run: uv sync --extra dashboard --extra mcp --dev
       - name: Check formatting and static rules
-        run: uv run ruff check shared tools tests mcp_server/tests
+        run: uv run ruff check shared tools tests mcp_server/tests dashboard/assistant_*.py dashboard/supervisor_*.py dashboard/gunicorn.conf.py
       - name: Run unit and contract tests
         run: uv run pytest -m "not integration and not e2e"
       - name: Scan tracked files for prohibited credential assignments
         run: uv run python tools/check_no_secrets.py
       - name: Verify Render Blueprint, locked installs, and service health
         run: uv run python tools/check_render_reproducibility.py --clean-install --process-smoke
+
+  assistant-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - run: uv sync --extra dashboard --extra mcp --dev
+      - name: Verify assistant storage, concurrency and recovery
+        env:
+          ASSISTANT_TEST_POSTGRES_PORT: "5432"
+        run: uv run pytest tests/test_assistant_postgres.py -q

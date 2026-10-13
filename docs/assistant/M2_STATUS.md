@@ -1,143 +1,82 @@
-# M2 local implementation status
+# M2 backend acceptance status
 
-## Recovery increment — latest
+Status: locally implemented and verified, 2026-10-12. Not deployed.
+AI Search and its dependent paused refresh schedule remain deferred by the user.
 
-Owned conversation reload now marks its expired runs interrupted without requiring
-a new submission. Internal `reconcile_expired(limit=100)` supports bounded
-SKIP LOCKED recovery batches, returns only a count and never executes writes.
-Seven PostgreSQL integration tests pass, including owner-local reload recovery,
-bounded maintenance, live-run preservation and stale finalization denial.
-62 targeted tests pass. Recovery/retention and timeout alignment are documented
-in DEPLOYMENT.md. No automatic deletion or scheduled maintenance is enabled;
-retention approval and operational scheduling remain rollout gates. M2 remains
-in progress; AI Search deferred. No live migrations or deployment.
+## Implemented scope
 
-## Deadline and snapshot verification — latest
+- Migration 0006: suffix-owned conversations, runs and messages, composite
+  ownership foreign keys, unique submissions and one active generation per user.
+- Migration 0007: additive message/title redaction markers. No applied migration
+  was edited. Both migrations applied twice in each disposable integration schema.
+- Owner-scoped repository with pagination, completed-turn history, shared capacity,
+  duplicate payload hashes, fixed leases and compare-and-set terminal persistence.
+- Trusted, dated Primary-watchlist snapshot, restricted to 50 normalized tickers.
+  Credentials and model-supplied identity never enter context.
+- Bounded Supervisor transport: 180-second caller deadline, 15-second socket idle
+  timeout, four daemon readers per process and one-event queue. Late events cannot
+  mutate expired response state. Abandoned readers retain capacity until real exit.
+- Internal generation lifecycle closes upstream streams on disconnect, persists
+  before announcing completion, sanitizes storage errors and does not retry an
+  uncertain commit. Durable reload/duplicate reads determine the actual outcome.
+- Owner reload and new submissions reconcile expired leases. Default-off Gunicorn
+  post-fork maintenance runs immediately and periodically using bounded SKIP LOCKED
+  batches, five-second statement timeout and one-second lock timeout.
+- Prepared Gunicorn config defaults to 240 seconds (allowed 240–600), above the
+  180-second generation deadline and 210-second lease. No live setting was changed.
+- User-selected 30-day transcript retention policy prepared, disabled by default.
+  Preview returns counts; explicit application clears terminal transcript text
+  while preserving IDs, hashes and metadata for duplicate safety. Conversation
+  titles are reset only when the entire conversation is old and has no live run.
+  It does not delete saved notes/reports or business-action records.
+- CI installs both dashboard/MCP extras, lints new backend modules and defines a
+  disposable PostgreSQL integration job. Hosted GitHub CI has not run locally.
 
-Caller-side total deadline is now enforced independently of network progress.
-A bounded one-event queue connects the caller to a daemon transport reader;
-authentication, POST and socket reads cannot extend caller waiting beyond the
-180-second default. State parsing happens only on the caller, so late network
-events cannot change an expired run's response state. Four transport slots per
-process bound active and abandoned readers; a timed-out reader retains its slot
-until actual exit. Capacity exhaustion fails closed. Socket inactivity remains
-15 seconds. This is local cancellation, NOT guaranteed remote job cancellation
-or immediate termination of a blocked library call. Caller suspension/backpressure
-cannot be preempted by the generator; M3 must handle browser delivery separately.
+## Verification evidence
 
-58 targeted backend/repository/schema tests pass, including blocked auth, POST,
-reads, slow-drip traffic, late-state denial and abandoned-reader capacity. Six
-real PostgreSQL 18 tests pass, now including Primary watchlist owner isolation,
-empty membership, timezone-aware database timestamp and the 50-ticker ceiling.
-The disposable localhost-only Docker database was removed after verification.
-Full fast suite: 363 passed, one pre-existing paused research-schedule assertion
-failure (expects UNPAUSED; configuration is PAUSED). Changed-file Ruff and secret
-scan pass. No dependencies, AI Search resources, live database or deployment changed.
+75 targeted backend/runtime/repository/schema tests pass.
+11 real PostgreSQL 18 integration tests pass:
 
-M2 remains in progress pending operational acceptance/recovery and retention
-configuration. M3 routes/UI and M5 execution receipts are not implemented here.
-All deadline/snapshot-pending notes below are historical and superseded.
+1. Owner isolation and terminal roundtrip.
+2. Concurrent duplicate submissions create one run.
+3. Lease expiry rejects stale finalization.
+4. Simultaneous owner-capacity claims and transaction rollback.
+5. Composite ownership foreign-key denial.
+6. Primary snapshot ownership, timestamp and 50-ticker bounds.
+7. Owned reload/maintenance recovery leaves live runs unchanged.
+8. Retention preview/redaction bounds, repeatability and preserved duplicate keys.
+9. Four simultaneous generations with a real five-connection threaded pool.
+   Each model wait held zero database connections; fifth user was rejected.
+   Observed local sample: maximum four checked-out connections, total 0.023 seconds.
+   Model transport was a deterministic stub, not a live latency benchmark.
+10. Abrupt child-process exit after claim; expiry recovers without regeneration.
+11. Lost terminal commit acknowledgement: safe public error, saved run found by
+    duplicate/reload without an extra assistant message.
 
-## Trusted snapshot increment
+Full fast suite: 380 passed, one known deferred schedule assertion failed
+(expects UNPAUSED; index-dependent job intentionally remains PAUSED).
+Changed-module Ruff, credential scan, diff checks, fresh hash-locked service
+installs and both exact Blueprint startup/health smoke checks pass.
+Disposable database schemas/container are cleaned up; no live Lakebase access.
 
-Added owner-scoped `watchlist_snapshot()` repository query for Primary, with a
-database timestamp and maximum 50 tickers. `assistant_context.py` normalizes
-tickers and forwards only membership, timestamp and application origin; unknown
-fields (including owner/credentials) are discarded. The generation service
-accepts an optional server-injected provider, not browser context. History budget
-includes snapshot UTF-8 bytes. No system-role authority or permission to write
-is derived from the snapshot. M3 must inject the repository provider explicitly.
-Execution-receipt context remains deferred until trusted M5 receipts exist.
+## Configuration and rollout boundary
 
-52 targeted local tests pass; prior five PostgreSQL integration tests remain
-valid for the earlier storage increment (new snapshot query not yet integration
-tested). Strict transport cancellation remains pending. No live changes.
+ASSISTANT_RECOVERY_ENABLED=false and ASSISTANT_SCHEMA_READY=false are Blueprint
+defaults. Only after an authorized migration through the checksum runner may the
+schema-ready and recovery flags be enabled. ASSISTANT_RETENTION_ENABLED=false;
+the user approved preparing 30 days, not enabling live redaction. Review preview
+and backup policy before separate deployment approval. Maintenance runs per
+Gunicorn worker; PostgreSQL coordinates claims/recovery across processes.
 
-## PostgreSQL verification update
+No chat routes, UI, public maintenance endpoint, proposal execution or live
+migration is introduced by M2. Trusted execution receipts belong to M5.
+See DEPLOYMENT.md for settings and rollout/rollback instructions.
 
-Docker Desktop became available. Five real integration tests passed against an
-isolated localhost PostgreSQL 18 container using an existing local image:
-owner-scoped reads/claims/finalization and roundtrip, simultaneous duplicate
-submissions producing one run, simultaneous same-owner capacity claims,
-expired-lease reconciliation rejecting stale completion, and composite ownership
-foreign-key denial. Migration 0006 DDL was applied twice in each fresh test schema.
-Tests removed only UUID-named fixture schemas; the disposable container/data
-volume was removed afterward. No Lakebase connection or mutation occurred.
+## Remaining external acceptance (M3/M6, not local backend proof)
 
-Reproduce with disposable local PostgreSQL and
-`ASSISTANT_TEST_POSTGRES_PORT=<localhost-port> .venv/bin/pytest tests/test_assistant_postgres.py`.
-Tests skip if the explicit test port is absent. They never consume LAKEBASE_URL.
-Strict deadline cancellation, trusted context and broader backend acceptance
-remain pending; M2 is not complete. Earlier Docker-unavailable notes below are
-historical and superseded by this verification.
-
-Latest verification: 50 targeted tests pass after malformed upstream shape,
-generator disconnect and safe failure-persistence coverage. Changed-file Ruff
-passes. Local PostgreSQL integration is blocked: postgres/initdb are absent from
-PATH and Docker CLI cannot connect because its daemon socket is absent. No live
-database fallback was attempted. Start Docker Desktop or supply a disposable
-local PostgreSQL instance before running genuine constraint/concurrency tests.
-Strict wall-clock cancellation remains unimplemented; do not enable production
-chat on the basis of the current between-frame deadline checks.
-
-M2 is in progress, not complete. AI Search recovery was deferred by the user.
-
-Implemented bounded server-owned completed-turn history, a production-independent
-SSE parser, and synchronous authenticated transport. The transport uses the
-existing SDK authentication helper; on Render that is explicit OAuth M2M. Endpoint
-comes from `SIGNAL_DESK_SUPERVISOR_ENDPOINT`, never from browser input. Set the
-embedded endpoint `mas-94a8ed23-endpoint` only when later enabling the integration.
-
-Bounds: 4,000-character question, 20 history messages, 24,000 UTF-8 content bytes,
-2 MB stream, 256 KB frame, 100 KB text. Incomplete frames and bare EOF do not
-verify completion. Failure overrides terminal success. Tool payloads are not
-rendered publicly; no candidate becomes an executable proposal here.
-
-Transport disables redirects and automatic application retries, closes responses,
-uses 10-second connection and 15-second socket-inactivity timeouts, and checks a
-180-second elapsed limit between received lines. This is not yet a strict
-wall-clock watchdog against slow-drip traffic. Completed text-only responses
-remain available through ResponseState.final_text for later orchestration.
-
-17 targeted tests and changed-file Ruff pass. No live invocation, migration,
-database write, deployment, or index change performed. Databricks Python SDK
-guidance informed auth reuse and synchronous Flask transport.
-
-Remaining before M2 completion: additive storage migration/registries, owner-scoped
-repository and pagination, shared leases/capacity, deduplication, expired-worker
-reconciliation, orchestration with database release before streaming, trusted
-context/receipt assembly, malformed-event hardening, strict deadline enforcement,
-and database-backed concurrency/isolation tests. Chat routes/UI are later work.
-
-## Persistence increment
-
-Migration `0006_assistant_conversations.sql` adds suffix-owned conversations,
-runs and messages, composite ownership foreign keys, unique submission IDs,
-and a partial unique active-run index per owner. Registries and migration
-rendering tests are updated. Proposal storage is deferred to M4, rather than
-creating an unused executable-action table now.
-
-`assistant_repository.py` provides owner-scoped creation, cursor pagination,
-bounded history reads, submission fingerprint/deduplication, capacity checks,
-210-second generation leases, expired-run reconciliation during new claims,
-and lease-token/expiry compare-and-set completion. The fixed namespaced
-transaction advisory lock serializes only brief claims; no lock/connection is
-held during model transport. Reconciliation updates run metadata across owners
-but returns no cross-owner transcript data. Leases are fixed-duration rather
-than renewed; strict transport termination before lease expiry remains required.
-
-`assistant_service.py` coordinates generation and terminal persistence, handles
-duplicate submissions without invoking the model, and records interrupted
-generations on generator close. It is an internal backend primitive, not a
-public route/SSE schema. Trusted context/receipts and proposal extraction remain
-unimplemented. No business-write execution is exposed.
-
-41 targeted tests pass (history/transport/protocol, mocked repository/service,
-and migration/schema rendering). Mocks verify queries and control flow, NOT
-real PostgreSQL constraints, rollback, concurrency or isolation. A disposable
-PostgreSQL integration test is still required; no migration has been applied.
-
-The remaining list above is historical; migration, registries, repository and
-basic orchestration now exist. Outstanding: database integration proof,
-strict wall-clock cancellation, malformed-event hardening, trusted context,
-operational recovery/retention policy and complete backend acceptance.
+Actual Render buffering, request-duration limits, first-response latency and
+production worker/pool capacity must be measured with the M3 routes. Local tests
+do not establish these. Guaranteed remote cancellation is not provided.
+Schema/role grants, migration deployment, two real browser users and retention
+enablement require explicit rollout scope. M4/M5 must separately govern proposal,
+receipt and legal-hold retention before any business-write release.

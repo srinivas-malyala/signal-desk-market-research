@@ -21,7 +21,7 @@ user and must be preserved.
 | `agent/agent_bricks_config.yaml` | Existing standalone nine-tool Supervisor; preserve |
 | `agent/system_prompt.md` | Existing standalone policy; add separate embedded policy |
 | `tools/phase7_live_capture.py` | Observed input/streaming protocol; CLI-only harness, not production client |
-| `render.yaml` | Service locks/startup/config; frontend currently has a 60-second Gunicorn timeout |
+| `render.yaml` | Service locks/startup/config; prepared Gunicorn default 240 seconds, not deployed |
 | `databricks.yml` | Data-plane resources; does not deploy the Render frontend |
 | `.github/workflows/ci.yml` | Current CI dependency install, limited lint scope, fast tests, secret/reproducibility checks |
 
@@ -34,12 +34,19 @@ from current configuration and newest recorded evidence; never copy historical
 index identifiers into the new client. The endpoint name in the standalone
 configuration is not automatically the endpoint for the embedded feature.
 
-## Proposed modules (not created yet)
+## Assistant implementation map
+
+M2 backend modules now exist: assistant_repository/service/history/context,
+supervisor_client/protocol, assistant_runtime and gunicorn.conf.py. Migrations
+0006/0007 add conversation/run/message storage and retention markers. Default-off
+worker hooks provide generation recovery and optional 30-day transcript redaction.
+Local acceptance is recorded in M2_STATUS.md. Routes/UI remain M3 work.
 
 M1 exception: `shared/contracts/assistant.py` now defines bounded candidate
 contracts; both embedded agent files and evaluation fixtures exist. Production
 MCP startup now mounts a default-off restricted `/embedded/mcp` surface. See
-M1_FINDINGS.md for the local/live boundary. Remaining modules below are proposed.
+M1_FINDINGS.md for the local/live boundary. Below are implemented backend files
+and proposed M3/M4/M5 files; the table is not proof of deployment.
 
 | Proposed file | Responsibility |
 |---|---|

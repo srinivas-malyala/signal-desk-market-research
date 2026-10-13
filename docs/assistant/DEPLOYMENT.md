@@ -1,107 +1,106 @@
 # Assistant rollout and recovery runbook
 
-Status: proposed; no deployment performed. Read the existing Render deployment
-runbook and current configuration before executing. Live operations require an
-authorized scope and user-selected Databricks profile.
+Status: M2 prepared and locally verified; no application deployment or live
+migration performed. Live operations require explicit rollout authority and a
+user-selected Databricks profile. AI Search recovery remains deferred.
 
-## Configuration contract
+## Implemented M2 configuration
 
-| Proposed setting | Initial value / behavior |
+| Setting | Default / bounds |
 |---|---|
-| ASSISTANT_ENABLED | false; disables chat APIs and UI |
-| ASSISTANT_ACTIONS_ENABLED | false; prevents proposal execution server-side |
-| SIGNAL_DESK_SUPERVISOR_ENDPOINT | Embedded endpoint name; required when enabled |
-| SUPERVISOR_TOTAL_TIMEOUT_SECONDS | 180; proposed total deadline |
-| SUPERVISOR_MAX_HISTORY_MESSAGES | 20 |
-| SUPERVISOR_MAX_INPUT_CHARS | 24000 |
-| ASSISTANT_PROPOSAL_TTL_SECONDS | 1800 |
+| SIGNAL_DESK_SUPERVISOR_ENDPOINT | Required by client; embedded endpoint name, never browser input |
+| FRONTEND_WORKER_TIMEOUT_SECONDS | 240; 240–600, validated at Gunicorn startup |
+| ASSISTANT_SCHEMA_READY | false; enable only after migrations 0006 and 0007 |
+| ASSISTANT_RECOVERY_ENABLED | false; starts post-fork startup/periodic recovery |
+| ASSISTANT_RECOVERY_INTERVAL_SECONDS | 60; 10–3600 |
+| ASSISTANT_RECOVERY_BATCH_SIZE | 100; 1–1000 |
+| ASSISTANT_RETENTION_ENABLED | false; requires recovery and schema readiness |
+| ASSISTANT_RETENTION_DAYS | 30; 1–3650; user selected preparation of 30 days |
 
-Reuse DATA_WORKSPACE_HOST/CLIENT_ID/CLIENT_SECRET through shared auth. Grant
-frontend principal CAN_QUERY on the embedded endpoint. Add a dedicated embedded
-MCP credential stored in protected Render configuration and Databricks secret
-storage, with no reuse of the unrestricted Supervisor token. Confirm exact
-setting names in M1. Do not put secret values into YAML, logs, CLI JSON, or prompts.
+Model deadline 180 seconds, lease 210 seconds, 20 history messages, 4,000-character
+question and 24,000-byte assembled content are code bounds, not environment knobs.
+The proposed ASSISTANT_ENABLED/ACTIONS_ENABLED and proposal-TTL flags are later
+M3/M4 work; no chat routes or executable proposals are registered in M2.
 
-## Deployment sequence
+Reuse DATA_WORKSPACE_HOST/CLIENT_ID/CLIENT_SECRET through shared auth. Frontend
+principal requires CAN_QUERY on the embedded endpoint. Keep embedded MCP bearer
+credential separate from browser-user assertions and the standalone token.
+Never put secrets or connection URLs in logs, YAML or prompts.
 
-1. Record baseline commit/deployment and preserve existing local changes.
-2. Pass local verification and service locked-install/startup checks. Update
-   affected hashed locks with repository tooling; no hand-edited hashes.
-3. Apply the additive assistant migration through the checksum-protected runner
-   with the deployment/migration identity. Verify only suffix-owned objects changed.
-   Confirm role grants, indexes, and rollback behavior before application rollout.
-4. Deploy MCP restriction support with existing standalone behavior preserved.
-   Verify tool discovery and forbidden direct calls using the embedded credential.
-5. Provision embedded UC connection/Supervisor, grant access, verify readiness and
-   protocol. Store non-secret IDs in deployment evidence. Use explicit selected
-   profile for every CLI call; discover current CLI syntax before mutations.
-6. Deploy Flask with flags false. Verify existing health/auth/direct workflows.
-7. Enable chat only for the permitted pilot; test real streaming through Render,
-   timeout behavior, OIDC/CSRF, conversation persistence, and two-user isolation.
-8. Measure worker/thread/pool capacity. Configure total and Gunicorn timeouts
-   from results; current frontend command uses 60 seconds. Do not assume SSE
-   heartbeats eliminate worker timeouts or platform buffering.
-9. Enable actions for pilot after proposal, identity, retry, and recovery gates pass.
-10. Expand access after acceptance evidence; update training/configuration/handoff.
+## Deployment sequence (requires separate approval)
 
-If streaming capacity is insufficient, implement durable run execution before
-general rollout. Do not silently switch paid plans or add infrastructure.
+1. Record commit/baseline and preserve unrelated working-tree changes.
+2. Run local acceptance, fresh locked installs and exact service startup checks.
+3. Apply migrations 0006 and 0007 with the existing checksum-protected MCP runner.
+   Verify only configured suffix-owned objects and intended role grants changed.
+   Do not use frontend startup to apply DDL; set schema readiness only afterward.
+4. Deploy frontend with recovery/retention and future chat/action flags disabled.
+   Prepared Blueprint loads dashboard/gunicorn.conf.py; no live timeout change
+   has occurred merely by editing the repository.
+5. Enable recovery and schema-ready flags only after schema verification.
+   Confirm count-only maintenance logs and bounded queries; no model retries.
+6. Deploy M3 research routes/UI disabled first; pilot with two authenticated users.
+   Verify OIDC/CSRF, persistence, ownership and real streamed POST through Render.
+7. Measure proxy buffering, first-response/total latency, worker/thread/pool
+   capacity and browser disconnects. A 240-second Gunicorn timeout does not prove
+   Render permits the same request duration. SSE heartbeats are not proof either.
+8. Review a retention count preview and backups. Only with separate approval set
+   ASSISTANT_RETENTION_ENABLED=true. Monitor redacted counts, not transcripts.
+9. Enable M4/M5 actions only after immutable proposal, user identity, retry and
+   readback gates pass. AI Search citation gate remains required for full release.
+10. Expand after M6 acceptance; update deployment evidence and user documentation.
 
-## Recovery and observability
+Do not silently change paid plans or add a queue. If deployed streaming capacity
+is insufficient, prepare durable execution for review before general rollout.
 
-### Implemented M2 recovery and retention policy
+## Generation recovery
 
-Owned conversation reload now reconciles expired generation leases for that
-conversation before reading turns. New submissions also reconcile expired runs.
-`AssistantRepository.reconcile_expired(limit=100)` is an internal, bounded,
-SKIP LOCKED maintenance primitive returning only a count. It changes expired
-generation metadata to interrupted; it never resumes model work or confirms
-business writes. No scheduled worker or public maintenance route is installed.
-M3 may invoke a bounded batch at application initialization after migrations;
-periodic scheduling must be explicitly configured before operational rollout.
+Owned reload reconciles expired runs for that conversation; new submissions also
+reconcile leases. Internal reconcile_expired(limit=100) returns counts only and
+never resumes model research or executes business writes. Gunicorn post_worker_init
+starts a daemon immediately and periodically only when flags permit; worker_exit
+stops it. No pre-fork threads/connections or public maintenance API.
+SQL batches use SKIP LOCKED, five-second statement and one-second lock timeouts.
 
-Transcript retention currently has no automatic deletion. Tables remain until
-an approved retention interval and deletion/recovery process are selected. Do
-not attach an automatic purge to startup or migrations. Future pruning must
-preserve active runs and all proposal/idempotency/receipt records needed for
-recovery; proposal retention cannot be chosen before M4/M5 storage exists.
-Restrict database access and keep transcripts out of ordinary logs. The lack
-of a scheduled sweep and an approved retention interval are rollout gates,
-not claims of completed operations.
+Run leases are fixed; stale completion cannot overwrite expiry. Model transport
+has four slots per process; abandoned readers retain slots until actual exit.
+Repository capacity is four across all workers. Local four-client tests held no
+database connections during model waits and rejected a fifth user. Investigate
+sustained capacity errors; do not automatically retry or raise limits.
 
-The client defaults to 180 seconds; generation leases are 210 seconds. Current
-Gunicorn timeout is 60 seconds and is intentionally unchanged while chat is
-unregistered. Before enabling M3 streaming, set and verify a worker timeout
-above the generation deadline plus terminal-persistence margin (initial proposed
-240 seconds), and measure Render/proxy buffering and disconnect behavior.
-Four transport slots are per process, not deployment-wide; repository run capacity
-is shared through PostgreSQL. Abandoned readers retain their process slots until
-real exit. Sustained capacity errors require investigation, not automatic retries
-or raising limits. Guaranteed remote cancellation remains out of scope.
+Terminal database persistence errors do not report saved/completed success.
+Do not retry an uncertain commit: reload/duplicate submission reads actual state.
+If a worker died before persistence, lease expiry labels the run interrupted.
+Response stopping is local; guaranteed remote cancellation is not supported.
 
-Record request/run/conversation IDs, pseudonymous owner, endpoint version,
-duration, safe error category, proposal ID/status, and replay/readback outcome.
-Keep full transcript logging off. Existing tool-event metrics do not automatically
-capture the chat experience or correct browser attribution for machine research;
-add explicit chat metrics without mislabelling service calls as human activity.
+## Prepared 30-day retention policy
 
-On startup and periodically through the selected recovery mechanism, reconcile
-expired generation/execution leases. Generation interruptions remain visible.
-For outcome_unknown writes, recover using the original owner/payload/key and a
-fresh browser-authorized execution request; do not substitute the service identity.
-Design unattended recovery authority explicitly before adding it. Browser logout
-or disconnect is not authorization to execute a pending proposal.
+User approved preparing automatic age-based retention, not live enablement.
+redact_expired_transcripts() defaults to a read-only count preview. Application
+clears message content and sets redacted_at for terminal runs whose finished_at
+is older than 30 days; active/recent runs are untouched. Counts represent messages,
+not conversations. Explicit apply and the default-off retention flag are required.
 
-## Rollback
+IDs, ownership, submission hashes and run states remain for duplicate safety.
+Old conversation titles become Research only when no live/recent run exists;
+title updates are separately bounded. Reload exposes redaction timestamps.
+Empty/redacted turns are excluded from Supervisor history. Redaction is irreversible
+in the active database; backups may retain content under a separate policy.
+This is not a secure-erasure guarantee. Disable retention immediately on unexpected
+results; restoring content requires an authorized backup restoration procedure.
 
-1. Disable ASSISTANT_ACTIONS_ENABLED; reject new confirmation requests.
-2. Disable ASSISTANT_ENABLED; stop accepting new generations.
-3. Record/drain active runs and reconcile claimed writes without new payloads.
-4. Restore the prior Flask/MCP build only if schema and credential policy remain
-   compatible. Preserve the standalone endpoint and existing direct workflows.
-5. Retain additive tables, receipts, keys, and conversations for recovery. No
-   destructive down migration or resource deletion as automatic rollback.
-6. Verify health, auth, direct reads/writes, and flag rejection behavior.
+Business notes/reports are not transcripts and are not changed. M4/M5 must define
+separate proposal/receipt retention and legal-hold requirements before rollout.
+No automatic removal of keys, receipts or foreign-key origins is authorized.
+Transcripts are not synchronized to Gold and remain excluded from ordinary logs.
 
-Rollout evidence must include whether in-flight writes were committed, pending,
-or uncertain. Disabling a flag cannot reverse an already committed action.
+## Observability and rollback
+
+Log IDs, safe categories, counts and durations, not transcripts/tool payloads or
+connection strings. Distinguish service research identity from browser attribution.
+Add M3 request-level metrics rather than treating existing MCP metrics as chat proof.
+
+Disable future action/chat flags, then disable retention/recovery as appropriate.
+Drain active work; retain additive schema, hashes, receipts and ownership metadata.
+No automatic destructive down migration. Flag rollback cannot reverse committed
+writes or redacted text. Verify existing health/auth/direct workflows afterward.

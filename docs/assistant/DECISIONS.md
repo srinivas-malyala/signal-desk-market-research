@@ -12,6 +12,10 @@ Status: proposed implementation design, 2026-10-12. No platform deployment claim
 | D6 | Streamed POST with sanitized public events | Existing CSRF flow; endpoint adapter isolates schema changes |
 | D7 | Database coordination across workers | In-memory locks do not coordinate current Gunicorn processes |
 | D8 | Feature flags and additive migrations | Stage research/actions independently; rollback without dropping user data |
+| D9 | Fixed 180-second model deadline, 210-second lease, worker timeout at least 240 seconds | Local blocking/slow-drip and startup tests verified; deployed streaming is M3 |
+| D10 | Opt-in post-fork recovery per Gunicorn worker | No pre-fork threads/connections; bounded SKIP LOCKED batches coordinate through PostgreSQL |
+| D11 | Prepare 30-day transcript redaction, disabled by default | User selected 30 days; preserve IDs/hashes rather than cascading retry metadata away |
+| D12 | Do not retry uncertain terminal database commits | Safe persistence error; duplicate/reload reads durable state or lease recovers interruption |
 
 ## Questions to resolve before dependent implementation
 

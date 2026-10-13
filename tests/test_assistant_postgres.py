@@ -1,6 +1,8 @@
 """Opt-in integration against disposable local PostgreSQL, never Lakebase."""
 
 import os
+import subprocess
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
@@ -12,6 +14,7 @@ import pytest
 from psycopg2.extras import RealDictCursor
 
 from dashboard.assistant_repository import AssistantConflict, AssistantNotFound, AssistantRepository
+from dashboard.assistant_service import AssistantService
 from mcp_server.lakebase import render_migration
 
 pytestmark = pytest.mark.integration
@@ -33,7 +36,7 @@ def database(monkeypatch):
     with connect() as conn, conn.cursor() as cur:
         cur.execute(f"CREATE SCHEMA {schema}")
         cur.execute(f"CREATE TABLE {schema}.users_test(id BIGINT PRIMARY KEY)")
-        cur.execute(f"INSERT INTO {schema}.users_test VALUES(1),(2),(3)")
+        cur.execute(f"INSERT INTO {schema}.users_test VALUES(1),(2),(3),(4),(5)")
         # Minimal existing watchlist tables, matching their production keys.
         cur.execute(f"CREATE TABLE {schema}.watchlists_test(id BIGINT PRIMARY KEY, "
                     f"user_id BIGINT REFERENCES {schema}.users_test(id), name TEXT, UNIQUE(user_id,name))")
@@ -42,6 +45,9 @@ def database(monkeypatch):
         sql = render_migration((Path(__file__).parents[1] / "mcp_server/migrations/0006_assistant_conversations.sql").read_text())
         cur.execute(sql)
         cur.execute(sql)  # Repeatable additive DDL.
+        sql = render_migration((Path(__file__).parents[1] / "mcp_server/migrations/0007_assistant_retention.sql").read_text())
+        cur.execute(sql)
+        cur.execute(sql)
 
     @contextmanager
     def connection():
@@ -169,3 +175,170 @@ def test_reload_recovers_only_owned_expired_runs(database):
     assert repo.reconcile_expired() == 0
     assert repo.turns(3, conversations[2])[0]["state"] == "running"
     assert not repo.finish(2, runs[1]["id"], runs[1]["lease_token"], state="completed", text="Late")
+
+
+def test_retention_preview_redaction_and_duplicate_safety(database):
+    repo, connection = database
+    conversation, submission = repo.create(1, title="Private old title")["id"], uuid4()
+    old, _ = repo.start(1, conversation, submission, "Old private question")
+    assert repo.finish(1, old["id"], old["lease_token"], state="completed", text="Old private answer")
+    fresh, _ = repo.start(2, repo.create(2)["id"], uuid4(), "Fresh")
+    repo.finish(2, fresh["id"], fresh["lease_token"], state="completed", text="Fresh answer")
+    live, _ = repo.start(3, repo.create(3)["id"], uuid4(), "Active")
+    with connection() as conn, conn.cursor() as cur:
+        cur.execute(f"UPDATE {repo.runs} SET finished_at=clock_timestamp()-interval '31 days' WHERE id=%s", (old["id"],))
+        cur.execute(f"UPDATE {repo.conversations} SET created_at=clock_timestamp()-interval '31 days' WHERE id=%s", (conversation,))
+        # Aged messages alone never authorize redaction of a recent/live run.
+        cur.execute(f"UPDATE {repo.messages} SET created_at=clock_timestamp()-interval '40 days'")
+        conn.commit()
+    assert repo.redact_expired_transcripts() == 2
+    assert repo.turns(1, conversation)[0]["user_text"] == "Old private question"
+    assert repo.redact_expired_transcripts(apply=True, limit=1) == 1
+    assert repo.redact_expired_transcripts(apply=True) == 1
+    assert repo.redact_expired_transcripts(apply=True) == 0
+    turn = repo.turns(1, conversation)[0]
+    assert turn["user_text"] == turn["assistant_text"] == ""
+    assert turn["user_redacted_at"] is not None and turn["assistant_redacted_at"] is not None
+    assert repo.list_conversations(1)[0]["title"] == "Research"
+    duplicate, created = repo.start(1, conversation, submission, "Old private question")
+    assert not created and duplicate["id"] == old["id"]
+    assert repo.turns(2, fresh["conversation_id"])[0]["assistant_text"] == "Fresh answer"
+    assert repo.turns(3, live["conversation_id"])[0]["user_text"] == "Active"
+
+
+def test_four_concurrent_generations_release_database_connections(database):
+    import threading
+    import time
+
+    repo, connection = database
+    from psycopg2.pool import ThreadedConnectionPool
+
+    connection_pool = ThreadedConnectionPool(1, 5, host="127.0.0.1",
+        port=int(os.environ["ASSISTANT_TEST_POSTGRES_PORT"]), dbname="postgres", user="postgres",
+        cursor_factory=RealDictCursor)
+    active = threading.local()
+    maximum = [0]
+    current = [0]
+    lock = threading.Lock()
+
+    @contextmanager
+    def tracked_connection():
+        conn = connection_pool.getconn()
+        active.connections = getattr(active, "connections", 0) + 1
+        with lock:
+            current[0] += 1
+            maximum[0] = max(maximum[0], current[0])
+        try:
+            yield conn
+        except BaseException:
+            conn.rollback()
+            raise
+        finally:
+            active.connections -= 1
+            with lock:
+                current[0] -= 1
+            connection_pool.putconn(conn)
+
+    repo = AssistantRepository(tracked_connection)
+    barrier = Barrier(4)
+    ready = threading.Event()
+    release = threading.Event()
+    conversations = [repo.create(owner)["id"] for owner in range(1, 6)]
+
+    class Client:
+        def stream(self, history, state):
+            assert getattr(active, "connections", 0) == 0
+            barrier.wait(timeout=5)
+            ready.set()
+            assert release.wait(5)
+            state.final_text = "Answer"
+            state.finalized = state.terminal = True
+            yield "Answer"
+
+    service = AssistantService(repo, Client())
+    started = time.monotonic()
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        futures = [pool.submit(lambda owner=owner: list(service.generate(
+            owner, conversations[owner-1], uuid4(), "Question"))) for owner in range(1, 5)]
+        try:
+            assert ready.wait(5)
+            with lock:
+                assert current[0] == 0
+            with pytest.raises(AssistantConflict, match="generation_capacity"):
+                repo.start(5, conversations[4], uuid4(), "Over capacity")
+        finally:
+            release.set()
+        assert all(f.result(timeout=5)[-1]["type"] == "complete" for f in futures)
+    assert current[0] == 0 and maximum[0] <= 4
+    connection_pool.closeall()
+    print(f"local_capacity=4 max_db_connections={maximum[0]} total_seconds={time.monotonic()-started:.3f}")
+
+
+def test_abrupt_worker_process_death_recovers_without_regeneration(database):
+    repo, connection = database
+    conversation, submission = repo.create(1)["id"], uuid4()
+    # Child connects ONLY to the explicit disposable localhost fixture.
+    script = """
+import os, sys
+from contextlib import contextmanager
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from dashboard.assistant_repository import AssistantRepository
+@contextmanager
+def connection():
+    conn = psycopg2.connect(host='127.0.0.1', port=int(os.environ['ASSISTANT_TEST_POSTGRES_PORT']),
+                           dbname='postgres', user='postgres', cursor_factory=RealDictCursor)
+    try:
+        yield conn
+    finally:
+        conn.close()
+AssistantRepository(connection).start(1, sys.argv[1], sys.argv[2], 'Crash question')
+os._exit(23)
+"""
+    process = subprocess.run([sys.executable, "-c", script, str(conversation), str(submission)],
+                             capture_output=True, timeout=10, check=False)
+    assert process.returncode == 23
+    assert repo.turns(1, conversation)[0]["state"] == "running"
+    with connection() as conn, conn.cursor() as cur:
+        cur.execute(f"UPDATE {repo.runs} SET lease_until=clock_timestamp()-interval '1 second' WHERE conversation_id=%s",
+                    (conversation,))
+        conn.commit()
+    assert repo.reconcile_expired() == 1
+    run, created = repo.start(1, conversation, submission, "Crash question")
+    assert not created and run["state"] == "interrupted"
+
+
+def test_lost_commit_acknowledgement_returns_error_but_duplicate_finds_saved_run(database):
+    repo, connection = database
+    conversation, submission = repo.create(1)["id"], uuid4()
+
+    class LostAcknowledgement:
+        def __init__(self, conn):
+            self.conn = conn
+
+        def cursor(self):
+            return self.conn.cursor()
+
+        def commit(self):
+            self.conn.commit()
+            raise RuntimeError("private-driver-details")
+
+    @contextmanager
+    def uncertain_connection():
+        with connection() as conn:
+            yield LostAcknowledgement(conn)
+
+    repo.finish = AssistantRepository(uncertain_connection).finish
+
+    class Client:
+        def stream(self, history, state):
+            state.final_text = "Answer"
+            state.finalized = state.terminal = True
+            yield "Answer"
+
+    events = list(AssistantService(repo, Client()).generate(1, conversation, submission, "Question"))
+    assert events[-1]["error_code"] == "storage_unavailable"
+    assert "private-driver" not in str(events)
+    saved, created = repo.start(1, conversation, submission, "Question")
+    assert not created and saved["state"] == "completed"
+    assert repo.turns(1, conversation)[0]["assistant_text"] == "Answer"

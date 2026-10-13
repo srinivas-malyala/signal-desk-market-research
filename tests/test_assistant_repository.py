@@ -115,3 +115,56 @@ def test_upstream_failure_persists_safe_category():
     events = list(AssistantService(repo, client).generate(7, "conversation", "submission", "Question"))
     assert events[-1]["error_code"] == "dependency_error"
     assert repo.finish.call_args.kwargs["state"] == "failed"
+
+
+def test_uncertain_terminal_commit_is_not_retried_or_reported_completed():
+    repo, client = Mock(), Mock()
+    repo.start.return_value = ({"id": "run", "lease_token": "lease"}, True)
+    repo.turns.return_value = []
+    repo.finish.side_effect = RuntimeError("private-database-connection")
+
+    def stream(history, state):
+        state.final_text = "Answer"
+        state.finalized = state.terminal = True
+        yield "Answer"
+
+    client.stream.side_effect = stream
+    events = list(AssistantService(repo, client).generate(7, "conversation", "submission", "Question"))
+    assert events[-1]["type"] == "error"
+    assert events[-1]["error_code"] == "storage_unavailable"
+    assert "private-database" not in str(events)
+    repo.finish.assert_called_once()
+
+
+def test_context_database_failure_persists_before_public_error():
+    repo, client = Mock(), Mock()
+    repo.start.return_value = ({"id": "run", "lease_token": "lease"}, True)
+    repo.turns.side_effect = RuntimeError("private-query-details")
+    repo.finish.return_value = True
+    generator = AssistantService(repo, client).generate(7, "conversation", "submission", "Question")
+    assert next(generator)["error_code"] == "backend_unavailable"
+    repo.finish.assert_called_once()
+    generator.close()
+    client.stream.assert_not_called()
+
+
+def test_disconnect_explicitly_closes_upstream_generator():
+    repo, client = Mock(), Mock()
+    repo.start.return_value = ({"id": "run", "lease_token": "lease"}, True)
+    repo.turns.return_value = []
+    closed = []
+
+    def stream(history, state):
+        try:
+            yield "partial"
+        finally:
+            closed.append(True)
+
+    client.stream.side_effect = stream
+    generator = AssistantService(repo, client).generate(7, "conversation", "submission", "Question")
+    next(generator)
+    next(generator)
+    generator.close()
+    assert closed == [True]
+    repo.finish.assert_called_once()
+    assert repo.finish.call_args.kwargs["state"] == "interrupted"

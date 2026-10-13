@@ -76,9 +76,23 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install --require-hashes --requirement dashboard/requirements.lock
-    startCommand: gunicorn --chdir dashboard --pythonpath .. --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 60 app:app
+    startCommand: gunicorn --config dashboard/gunicorn.conf.py --chdir dashboard --pythonpath .. --bind 0.0.0.0:$PORT --workers 2 --threads 4 app:app
     healthCheckPath: /healthz
     envVars:
+      - key: FRONTEND_WORKER_TIMEOUT_SECONDS
+        value: "240"
+      - key: ASSISTANT_RECOVERY_ENABLED
+        value: "false"
+      - key: ASSISTANT_SCHEMA_READY
+        value: "false"
+      - key: ASSISTANT_RECOVERY_INTERVAL_SECONDS
+        value: "60"
+      - key: ASSISTANT_RECOVERY_BATCH_SIZE
+        value: "100"
+      - key: ASSISTANT_RETENTION_ENABLED
+        value: "false"
+      - key: ASSISTANT_RETENTION_DAYS
+        value: "30"
       - key: PYTHON_VERSION
         value: 3.11.11
       - key: PYTHONPATH

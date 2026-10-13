@@ -2,7 +2,7 @@
 
 Updated: 2026-10-12, America/Los_Angeles.
 Current state: M0 local spike and standalone live protocol baseline verified.
-Active milestone: M2 started locally; M1 citation/index recovery deferred by user.
+Active milestone: M2 locally verified; M1 citation/index recovery deferred by user.
 Live update: user deployed MCP and created the governed embedded service; separate
 Supervisor created, but attachment failed with "not an MCP connection". Resume
 from `docs/assistant/LIVE_STATUS.md`; do not create a duplicate Supervisor.
@@ -24,7 +24,7 @@ Selected live profile: `dataexpertio_srini` (user selected 2026-10-12).
 |---|---|---|---|---|
 | M0 Protocol/design spike | Partially verified | None | Embedded proposal/citation and permission proof still pending | `docs/assistant/M0_FINDINGS.md`; 18 targeted tests pass |
 | M1 Restricted embedded agent | Locally verified; live gate pending | M0 | Four research tools accessible; forbidden direct calls rejected | `docs/assistant/M1_FINDINGS.md`; 27 tests pass |
-| M2 Persistence and backend | In progress; local backend verified | M0 | Isolation, bounded history, run leases, deduplication, adapter tests pass | 62 targeted tests and 7 PostgreSQL tests pass; reload/maintenance recovery added; operational rollout gates remain |
+| M2 Persistence and backend | Locally complete; deployment not performed | M0 | Isolation, bounded history, run leases, deduplication, adapter tests pass | 75 targeted tests, 11 PostgreSQL tests, locked installs/startup verified; default-off recovery and 30-day retention prepared |
 | M3 Research chat | Not started | M1, M2 | Multi-turn streamed research works through deployed infrastructure | Pending |
 | M4 Proposal lifecycle | Not started | M2, M3 | Immutable previews, edits, expiry, dismissal, confirmation pass | Pending |
 | M5 User-bound execution | Not started | M4 | Ownership, stable retry, ambiguous-outcome recovery, readback pass | Pending |
@@ -68,10 +68,12 @@ deduplication, reconciliation, generation orchestration and trusted snapshots.
 Transport bounds caller waiting to 180 seconds, including blocked authentication,
 POST and slow-drip reads, using four bounded daemon readers per process. Timed-out
 readers retain slots until they really exit; remote cancellation is not guaranteed.
-58 targeted tests and six disposable PostgreSQL tests pass. No public routes,
-live migrations or deployment. Remaining operational acceptance: measured worker
-capacity, recovery/retention configuration and deployment timeout alignment.
-Trusted execution receipts remain M5 work. AI Search explicitly remains deferred.
+75 targeted tests and 11 disposable PostgreSQL tests pass. Default-off recovery
+hooks, 30-day transcript retention and minimum 240-second worker configuration
+are implemented; four-client threaded-pool capacity, process death and uncertain
+commit handling verified locally. No public routes, live migrations or deployment.
+Actual Render stream measurement belongs to M3/M6; trusted execution receipts
+remain M5 work. AI Search and its paused refresh schedule remain deferred.
 
 - Add a new migration after verifying the next unused sequence number; update
   frontend/MCP table registries and migration tests. Add owner/index/FK constraints.

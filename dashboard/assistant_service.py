@@ -20,25 +20,53 @@ class AssistantService:
         state = ResponseState()
         terminal = "interrupted"
         error = "disconnected"
-        finalized = False
+        persistence_attempted = False
+        stream = None
+
+        def persist():
+            nonlocal persistence_attempted
+            persistence_attempted = True
+            try:
+                return self.repository.finish(owner, run["id"], run["lease_token"], state=terminal,
+                                              text=state.final_text or state.text, error_code=error)
+            except Exception:
+                # Leave the lease for reconciliation; do not retry an uncertain
+                # commit or expose a database exception/connection string.
+                return None
+
         try:
             turns = self.repository.turns(owner, conversation)
             context = watchlist_context(self.context_provider(owner)) if self.context_provider else ""
             history, omitted = build_history(turns, question, context=context)
             yield {"type": "status", "run_id": str(run["id"]), "history_omitted": omitted}
             # Repository methods have released their pooled connections here.
-            for delta in self.client.stream(history, state):
+            stream = self.client.stream(history, state)
+            for delta in stream:
                 yield {"type": "text_delta", "text": delta}
             terminal = state.status
             error = None if terminal == "completed" else "invalid_stream"
-            finalized = self.repository.finish(owner, run["id"], run["lease_token"], state=terminal,
-                                               text=state.final_text or state.text, error_code=error)
+            finalized = persist()
             yield {"type": "complete" if terminal == "completed" and finalized else "error",
-                   "run_id": str(run["id"]), "state": terminal if finalized else "interrupted"}
+                   "run_id": str(run["id"]), "state": terminal if finalized else "interrupted",
+                   **({"error_code": "storage_unavailable"} if finalized is None else {})}
         except SupervisorError:
             terminal, error = "failed", "dependency_error"
-            yield {"type": "error", "run_id": str(run["id"]), "state": "failed", "error_code": error}
+            finalized = persist()
+            yield {"type": "error", "run_id": str(run["id"]),
+                   "state": "failed" if finalized else "interrupted",
+                   "error_code": "storage_unavailable" if finalized is None else error}
+        except Exception:
+            terminal, error = "failed", "dependency_error"
+            finalized = persist() if not persistence_attempted else None
+            yield {"type": "error", "run_id": str(run["id"]), "state": "failed" if finalized else "interrupted",
+                   "error_code": "backend_unavailable" if finalized else "storage_unavailable"}
         finally:
-            if not finalized:
-                self.repository.finish(owner, run["id"], run["lease_token"], state=terminal,
-                                       text=state.final_text or state.text, error_code=error)
+            if stream is not None:
+                close = getattr(stream, "close", None)
+                if close is not None:
+                    try:
+                        close()
+                    except Exception:
+                        pass  # Lease recovery is safer than leaking transport errors.
+            if not persistence_attempted:
+                persist()

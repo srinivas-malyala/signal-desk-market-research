@@ -32,8 +32,8 @@ EXPECTED = {
     "signal-desk-frontend": {
         "buildCommand": "pip install --require-hashes --requirement dashboard/requirements.lock",
         "startCommand": (
-            "gunicorn --chdir dashboard --pythonpath .. --bind 0.0.0.0:$PORT "
-            "--workers 2 --threads 4 --timeout 60 app:app"
+            "gunicorn --config dashboard/gunicorn.conf.py --chdir dashboard --pythonpath .. --bind 0.0.0.0:$PORT "
+            "--workers 2 --threads 4 app:app"
         ),
         "healthCheckPath": "/healthz",
         "smokeHealthPath": "/healthz",

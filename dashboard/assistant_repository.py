@@ -53,6 +53,8 @@ class AssistantRepository:
         if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 1000:
             raise ValueError("invalid_limit")
         with self.connection() as conn, conn.cursor() as cur:
+            cur.execute("SET LOCAL statement_timeout = '5s'")
+            cur.execute("SET LOCAL lock_timeout = '1s'")
             cur.execute(f"WITH expired AS (SELECT id FROM {self.runs} "
                         "WHERE state='running' AND lease_until<=clock_timestamp() "
                         "ORDER BY lease_until,id LIMIT %s FOR UPDATE SKIP LOCKED) "
@@ -76,6 +78,46 @@ class AssistantRepository:
             if len(tickers) > 50:
                 raise ValueError("context_capacity")
             return {"tickers": tickers, "captured_at": timestamp}
+
+    def redact_expired_transcripts(self, *, days=30, limit=100, apply=False) -> int:
+        """Internal retention, preview by default; preserve IDs/hashes/FKs.
+
+        Age is measured from terminal completion, not the user message timestamp.
+        Titles are reset only for wholly expired conversations without live runs.
+        Deployment must explicitly authorize application; this is not a route.
+        """
+        if isinstance(days, bool) or not isinstance(days, int) or not 1 <= days <= 3650:
+            raise ValueError("invalid_retention_days")
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 1000:
+            raise ValueError("invalid_limit")
+        if not isinstance(apply, bool):
+            raise ValueError("invalid_apply")
+        with self.connection() as conn, conn.cursor() as cur:
+            cur.execute("SET LOCAL statement_timeout = '5s'")
+            cur.execute("SET LOCAL lock_timeout = '1s'")
+            eligible = (f"FROM {self.messages} m JOIN {self.runs} r ON r.id=m.run_id "
+                        "WHERE m.redacted_at IS NULL AND r.state<>'running' "
+                        "AND r.finished_at < clock_timestamp()-(%s * interval '1 day')")
+            if not apply:
+                cur.execute("SELECT count(*) AS total " + eligible, (days,))
+                count = cur.fetchone()["total"]
+            else:
+                cur.execute("WITH expired AS (SELECT m.id " + eligible +
+                            " ORDER BY r.finished_at,m.id LIMIT %s FOR UPDATE OF m SKIP LOCKED) "
+                            f"UPDATE {self.messages} m SET content='',redacted_at=clock_timestamp() "
+                            "FROM expired e WHERE m.id=e.id", (days, limit))
+                count = cur.rowcount
+                cur.execute(f"WITH expired AS (SELECT c.id FROM {self.conversations} c "
+                            "WHERE c.title_redacted_at IS NULL "
+                            "AND c.created_at<clock_timestamp()-(%s * interval '1 day') "
+                            f"AND NOT EXISTS (SELECT 1 FROM {self.runs} r WHERE r.conversation_id=c.id "
+                            "AND (r.state='running' OR r.finished_at IS NULL OR "
+                            "r.finished_at>=clock_timestamp()-(%s * interval '1 day'))) "
+                            "ORDER BY c.created_at,c.id LIMIT %s FOR UPDATE OF c SKIP LOCKED) "
+                            f"UPDATE {self.conversations} c SET title='Research',title_redacted_at=clock_timestamp() "
+                            "FROM expired e WHERE c.id=e.id", (days, days, limit))
+            conn.commit()
+            return count
 
     def list_conversations(self, owner: int, *, limit=20, before=None) -> list[dict]:
         if not 1 <= limit <= 100:
@@ -102,7 +144,8 @@ class AssistantRepository:
             cur.execute(f"UPDATE {self.runs} SET state='interrupted',finished_at=clock_timestamp(),"
                         "error_code='lease_expired' WHERE conversation_id=%s AND user_id=%s "
                         "AND state='running' AND lease_until<=clock_timestamp()", (conversation, owner))
-            cur.execute(f"SELECT r.id,r.state,r.created_at,u.content AS user_text,a.content AS assistant_text "
+            cur.execute(f"SELECT r.id,r.state,r.created_at,u.content AS user_text,a.content AS assistant_text,"
+                        "u.redacted_at AS user_redacted_at,a.redacted_at AS assistant_redacted_at "
                         f"FROM {self.runs} r JOIN {self.messages} u ON u.run_id=r.id AND u.role='user' "
                         f"AND u.user_id=r.user_id LEFT JOIN {self.messages} a ON a.run_id=r.id "
                         "AND a.role='assistant' AND a.user_id=r.user_id "
