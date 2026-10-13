@@ -14,6 +14,12 @@ preparation was selected by user, but redaction enablement needs separate approv
 AI Search and its refresh schedule remain deferred. M2_STATUS.md is current;
 earlier incremental notes below are historical.
 
+Live scheduling update: in `dataexpertio_srini`, the deployed `dev` bundle's
+activity analytics, market daily, and research refresh schedules are all paused
+as of 2026-10-12. Its other eight jobs have no schedule, trigger, or continuous
+configuration. All three corresponding bundle declarations are `PAUSED` so a
+future deployment does not reactivate them.
+
 Latest recovery increment: owned reload expires dead-worker runs; bounded internal
 maintenance uses SKIP LOCKED and returns counts only. 62 targeted and seven
 PostgreSQL tests pass. Retention/scheduling/timeout rollout gates documented;

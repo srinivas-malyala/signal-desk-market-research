@@ -9,6 +9,11 @@ scan pass. Full fast suite: 380 passed, known index-dependent paused-schedule
 failure. M3 routes/UI and live migrations remain pending; AI Search deferred.
 See docs/assistant/M2_STATUS.md; older incremental notes below are historical.
 
+Live workspace status: all three scheduled jobs in the deployed `dev` bundle
+(`activity_analytics_refresh`, `market_daily_refresh`, and `research_refresh`)
+are paused in `dataexpertio_srini` as of 2026-10-12. The other eight bundle jobs
+remain manual-only; all three local bundle schedule declarations are `PAUSED`.
+
 Latest M2 recovery: owner-local reload reconciliation and bounded internal
 maintenance implemented. 62 targeted and seven PostgreSQL tests pass.
 Operational rollout gates remain; no deletion policy or schedule enabled.

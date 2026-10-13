@@ -8,6 +8,10 @@ it to the separate Supervisor in the UI. Comparison and proposal tests succeeded
 semantic search failed because its index is missing. See LIVE_STATUS.md; do not
 create a duplicate Supervisor or unpause the index-dependent refresh job.
 Selected live profile: `dataexpertio_srini` (user selected 2026-10-12).
+Live operations update: all three scheduled jobs owned by the deployed `dev`
+bundle are paused as of 2026-10-12; the remaining eight jobs are manual-only.
+The three bundle schedule declarations are also `PAUSED` to prevent redeployment
+from re-enabling them.
 
 ## Working documents
 

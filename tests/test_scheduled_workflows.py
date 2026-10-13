@@ -10,7 +10,7 @@ def test_activity_analytics_refresh_matches_frontend_freshness_contract() -> Non
     resource = (RESOURCES / "activity_analytics_refresh.job.yml").read_text(encoding="utf-8")
 
     assert 'quartz_cron_expression: "0 0/30 * * * ?"' in resource
-    assert "pause_status: UNPAUSED" in resource
+    assert "pause_status: PAUSED" in resource
     assert "${resources.pipelines.activity_analytics_pipeline.id}" in resource
     assert "full_refresh: false" in resource
 
@@ -28,6 +28,7 @@ def test_market_daily_refresh_publishes_only_market_serving_data() -> None:
     assert positions == sorted(positions)
     assert 'quartz_cron_expression: "0 0 6 ? * MON-FRI"' in resource
     assert "timezone_id: America/Los_Angeles" in resource
+    assert "pause_status: PAUSED" in resource
     assert "resources.jobs.market_ingestion.id" in resource
     assert "resources.pipelines.market_pipeline.id" in resource
     assert "resources.jobs.market_serving_publish.id" in resource
@@ -35,10 +36,10 @@ def test_market_daily_refresh_publishes_only_market_serving_data() -> None:
     assert "dataset: market" in resource
 
 
-def test_research_refresh_runs_every_six_hours() -> None:
+def test_research_refresh_keeps_six_hour_trigger_paused() -> None:
     resource = (RESOURCES / "research_refresh.job.yml").read_text(encoding="utf-8")
 
-    assert "pause_status: UNPAUSED" in resource
+    assert "pause_status: PAUSED" in resource
     assert "interval: 6" in resource
     assert "unit: HOURS" in resource
 
